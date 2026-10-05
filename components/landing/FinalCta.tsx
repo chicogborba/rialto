@@ -20,7 +20,7 @@ export function FinalCta() {
       </div>
       <footer className="relative border-t border-ink/30 bg-signal">
         <p className="mx-auto max-w-[1440px] px-4 py-5 font-mono text-[11px] font-bold uppercase tracking-[0.08em] md:px-10">
-          Demo build. Providers are fictional. Payments are simulated unless the LIVE badge is shown.
+          Built for Solana ◎ · x402 · USDC. Demo build: providers are fictional, payments are simulated unless the LIVE badge is shown.
         </p>
       </footer>
     </section>

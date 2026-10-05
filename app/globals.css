@@ -383,6 +383,7 @@
   filter: drop-shadow(3px 3px 0 var(--color-ink));
 }
 .sy-label[data-state="rejected"] u,
+.sy-label[data-state="dim"] u,
 .sy-label[data-state="winner"] u {
   display: block;
   animation: sy-pop-in 0.35s cubic-bezier(0.2, 0, 0, 1) both;
@@ -414,4 +415,73 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .sy-label u { animation: none !important; }
+}
+
+/* ---------- landing: Solana section ---------- */
+@theme {
+  --color-sol-a: #9945ff;
+  --color-sol-b: #14f195;
+}
+.sy-sol-text {
+  background: linear-gradient(90deg, var(--color-sol-a), var(--color-sol-b));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.sy-sol-bg {
+  background: linear-gradient(90deg, var(--color-sol-a), var(--color-sol-b));
+}
+@keyframes sy-block {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+/* one fill = one ~400 ms Solana slot */
+.sy-block-fill {
+  transform-origin: left;
+  animation: sy-block 0.4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sy-block-fill { animation: none !important; transform: scaleX(1); }
+}
+
+/* mood switching: one emoji visible at a time */
+.sy-label u span,
+.sy-think span,
+.sy-fly span {
+  display: none;
+  font-size: inherit;
+  color: inherit;
+}
+.sy-label u .m0,
+.sy-think[data-mood="0"] .m0,
+.sy-think[data-mood="1"] .m1,
+.sy-think[data-mood="2"] .m2,
+.sy-fly[data-mood="0"] .m0,
+.sy-fly[data-mood="1"] .m1 {
+  display: inline;
+}
+.sy-label[data-mood="1"] u .m0,
+.sy-label[data-mood="2"] u .m0 {
+  display: none;
+}
+.sy-label[data-mood="1"] u .m1,
+.sy-label[data-mood="2"] u .m2 {
+  display: inline;
+}
+.sy-label[data-state="dim"] u {
+  font-size: 30px;
+}
+.sy-fly {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  font-size: 34px;
+  line-height: 1;
+  filter: drop-shadow(2px 2px 0 var(--color-ink));
+}
+@media (max-width: 767px) {
+  .sy-fly { font-size: 22px; }
 }

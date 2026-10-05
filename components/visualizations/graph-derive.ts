@@ -75,13 +75,13 @@ export function deriveGroupNodes(cap: CapabilityState | undefined, step: StepSta
 
 export const STAGE_BADGE: Partial<Record<PaymentStage, { text: string; tone: "pay" | "signal" | "fail" | "data" }>> = {
   requested: { text: "REQ", tone: "data" },
-  required_402: { text: "402", tone: "pay" },
+  required_402: { text: "🧾 402", tone: "pay" },
   policy_ok: { text: "POLICY", tone: "pay" },
   signing: { text: "SIGN", tone: "pay" },
   verified: { text: "VERIFIED", tone: "signal" },
   executing: { text: "EXEC", tone: "data" },
-  settled: { text: "PAID", tone: "signal" },
-  failed: { text: "FAILED", tone: "fail" },
+  settled: { text: "🤑 PAID", tone: "signal" },
+  failed: { text: "💀 FAIL", tone: "fail" },
 };
 
 export function runStateLabel(state: RunState): string {

@@ -29,6 +29,8 @@ export interface LabelFrame {
   opacity: number;
   fill: number;
   state: LabelState;
+  /** which emoji a pinned element shows (meaning depends on the element) */
+  mood: number;
 }
 export interface YardOptions {
   mobile: boolean;
@@ -203,7 +205,8 @@ export class YardScene {
       { p: 1.0, pos: [0, 6.5, 15.5], look: [0, 0.3, 2] },
     ];
     // one frame per specialist, plus a last one for the agent core (the "thinking" emoji)
-    this.frames = [...specs, null].map(() => ({ x: 0, y: 0, opacity: 0, fill: 0, state: "idle" as LabelState }));
+    // then one frame per payment packet on the hired track (the flying emoji)
+    this.frames = Array.from({ length: specs.length + 1 + PACKETS_PER_TRACK }, () => ({ x: 0, y: 0, opacity: 0, fill: 0, state: "idle" as LabelState, mood: 0 }));
   }
 
   /** Winner in the centre, rejected at the edges. */
@@ -353,6 +356,8 @@ export class YardScene {
       f.state = rejected ? "rejected" : n.spec.winner && hire > 0.3 ? "winner" : hire > 0.3 && !n.spec.rejected ? "dim" : "idle";
       f.opacity = this.tA.z > 1 ? 0 : appear * (f.state === "dim" ? 0.35 : f.state === "rejected" ? 0.75 : 1);
       f.fill = n.spec.rejected ? 0 : smooth(seg(vet, 0.45, 0.95)) * n.spec.score;
+      // hired: star-struck → paid → shipped
+      f.mood = n.spec.winner ? (deliver > 0.6 ? 2 : payMix > 0.5 ? 1 : 0) : 0;
     });
     // the agent "thinks" from the first arrival until it commits to a hire
     const coreFrame = this.frames[this.nodes.length];
@@ -360,7 +365,28 @@ export class YardScene {
     this.tA.project(this.camera);
     coreFrame.x = (this.tA.x * 0.5 + 0.5) * this.width;
     coreFrame.y = (-this.tA.y * 0.5 + 0.5) * this.height;
-    coreFrame.opacity = this.tA.z > 1 ? 0 : smooth(seg(p, 0.15, 0.19)) * (1 - smooth(seg(p, 0.49, 0.53)));
+    const thinking = smooth(seg(p, 0.15, 0.19)) * (1 - smooth(seg(p, 0.49, 0.53)));
+    const celebrating = smooth(seg(p, 0.9, 0.94));
+    coreFrame.opacity = this.tA.z > 1 ? 0 : Math.max(thinking, payMix, celebrating);
+    coreFrame.mood = celebrating > 0.5 ? 2 : payMix > 0.5 ? 1 : 0;
+
+    // money out, goods back: emoji riding the hired track
+    const hired = this.nodes.find((n) => n.spec.winner);
+    const paying = pay > 0 && deliver <= 0;
+    const returning = deliver > 0 && deliver < 1;
+    for (let k = 0; k < PACKETS_PER_TRACK; k++) {
+      const f = this.frames[this.nodes.length + 1 + k];
+      const m = hired?.packets[k];
+      if (!m || !(paying || returning)) {
+        f.opacity = 0;
+        continue;
+      }
+      this.tA.copy(m.position).project(this.camera);
+      f.x = (this.tA.x * 0.5 + 0.5) * this.width;
+      f.y = (-this.tA.y * 0.5 + 0.5) * this.height;
+      f.opacity = this.tA.z > 1 ? 0 : 1;
+      f.mood = returning ? 1 : 0;
+    }
     return this.frames;
   }
 

@@ -12,11 +12,11 @@ import type { YardScene } from "./scene/YardScene";
 const ACT_STARTS = [0, 0.13, 0.31, 0.49, 0.65, 0.84] as const;
 
 const ACTS = [
-  { title: "SCOUT", line: `${STORY_FACTS.found} APIs slid in.`, emoji: "👀", tone: "" },
+  { title: "SCOUT", line: `${STORY_FACTS.found} APIs slid in.`, emoji: "👀🛰️", tone: "" },
   { title: "VET", line: `${STORY_FACTS.rejected} got cooked by policy.`, emoji: "💀", tone: "" },
   { title: "HIRE", line: `${STORY_FACTS.winner} understood the assignment.`, emoji: "✅", tone: "text-signal" },
-  { title: "PAY", line: `${STORY_FACTS.price} over x402. No subscription.`, emoji: "💸", tone: "text-pay" },
-  { title: "SHIPPED", line: `Done in ${STORY_FACTS.latencyMs} ms.`, emoji: "⚡", tone: "text-signal" },
+  { title: "PAY", line: `${STORY_FACTS.price} USDC. x402 on Solana.`, emoji: "🤑💸", tone: "text-pay" },
+  { title: "SHIPPED", line: `Done in ${STORY_FACTS.latencyMs} ms.`, emoji: "📦⚡🥳", tone: "text-signal" },
 ] as const;
 
 function actOf(p: number): number {
@@ -48,6 +48,7 @@ export function Story() {
     let currentAct = 0;
     const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
     const states: string[] = [];
+    const moods: number[] = [];
 
     const progress = () => {
       const r = wrap.getBoundingClientRect();
@@ -77,6 +78,10 @@ export function Story() {
         if (states[i] !== f.state) {
           states[i] = f.state;
           el.dataset.state = f.state;
+        }
+        if (moods[i] !== f.mood) {
+          moods[i] = f.mood;
+          el.dataset.mood = String(f.mood);
         }
       }
       if (barRef.current) barRef.current.style.transform = `scaleX(${p.toFixed(4)})`;
@@ -133,10 +138,32 @@ export function Story() {
               <span>{n.price} · {n.quality}</span>
               <i />
               <em>{n.winner ? "HIRED" : n.rejectLabel}</em>
-              {(n.winner || n.rejected) && <u>{n.winner ? "🤩" : "💀"}</u>}
+              <u>
+                {n.winner ? (
+                  <>
+                    <span className="m0">🤩</span>
+                    <span className="m1">🤑</span>
+                    <span className="m2">😎</span>
+                  </>
+                ) : n.rejected ? (
+                  <span className="m0">💀</span>
+                ) : (
+                  <span className="m0">😢</span>
+                )}
+              </u>
             </div>
           ))}
-          <div ref={(el) => { labelRefs.current[STORY_NODES.length] = el; }} className="sy-think">🤔</div>
+          <div ref={(el) => { labelRefs.current[STORY_NODES.length] = el; }} className="sy-think" data-mood="0">
+            <span className="m0">🤔</span>
+            <span className="m1">🫰</span>
+            <span className="m2">🥳</span>
+          </div>
+          {[0, 1, 2, 3].map((k) => (
+            <div key={k} ref={(el) => { labelRefs.current[STORY_NODES.length + 1 + k] = el; }} className="sy-fly" data-mood="0">
+              <span className="m0">💸</span>
+              <span className="m1">📦</span>
+            </div>
+          ))}
         </div>
 
         <div className={cn("absolute inset-x-0 top-20 flex justify-center px-4 transition-opacity duration-300", act === 0 ? "opacity-0" : "opacity-100")}>
@@ -156,9 +183,10 @@ export function Story() {
             <span className="block text-signal">that hire.</span>
           </h1>
           <ul className="mt-6 flex flex-wrap gap-3" aria-label="What it is">
-            <li><Slap still tone="signal" rotate={-2}>⚡ x402-native</Slap></li>
-            <li><Slap still tone="pay" rotate={1.5}>💸 pay-per-call</Slap></li>
-            <li><Slap still tone="paper" rotate={-1}>🤖 no humans in the loop</Slap></li>
+            <li><Slap still tone="paper" rotate={-2} className="!bg-ink !text-paper"><span className="sy-sol-text">◎ built for Solana</span></Slap></li>
+            <li><Slap still tone="signal" rotate={1}>⚡ x402-native</Slap></li>
+            <li><Slap still tone="pay" rotate={-1.5}>💸 pay-per-call</Slap></li>
+            <li><Slap still tone="paper" rotate={1}>🤖 no humans in the loop</Slap></li>
           </ul>
           <div className="mt-7 flex flex-wrap items-center gap-5">
             <a href="#demo" className={hardButtonClass("primary", "lg")}>Run it</a>

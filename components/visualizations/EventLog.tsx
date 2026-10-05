@@ -14,6 +14,30 @@ const FAMILY_TONE: Record<EventFamily, string> = {
   neutral: "text-muted",
 };
 
+const EVENT_EMOJI: Record<RunEvent["type"], string> = {
+  "run.started": "🎯",
+  "goal.parsed": "🧩",
+  "discovery.completed": "👀",
+  "qualification.completed": "🧪",
+  "evaluation.scored": "📊",
+  "decision.made": "🤩",
+  "plan.ready": "📋",
+  "request.sent": "📡",
+  "payment.required": "🧾",
+  "policy.checked": "🛡️",
+  "payment.signed": "✍️",
+  "payment.verified": "🔐",
+  "execution.started": "⚙️",
+  "execution.completed": "📦",
+  "execution.failed": "💀",
+  "payment.settled": "🤑",
+  "wallet.updated": "👛",
+  "reputation.updated": "⭐",
+  "fallback.triggered": "🔁",
+  "run.completed": "🏁",
+  "run.failed": "🛑",
+};
+
 function clock(ts: number): string {
   const d = new Date(ts);
   const p = (n: number, w = 2) => String(n).padStart(w, "0");
@@ -71,11 +95,12 @@ export function EventLog({ state, variant = "terminal", filter, className, maxHe
                 {variant === "timeline" ? (
                   <>
                     <span className="tnum shrink-0 text-muted">{clock(e.ts)}</span>
+                    <span aria-hidden className="shrink-0">{EVENT_EMOJI[e.type]}</span>
                     <span className="uppercase tracking-wide">{describeEvent(e, nameOf)}</span>
                   </>
                 ) : (
                   <>
-                    <span aria-hidden className="shrink-0 text-muted">&gt;</span>
+                    <span aria-hidden className="shrink-0">{EVENT_EMOJI[e.type]}</span>
                     <span>{describeEvent(e, nameOf)}</span>
                   </>
                 )}

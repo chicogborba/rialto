@@ -1,5 +1,5 @@
-const A = ["Agentic commerce", "🤝", "Pay-per-call", "⚡", "Machine-to-machine", "🤖", "Zero subscriptions", "💸"];
-const B = ["x402-native", "🚦", "Autonomous routing", "🧠", "On-chain settlement", "⛓️", "No humans in the loop", "👀"];
+const A = ["Built for Solana", "◎", "Agentic commerce", "🤝", "Pay-per-call", "⚡", "Machine-to-machine", "🤖", "Zero subscriptions", "💸"];
+const B = ["400 ms blocks", "⚡", "x402-native", "🚦", "Autonomous routing", "🧠", "On-chain settlement", "⛓️", "No humans in the loop", "👀"];
 
 function Tape({ words, className, reverse }: { words: string[]; className: string; reverse?: boolean }) {
   const row = (hidden: boolean) => (
