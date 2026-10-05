@@ -41,7 +41,8 @@ export interface YardOptions {
 const HEX = { ink: 0x0b0c0a, signal: 0xc6ff3d, pay: 0xff5b1f, data: 0x5ce1e6, fail: 0xff3b3b, paper: 0xedebe3, steel: 0x8c8e84 };
 const CORE_POS = new THREE.Vector3(0, 0, 4);
 /** where lines meet the agent: the top of his head, so nothing crosses his face */
-const ANTENNA = new THREE.Vector3(CORE_POS.x, CORE_POS.y + 0.72, CORE_POS.z);
+const MASCOT_SCALE = 1.3;
+const ANTENNA = new THREE.Vector3(CORE_POS.x, CORE_POS.y + 0.72 * MASCOT_SCALE, CORE_POS.z);
 const PACKETS_PER_TRACK = 4;
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
@@ -119,11 +120,12 @@ export class YardScene {
     this.scene.add(floor);
 
     // ---- the agent: the orange critter standing on a ringed pad
+    this.mascot.group.scale.setScalar(MASCOT_SCALE);
     this.core.add(this.mascot.group);
     for (let i = 0; i < 2; i++) {
       const ring = new THREE.Mesh(new THREE.TorusGeometry(1.9 + i * 0.4, 0.02, 6, 96), new THREE.MeshBasicMaterial({ color: HEX.signal }));
       ring.rotation.x = Math.PI / 2;
-      ring.position.y = -1.05;
+      ring.position.y = -1.05 * MASCOT_SCALE;
       // a satellite riding each ring
       const sat = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), new THREE.MeshBasicMaterial({ color: HEX.paper }));
       sat.position.x = 1.9 + i * 0.4;
@@ -257,6 +259,7 @@ export class YardScene {
     const coreColor = this.tC.copy(signal).lerp(payC, payMix);
     this.mascot.update({
       time: t,
+      dt: this.opts.reduced ? 10 : dt,
       mx,
       scout: smooth(seg(p, 0.14, 0.18)) * (1 - smooth(seg(p, 0.29, 0.33))),
       think: smooth(seg(p, 0.31, 0.35)) * (1 - smooth(seg(p, 0.48, 0.5))),
@@ -360,7 +363,7 @@ export class YardScene {
     });
     // the agent "thinks" from the first arrival until it commits to a hire
     const coreFrame = this.frames[this.nodes.length];
-    this.tA.copy(this.core.position).y += 1.75 + this.mascot.height;
+    this.tA.copy(this.core.position).y += (1.55 + this.mascot.height) * MASCOT_SCALE;
     this.tA.project(this.camera);
     coreFrame.x = (this.tA.x * 0.5 + 0.5) * this.width;
     coreFrame.y = (-this.tA.y * 0.5 + 0.5) * this.height;

@@ -1,5 +1,6 @@
 import { BigStatement } from "@/components/landing/BigStatement";
 import { Compare } from "@/components/landing/Compare";
+import { CursorTrail } from "@/components/landing/CursorTrail";
 import { DecisionEngineSection } from "@/components/landing/DecisionEngineSection";
 import { FinalCta } from "@/components/landing/FinalCta";
 import { ImageCompare } from "@/components/landing/ImageCompare";
@@ -12,6 +13,7 @@ import { Why } from "@/components/landing/Why";
 export default function LandingPage() {
   return (
     <div className="relative">
+      <CursorTrail />
       <LandingHeader />
       <main>
         <Story />

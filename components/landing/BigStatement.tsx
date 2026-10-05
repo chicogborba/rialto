@@ -1,3 +1,5 @@
+import { Buddy } from "./Buddy";
+
 const A = ["Built for Solana", "◎", "Agentic commerce", "🤝", "Pay-per-call", "⚡", "Machine-to-machine", "🤖", "Zero subscriptions", "💸"];
 const B = ["400 ms blocks", "⚡", "x402-native", "🚦", "Autonomous routing", "🧠", "On-chain settlement", "⛓️", "No humans in the loop", "👀"];
 
@@ -25,6 +27,10 @@ export function BigStatement() {
     <section aria-label="What Switchyard is, in buzzwords" className="relative h-52 overflow-hidden border-t border-line md:h-64">
       <Tape words={A} className="top-8 -rotate-3 bg-signal text-ink md:top-12" />
       <Tape words={B} className="top-24 rotate-2 bg-paper text-ink md:top-32" reverse />
+      {/* he strolls across between the tapes */}
+      <div aria-hidden className="sy-walk absolute bottom-1 left-0">
+        <Buddy mood="happy" className="w-16 md:w-24" />
+      </div>
     </section>
   );
 }

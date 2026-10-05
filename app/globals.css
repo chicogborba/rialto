@@ -485,3 +485,19 @@
 @media (max-width: 767px) {
   .sy-fly { font-size: 22px; }
 }
+
+/* ---------- 2D buddy (SVG mascot) ---------- */
+@keyframes sy-buddy-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1px); } }
+@keyframes sy-buddy-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+@keyframes sy-buddy-step { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
+@keyframes sy-buddy-wave { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-38deg); } }
+.sy-buddy-body { animation: sy-buddy-bob 1.1s steps(2, jump-none) infinite; }
+.sy-buddy-eyes { transform-box: fill-box; transform-origin: center; animation: sy-buddy-blink 3.6s linear infinite; }
+.sy-buddy-leg-a { animation: sy-buddy-step 0.55s steps(2, jump-none) infinite; }
+.sy-buddy-leg-b { animation: sy-buddy-step 0.55s steps(2, jump-none) infinite 0.275s; }
+.sy-buddy-wave { transform-box: fill-box; transform-origin: left bottom; animation: sy-buddy-wave 0.5s ease-in-out infinite; }
+@keyframes sy-walk { from { transform: translateX(-12vw); } to { transform: translateX(112vw); } }
+.sy-walk { animation: sy-walk 22s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .sy-buddy-body, .sy-buddy-eyes, .sy-buddy-leg-a, .sy-buddy-leg-b, .sy-buddy-wave, .sy-walk { animation: none !important; }
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
+import { Buddy } from "./Buddy";
 import { Slap } from "./Stickers";
 
 const REASONS = [
@@ -20,7 +21,8 @@ export function Why() {
           <h2 id="why-title" className="text-[clamp(4.5rem,20vw,18rem)] font-bold uppercase leading-[0.78] tracking-[-0.07em]">
             Why<span className="text-signal">?</span>
           </h2>
-          <Slap tone="pay" rotate={7} className="absolute right-0 top-2 md:right-[18%] md:top-8 md:text-base">fr tho 🤔</Slap>
+          <Slap tone="pay" rotate={7} className="absolute right-0 top-2 md:right-[30%] md:top-8 md:text-base">fr tho 🤔</Slap>
+          <Buddy className="absolute bottom-1 right-2 w-24 md:right-[8%] md:w-48" />
         </div>
 
         <ol className="mt-12 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Buddy } from "./Buddy";
 import { ShaderBackdrop } from "./ShaderBackdrop";
 
 const LIME: [number, number, number] = [0.776, 1.0, 0.239];
@@ -17,6 +18,7 @@ export function FinalCta() {
         <Link href="/app" className="mt-10 inline-flex min-h-16 items-center border-2 border-ink bg-ink px-10 font-mono text-base font-bold uppercase tracking-[0.1em] text-signal shadow-[8px_8px_0_var(--color-paper)] transition-[transform,box-shadow] duration-75 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[11px_11px_0_var(--color-paper)] active:translate-x-1 active:translate-y-1 active:shadow-[3px_3px_0_var(--color-paper)]">
           Open the console →
         </Link>
+        <Buddy mood="wave" className="absolute bottom-6 right-4 w-28 md:right-16 md:w-64" />
       </div>
       <footer className="relative border-t border-ink/30 bg-signal">
         <p className="mx-auto max-w-[1440px] px-4 py-5 font-mono text-[11px] font-bold uppercase tracking-[0.08em] md:px-10">

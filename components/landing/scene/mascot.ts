@@ -3,12 +3,17 @@ import * as THREE from "three";
 /**
  * The agent: a boxy orange critter modelled after the Claude Code mascot — wide block body,
  * tall rectangular eyes (that squint into > < when happy), stub arms and a row of thin legs.
- * Built from boxes and animated entirely procedurally: blink, breathe, look around, tap a foot
- * while thinking, hop on the decision, lean in to pay, party when the job ships.
+ *
+ * Animated procedurally. Scroll decides WHAT he is doing; everything is then eased over time so
+ * poses blend instead of snapping, with follow-through (the body leans into turns, legs step when
+ * he rotates) and a prop for each job: a magnifier to scout, a clipboard to vet, a coin to pay,
+ * confetti when the work ships.
  */
 
 export interface MascotState {
   time: number;
+  /** seconds since last frame (large value = snap, used for reduced motion) */
+  dt: number;
   /** pointer x in -1..1: he looks at you when idle */
   mx: number;
   /** 0..1 scanning the market */
@@ -25,12 +30,25 @@ export interface MascotState {
 
 const ORANGE = 0xee7a35;
 const INK = 0x17120f;
+const PAPER = 0xedebe3;
+const SIGNAL = 0xc6ff3d;
 const BODY = { w: 1.9, h: 1.25, d: 0.85 };
 const LEG = { w: 0.17, h: 0.46, d: 0.17 };
 const LEG_X = [-0.72, -0.44, 0.44, 0.72];
+const FACE = BODY.d / 2 + 0.03;
+const CONFETTI = 46;
 
 const shade = (hex: number, k: number) => new THREE.Color(hex).multiplyScalar(k);
 const flat = (color: THREE.ColorRepresentation) => new THREE.MeshBasicMaterial({ color });
+const box = (w: number, h: number, d: number, color: THREE.ColorRepresentation) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), flat(color));
+const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+const backOut = (t: number) => (t <= 0 ? 0 : 1 + 2.70158 * Math.pow(t - 1, 3) + 1.70158 * Math.pow(t - 1, 2));
+/** frame-rate independent exponential ease toward a target */
+const ease = (cur: number, target: number, rate: number, dt: number) => cur + (target - cur) * (1 - Math.exp(-rate * dt));
+const rnd = (i: number, n: number) => {
+  const x = Math.sin(i * 12.9898 + n * 78.233) * 43758.5453;
+  return x - Math.floor(x);
+};
 
 /** Box with per-face shades: fakes lighting without any lights in the scene. */
 function shadedBox(w: number, h: number, d: number, hex: number): THREE.Mesh {
@@ -56,24 +74,40 @@ export class Mascot {
   private readonly arms: THREE.Group[] = [];
   private readonly legs: THREE.Mesh[] = [];
   private readonly shadow: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
+  private readonly magnifier = new THREE.Group();
+  private readonly clipboard = new THREE.Group();
+  private readonly marks: THREE.Mesh[] = [];
+  private readonly coin: THREE.Mesh;
+  private readonly confetti: THREE.InstancedMesh;
+  private readonly m4 = new THREE.Matrix4();
+  private readonly quat = new THREE.Quaternion();
+  private readonly euler = new THREE.Euler();
+  private readonly v3 = new THREE.Vector3();
+  private readonly one = new THREE.Vector3();
+
+  // eased copies of the scroll-driven state + follow-through
+  private scout = 0;
+  private think = 0;
+  private pay = 0;
+  private party = 0;
+  private yaw = 0;
+  private yawVel = 0;
+  private lean = 0;
 
   constructor() {
     this.body.add(shadedBox(BODY.w, BODY.h, BODY.d, ORANGE));
-    const face = BODY.d / 2 + 0.03;
 
     for (const side of [-1, 1]) {
-      // open eye: a tall black rectangle
-      const open = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.4, 0.06), flat(INK));
-      open.position.set(side * 0.47, 0.13, face);
-      // happy eye: a chevron pointing at the nose ( > on his right, < on his left )
+      const open = box(0.17, 0.4, 0.06, INK);
+      open.position.set(side * 0.47, 0.13, FACE);
       const squint = new THREE.Group();
       for (const k of [-1, 1]) {
-        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.09, 0.06), flat(INK));
+        const bar = box(0.34, 0.09, 0.06, INK);
         bar.rotation.z = k * side * 0.5;
         bar.position.y = k * 0.085;
         squint.add(bar);
       }
-      squint.position.set(side * 0.47, 0.13, face);
+      squint.position.set(side * 0.47, 0.13, FACE);
       squint.visible = false;
       this.eyes.push({ open, squint, side });
       this.body.add(open, squint);
@@ -98,6 +132,46 @@ export class Mascot {
       }
     }
 
+    // ---- prop: magnifier (scouting)
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.045, 8, 24), flat(INK));
+    const lens = new THREE.Mesh(new THREE.CircleGeometry(0.22, 20), new THREE.MeshBasicMaterial({ color: 0x5ce1e6, transparent: true, opacity: 0.35 }));
+    const handle = box(0.08, 0.34, 0.08, INK);
+    handle.position.set(0.2, -0.36, 0);
+    handle.rotation.z = 0.5;
+    this.magnifier.add(rim, lens, handle);
+    this.body.add(this.magnifier);
+
+    // ---- prop: clipboard with a checklist (vetting)
+    const board = box(0.78, 1.0, 0.05, 0x6b4a2f);
+    const sheet = box(0.66, 0.84, 0.02, PAPER);
+    sheet.position.set(0, -0.03, 0.035);
+    const clip = box(0.3, 0.12, 0.07, 0x8c8e84);
+    clip.position.set(0, 0.47, 0.03);
+    this.clipboard.add(board, sheet, clip);
+    for (let i = 0; i < 5; i++) {
+      const y = 0.26 - i * 0.15;
+      const line = box(0.34, 0.035, 0.01, 0x8c8e84);
+      line.position.set(0.1, y, 0.05);
+      // tick box: fills in as he works down the list (two fail, the rest pass)
+      const mark = box(0.1, 0.1, 0.012, i === 1 || i === 4 ? 0xff3b3b : SIGNAL);
+      mark.position.set(-0.22, y, 0.05);
+      this.marks.push(mark);
+      this.clipboard.add(line, mark);
+    }
+    this.body.add(this.clipboard);
+
+    // ---- prop: coin (paying)
+    this.coin = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 20), [flat(0xd9a400), flat(0xffd23f), flat(0xffd23f)]);
+    this.body.add(this.coin);
+
+    // ---- confetti (party)
+    this.confetti = new THREE.InstancedMesh(new THREE.BoxGeometry(0.11, 0.11, 0.02), new THREE.MeshBasicMaterial(), CONFETTI);
+    const palette = [SIGNAL, 0xff5b1f, 0x5ce1e6, PAPER, 0xffd23f];
+    const c = new THREE.Color();
+    for (let i = 0; i < CONFETTI; i++) this.confetti.setColorAt(i, c.setHex(palette[i % palette.length]));
+    this.confetti.frustumCulled = false;
+    this.group.add(this.confetti);
+
     this.shadow = new THREE.Mesh(new THREE.CircleGeometry(1.2, 28), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45, depthWrite: false }));
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadow.position.y = -(BODY.h / 2 + LEG.h) + 0.03;
@@ -106,59 +180,126 @@ export class Mascot {
 
   update(s: MascotState): void {
     const t = s.time;
+    const dt = s.dt;
     const sin = Math.sin;
 
+    // ---- ease into each activity so poses blend
+    this.scout = ease(this.scout, s.scout, 7, dt);
+    this.think = ease(this.think, s.think, 7, dt);
+    this.pay = ease(this.pay, s.pay, 8, dt);
+    this.party = ease(this.party, s.party, 6, dt);
+    const { scout, think, pay, party } = this;
+    const busy = Math.max(scout, think, pay, party, s.hop > 0 && s.hop < 1 ? 1 : 0);
+    const idle = 1 - busy;
+
     // ---- hops: one big one on the decision, a string of small ones at the party
-    const decision = sin(Math.min(1, Math.max(0, s.hop)) * Math.PI) * 1.2;
-    const party = Math.abs(sin(t * 6.5)) * 0.55 * s.party;
-    const hop = decision + party;
+    const decision = sin(clamp01(s.hop) * Math.PI) * 1.2;
+    const partyHop = Math.abs(sin(t * 6.5)) * 0.55 * party;
+    const hop = decision + partyHop;
     this.height = hop;
-    const squash = Math.max(0, 0.12 - hop) * (s.hop > 0 || s.party > 0 ? 1 : 0);
+    const landing = Math.max(0, 0.14 - hop) * (s.hop > 0 && s.hop < 1 ? 1 : party);
+
+    // ---- where he is looking: you (idle), the market (scout), the clipboard with glances up (think)
+    const glance = think * Math.max(0, sin(t * 0.9)) ** 6; // quick look up at the candidates
+    const targetYaw =
+      s.mx * 0.5 * idle +
+      sin(t * 1.9) * 0.6 * scout +
+      (-0.28 + glance * 0.35) * think +
+      sin(t * 0.6) * 0.08 * idle +
+      party * party * (3 - 2 * party) * Math.PI * 2;
+    const prevYaw = this.yaw;
+    this.yaw = ease(this.yaw, targetYaw, 6, dt);
+    this.yawVel = ease(this.yawVel, dt > 0 ? (this.yaw - prevYaw) / Math.max(dt, 1e-3) : 0, 10, dt);
+    // follow-through: he banks into turns
+    this.lean = ease(this.lean, THREE.MathUtils.clamp(-this.yawVel * 0.12, -0.25, 0.25), 8, dt);
 
     // ---- body
     const breathe = sin(t * 2.1) * 0.018;
-    this.body.position.y = sin(t * 2.1) * 0.035 + hop;
-    this.body.scale.set(1 - breathe + squash * 0.6 - hop * 0.04, 1 + breathe - squash + hop * 0.08, 1 - breathe + squash * 0.6);
-    const lookAround = sin(t * 2.3) * 0.55 * s.scout;
-    const spin = s.party * s.party * (3 - 2 * s.party) * Math.PI * 2;
-    this.body.rotation.y = s.mx * 0.45 * (1 - s.scout) + lookAround + spin;
-    this.body.rotation.z = sin(t * 1.4) * 0.16 * s.think + sin(t * 31) * 0.02 * s.pay;
-    this.body.rotation.x = -0.12 * s.scout - 0.2 * s.pay + sin(t * 2.1) * 0.02;
+    const sway = sin(t * 1.1) * 0.05 * idle; // weight shifting foot to foot
+    this.body.position.set(sway, sin(t * 2.1) * 0.035 + hop - landing * 0.5, 0);
+    this.body.scale.set(1 - breathe + landing * 0.7 - hop * 0.04, 1 + breathe - landing + hop * 0.08, 1 - breathe + landing * 0.7);
+    this.body.rotation.y = this.yaw;
+    this.body.rotation.z = this.lean + sway * 0.6 + sin(t * 1.3) * 0.07 * think + sin(t * 31) * 0.015 * pay;
+    this.body.rotation.x = -0.14 * scout + 0.16 * think * (1 - glance) - 0.2 * pay + sin(t * 2.1) * 0.02;
 
-    // ---- eyes: blink, glance around, squint into > < when he is pleased
+    // ---- eyes
     const blink = t % 3.4 < 0.13 || (t + 1.7) % 7.3 < 0.11;
-    const happy = s.party > 0.4 || decision > 0.1;
+    const happy = party > 0.4 || decision > 0.1;
     for (const eye of this.eyes) {
-      const x = eye.side * 0.47 + s.mx * 0.06 * (1 - s.scout) + sin(t * 2.3) * 0.06 * s.scout;
-      const y = 0.13 + s.scout * 0.06 - s.think * 0.03;
+      const x = eye.side * 0.47 + s.mx * 0.06 * idle + sin(t * 1.9) * 0.06 * scout - 0.07 * think * (1 - glance);
+      const y = 0.13 + scout * 0.06 - think * 0.09 * (1 - glance) + glance * 0.05;
       eye.open.visible = !happy;
       eye.squint.visible = happy;
-      eye.open.position.set(x, y, eye.open.position.z);
-      eye.squint.position.set(x, y, eye.squint.position.z);
-      // while thinking, one eye narrows (a skeptical look)
-      eye.open.scale.y = blink ? 0.1 : 1 - (eye.side > 0 ? s.think * 0.45 : 0) - s.pay * 0.25;
+      eye.open.position.set(x, y, FACE);
+      eye.squint.position.set(x, y, FACE);
+      // one eye narrows while he reads (a skeptical look); both narrow as he pays
+      eye.open.scale.y = blink ? 0.1 : 1 - (eye.side > 0 ? think * 0.4 * (1 - glance) : 0) - pay * 0.25;
     }
 
-    // ---- stub arms: flap gently, shoot up on a win, the right one jabs when paying
+    // ---- arms
     const [left, right] = this.arms;
-    const up = Math.max(decision > 0.05 ? 1 : 0, s.party);
+    const up = Math.max(decision > 0.05 ? 1 : 0, party);
     const flap = sin(t * 2.1) * 0.08;
-    left.rotation.z = flap - up * (0.75 + sin(t * 11) * 0.25);
-    right.rotation.z = -flap + up * (0.75 + sin(t * 11 + 1) * 0.25) + s.think * 0.45;
-    right.rotation.y = -sin(t * 8) * 0.5 * s.pay;
-    left.rotation.y = sin(t * 8 + 1.5) * 0.2 * s.pay;
+    // a little wave hello every so often when he has nothing to do
+    const wave = idle * (t % 7 < 1.3 ? sin(((t % 7) / 1.3) * Math.PI) : 0);
+    left.rotation.z = flap - up * (0.75 + sin(t * 11) * 0.25) - this.lean * 0.8;
+    left.rotation.y = think * 0.9 + sin(t * 8 + 1.5) * 0.15 * pay; // reaches forward to hold the clipboard
+    right.rotation.z = -flap + up * (0.75 + sin(t * 11 + 1) * 0.25) + wave * (0.9 + sin(t * 14) * 0.3) - this.lean * 0.8 + scout * 0.5;
+    right.rotation.y = -think * (0.8 + sin(t * 17) * 0.12) - scout * 0.7 - sin(t * 8) * 0.5 * pay; // scribbling / holding the glass / tossing
 
-    // ---- legs: idle shuffle, impatient tapping while thinking, tucked in mid-air
+    // ---- prop: magnifier held up to his right eye while scouting
+    const mag = backOut(clamp01(scout * 1.4));
+    this.magnifier.visible = scout > 0.02;
+    this.magnifier.scale.setScalar(Math.max(0.0001, mag));
+    this.magnifier.position.set(0.5 + sin(t * 1.9) * 0.05, 0.17 - (1 - mag) * 0.8, FACE + 0.3);
+    this.magnifier.rotation.z = sin(t * 1.9) * 0.12;
+
+    // ---- prop: clipboard, pulled up from below; the checklist fills in as he thinks
+    const clipIn = backOut(clamp01(think * 1.3));
+    this.clipboard.visible = think > 0.02;
+    this.clipboard.scale.setScalar(Math.max(0.0001, 0.86 * clipIn));
+    this.clipboard.position.set(-0.52, -0.22 - (1 - clipIn) * 1.1 + sin(t * 2.1) * 0.015, FACE + 0.38);
+    this.clipboard.rotation.set(-0.5 + glance * 0.25, 0.35, 0.08 + sin(t * 1.3) * 0.03);
+    this.marks.forEach((mark, i) => {
+      const k = clamp01(s.think * (this.marks.length + 1.5) - i - 0.6);
+      mark.scale.setScalar(Math.max(0.0001, backOut(k)));
+    });
+
+    // ---- prop: coin flipping above his right arm before he pays
+    const coinIn = backOut(clamp01(pay * 1.5));
+    this.coin.visible = pay > 0.02;
+    this.coin.scale.setScalar(Math.max(0.0001, coinIn));
+    this.coin.position.set(1.15, 0.45 + Math.abs(sin(t * 5)) * 0.6, 0.15);
+    this.coin.rotation.set(t * 11, 0, Math.PI / 2);
+
+    // ---- legs: shuffle, step when turning, tap while thinking, kick at the party, tuck mid-air
     const baseY = -(BODY.h / 2 + LEG.h / 2) + 0.02;
+    const stepping = Math.min(1, Math.abs(this.yawVel) * 0.5);
     this.legs.forEach((leg, i) => {
-      const shuffle = Math.max(0, sin(t * 3.2 + i * 1.3)) * 0.035;
-      const tap = i === 3 ? Math.max(0, sin(t * 10)) * 0.15 * s.think : 0;
-      const kick = s.party * Math.max(0, sin(t * 13 + i)) * 0.08;
-      leg.position.y = baseY + shuffle + tap + kick + hop * 0.92;
+      const shuffle = Math.max(0, sin(t * 3.2 + i * 1.3)) * 0.035 * idle;
+      const step = Math.max(0, sin(t * 14 + (i % 2) * Math.PI)) * 0.12 * stepping;
+      const tap = i === 3 ? Math.max(0, sin(t * 10)) * 0.15 * think : 0;
+      const kick = party * Math.max(0, sin(t * 13 + i)) * 0.08;
+      leg.position.y = baseY + shuffle + step + tap + kick + hop * 0.92;
+      leg.position.x = LEG_X[i % 4] + sway * 0.25;
       leg.scale.y = 1 - Math.min(0.35, hop * 0.4);
     });
 
+    // ---- confetti raining while he celebrates
+    this.confetti.visible = party > 0.02;
+    if (this.confetti.visible) {
+      for (let i = 0; i < CONFETTI; i++) {
+        const fall = (t * (0.35 + rnd(i, 1) * 0.4) + rnd(i, 2)) % 1;
+        this.v3.set((rnd(i, 3) - 0.5) * 5 + sin(t * 2 + i) * 0.2, 3.6 - fall * 4.6, (rnd(i, 4) - 0.5) * 3);
+        this.quat.setFromEuler(this.euler.set(t * (2 + rnd(i, 5) * 4), t * (1 + rnd(i, 6) * 3), i));
+        this.m4.compose(this.v3, this.quat, this.one.setScalar(party * (0.7 + rnd(i, 7) * 0.8)));
+        this.confetti.setMatrixAt(i, this.m4);
+      }
+      this.confetti.instanceMatrix.needsUpdate = true;
+    }
+
     this.shadow.scale.setScalar(1 - Math.min(0.5, hop * 0.35));
     this.shadow.material.opacity = 0.45 - Math.min(0.3, hop * 0.2);
+    this.shadow.position.x = sway;
   }
 }
