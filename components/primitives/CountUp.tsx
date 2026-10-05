@@ -21,7 +21,9 @@ export function CountUp({
   const ref = useRef<HTMLSpanElement>(null);
   const mv = useMotionValue(value);
   const fmt = useRef(format);
-  fmt.current = format;
+  useEffect(() => {
+    fmt.current = format;
+  });
 
   useEffect(() => {
     const el = ref.current;
