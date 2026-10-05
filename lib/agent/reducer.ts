@@ -4,6 +4,7 @@ import type { PolicyCheck } from "@/lib/wallet/policy";
 import type {
   Candidate,
   CapabilityId,
+  Constraints,
   DagNode,
   DecisionExplanation,
   ExecutionPlan,
@@ -82,6 +83,7 @@ export interface RunState {
   runId: string | null;
   goal: string;
   mode: PaymentMode | null;
+  constraints: Constraints | null;
   events: RunEvent[];
   dag: DagNode[];
   /** keyed by capability id */
@@ -106,6 +108,7 @@ export function initialRunState(): RunState {
     runId: null,
     goal: "",
     mode: null,
+    constraints: null,
     events: [],
     dag: [],
     capabilities: {},
@@ -178,7 +181,7 @@ export function reduceRun(state: RunState, event: RunEvent): RunState {
 
   switch (event.type) {
     case "run.started":
-      return { ...initialRunState(), events: [event], status: "running", phase: "goal", runId: event.runId, goal: event.goal, mode: event.mode };
+      return { ...initialRunState(), events: [event], status: "running", phase: "goal", runId: event.runId, goal: event.goal, mode: event.mode, constraints: event.constraints };
 
     case "goal.parsed":
       return {

@@ -7,3 +7,4 @@ export { StatusDot } from "./StatusDot";
 export { CountUp } from "./CountUp";
 export { Metric } from "./Metric";
 export { Ticker } from "./Ticker";
+export { SegTabs } from "./SegTabs";

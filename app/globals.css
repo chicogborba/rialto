@@ -154,6 +154,11 @@
   animation-play-state: paused;
 }
 
+@keyframes sy-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+
 /* Idle pulse used on the hero graph */
 @keyframes sy-pulse {
   0%, 100% { opacity: 1; }
