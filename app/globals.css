@@ -226,12 +226,12 @@
 .sy-label b {
   display: block;
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1.1;
   color: var(--color-paper);
 }
 .sy-label span {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-muted);
 }
 .sy-label i {

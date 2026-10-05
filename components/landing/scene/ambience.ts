@@ -52,7 +52,7 @@ export class Ambience {
   private readonly coreGlow: THREE.Sprite;
   private readonly hireGlow: THREE.Sprite;
 
-  constructor(scene: THREE.Scene, core: THREE.Vector3, winner: THREE.Vector3, mobile: boolean) {
+  constructor(scene: THREE.Scene, core: THREE.Vector3, intake: THREE.Vector3, winner: THREE.Vector3, mobile: boolean) {
     const tex = glowTexture();
     const sprite = (scale: number) => {
       const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: SIGNAL, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
@@ -122,7 +122,7 @@ export class Ambience {
       const a = (i / lanes) * Math.PI * 2 + 0.4;
       const r = 17 + rnd(i, 16) * 10;
       const from = new THREE.Vector3(core.x + Math.cos(a) * r, 2 + rnd(i, 17) * 6, core.z + Math.sin(a) * r);
-      const mid = from.clone().lerp(core, 0.5).setY(from.y + 2.5);
+      const mid = from.clone().lerp(intake, 0.5).setY(from.y + 2.5);
       const mat = new THREE.ShaderMaterial({
         vertexShader: TRACK_VERT,
         fragmentShader: TRACK_FRAG,
@@ -135,7 +135,7 @@ export class Ambience {
         blending: THREE.AdditiveBlending,
       });
       this.traffic.push(mat);
-      scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(from, mid, core.clone()), 40, 0.014, 5), mat));
+      scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(from, mid, intake.clone()), 40, 0.014, 5), mat));
     }
 
     // ---- radar sweep (vetting)

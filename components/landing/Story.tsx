@@ -12,11 +12,11 @@ import type { YardScene } from "./scene/YardScene";
 const ACT_STARTS = [0, 0.13, 0.31, 0.49, 0.65, 0.84] as const;
 
 const ACTS = [
-  { title: "SCOUT", line: `${STORY_FACTS.found} APIs slid in.`, emoji: "👀🛰️", tone: "" },
-  { title: "VET", line: `${STORY_FACTS.rejected} got cooked by policy.`, emoji: "💀", tone: "" },
-  { title: "HIRE", line: `${STORY_FACTS.winner} understood the assignment.`, emoji: "✅", tone: "text-signal" },
-  { title: "PAY", line: `${STORY_FACTS.price} USDC. x402 on Solana.`, emoji: "🤑💸", tone: "text-pay" },
-  { title: "SHIPPED", line: `Done in ${STORY_FACTS.latencyMs} ms.`, emoji: "📦⚡🥳", tone: "text-signal" },
+  { title: "SCOUT", line: `Pulls ${STORY_FACTS.found} APIs out of the market.`, emoji: "👀", tone: "" },
+  { title: "VET", line: `${STORY_FACTS.rejected} break the rules. Cooked.`, emoji: "💀", tone: "" },
+  { title: "HIRE", line: `Scores the rest. ${STORY_FACTS.winner} wins.`, emoji: "🤩", tone: "text-signal" },
+  { title: "PAY", line: `Pays ${STORY_FACTS.price} USDC. x402 on Solana.`, emoji: "🤑", tone: "text-pay" },
+  { title: "SHIPPED", line: `Answer back in ${STORY_FACTS.latencyMs} ms.`, emoji: "📦", tone: "text-signal" },
 ] as const;
 
 function actOf(p: number): number {
@@ -124,6 +124,14 @@ export function Story() {
     };
   }, []);
 
+  const jump = (i: number) => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const total = wrap.offsetHeight - window.innerHeight;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: wrap.offsetTop + total * (ACT_STARTS[i] + 0.08), behavior: reduced ? "auto" : "smooth" });
+  };
+
   return (
     <section ref={wrapRef} aria-label="How an agent hires an API: scout, vet, hire, pay, shipped" className="relative h-[520vh]">
       <div className="sticky top-0 h-[100svh] overflow-hidden">
@@ -166,10 +174,27 @@ export function Story() {
           ))}
         </div>
 
-        <div className={cn("absolute inset-x-0 top-20 flex justify-center px-4 transition-opacity duration-300", act === 0 ? "opacity-0" : "opacity-100")}>
-          <p className="border border-line-hi bg-ink/85 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.1em]">
-            <span className="text-signal">Goal ▸</span> &ldquo;Is this container damaged?&rdquo;
+        {/* what the agent was asked + where we are in the story */}
+        <div className={cn("absolute inset-x-0 top-16 flex flex-col items-center gap-3 px-3 transition-opacity duration-300 md:top-20", act === 0 ? "pointer-events-none opacity-0" : "opacity-100")}>
+          <p className="max-w-full border-2 border-ink bg-paper px-4 py-2.5 text-center text-base font-bold text-ink shadow-[5px_5px_0_var(--color-signal)] md:px-6 md:py-3 md:text-2xl">
+            <span aria-hidden>🎯 </span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] opacity-60 md:text-xs">The job</span>{" "}
+            &ldquo;Is this container damaged?&rdquo;
           </p>
+          <ol className="flex max-w-full gap-1 overflow-x-auto font-mono text-[10px] font-bold uppercase tracking-[0.1em] md:gap-2 md:text-xs" aria-label="Steps">
+            {ACTS.map((a, i) => (
+              <li key={a.title}>
+                <button
+                  type="button"
+                  onClick={() => jump(i + 1)}
+                  aria-current={act === i + 1 ? "step" : undefined}
+                  className={cn("min-h-9 whitespace-nowrap border-2 px-2 md:px-3", act === i + 1 ? "border-ink bg-signal text-ink" : act > i + 1 ? "border-line-hi bg-ink/80 text-paper" : "border-line bg-ink/80 text-muted")}
+                >
+                  {act > i + 1 ? "✓ " : `${i + 1} `}{a.title}
+                </button>
+              </li>
+            ))}
+          </ol>
         </div>
 
         <div aria-hidden className={cn("sy-stroke-pay pointer-events-none absolute right-[4vw] top-[12vh] font-mono text-[34vw] font-bold leading-none tracking-tighter transition-[opacity,transform] duration-300 md:text-[20vw]", act === 4 ? "scale-100 opacity-90" : "scale-90 opacity-0")}>
@@ -197,11 +222,10 @@ export function Story() {
 
         {ACTS.map((a, i) => (
           <div key={a.title} className="sy-act absolute inset-x-0 bottom-0 px-4 pb-10 md:px-10 md:pb-14" data-on={act === i + 1}>
-            <p className="font-mono text-sm font-bold tracking-[0.2em] text-muted">0{i + 1}/05</p>
             <h2 className={cn("text-[clamp(3.4rem,15vw,13rem)] font-bold uppercase leading-[0.82] tracking-[-0.06em]", a.tone)}>
               <Scramble text={a.title} active={act === i + 1} />
             </h2>
-            <p className="mt-2 text-xl font-medium md:text-3xl">{a.line} <span aria-hidden>{a.emoji}</span></p>
+            <p className="mt-2 text-2xl font-bold md:text-4xl">{a.line} <span aria-hidden>{a.emoji}</span></p>
           </div>
         ))}
 

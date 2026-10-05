@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { Ambience } from "./ambience";
-import { CORE_FRAG, CORE_VERT, FLOOR_FRAG, FLOOR_VERT, TRACK_FRAG, TRACK_VERT } from "./shaders";
+import { Mascot } from "./mascot";
+import { FLOOR_FRAG, FLOOR_VERT, TRACK_FRAG, TRACK_VERT } from "./shaders";
 
 /**
  * The landing's 3D story: an agent core hires one specialist out of five.
@@ -39,6 +40,7 @@ export interface YardOptions {
 
 const HEX = { ink: 0x0b0c0a, signal: 0xc6ff3d, pay: 0xff5b1f, data: 0x5ce1e6, fail: 0xff3b3b, paper: 0xedebe3, steel: 0x8c8e84 };
 const CORE_POS = new THREE.Vector3(0, 0, 4);
+const ANTENNA = new THREE.Vector3(CORE_POS.x + 0.35, CORE_POS.y + 1.15, CORE_POS.z);
 const PACKETS_PER_TRACK = 4;
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
@@ -72,8 +74,7 @@ export class YardScene {
   private readonly camera = new THREE.PerspectiveCamera(46, 1, 0.1, 160);
   private readonly nodes: YardNode[] = [];
   private readonly core = new THREE.Group();
-  private readonly coreMat: THREE.ShaderMaterial;
-  private readonly shellMat: THREE.LineBasicMaterial;
+  private readonly mascot = new Mascot();
   private readonly rings: THREE.Mesh<THREE.TorusGeometry, THREE.MeshBasicMaterial>[] = [];
   private readonly floorMat: THREE.ShaderMaterial;
   private readonly shock: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
@@ -116,21 +117,15 @@ export class YardScene {
     floor.position.y = -1.6;
     this.scene.add(floor);
 
-    // ---- core (the agent)
-    this.coreMat = new THREE.ShaderMaterial({
-      vertexShader: CORE_VERT,
-      fragmentShader: CORE_FRAG,
-      uniforms: { uTime: { value: 0 }, uAmp: { value: 0.06 }, uColor: { value: new THREE.Color(HEX.signal) }, uBoost: { value: 0 } },
-    });
-    this.core.add(new THREE.Mesh(new THREE.IcosahedronGeometry(1, opts.mobile ? 4 : 5), this.coreMat));
-    this.shellMat = new THREE.LineBasicMaterial({ color: HEX.signal, transparent: true, opacity: 0.45 });
-    this.core.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(1.55, 1)), this.shellMat));
+    // ---- the agent: a little orange critter standing on a ringed pad
+    this.core.add(this.mascot.group);
     for (let i = 0; i < 2; i++) {
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(2.0 + i * 0.35, 0.014, 6, 96), new THREE.MeshBasicMaterial({ color: HEX.signal }));
-      ring.rotation.x = Math.PI / 2 + (i ? 0.5 : -0.35);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(1.9 + i * 0.4, 0.02, 6, 96), new THREE.MeshBasicMaterial({ color: HEX.signal }));
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = -0.92;
       // a satellite riding each ring
       const sat = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), new THREE.MeshBasicMaterial({ color: HEX.paper }));
-      sat.position.x = 2.0 + i * 0.35;
+      sat.position.x = 1.9 + i * 0.4;
       ring.add(sat);
       this.rings.push(ring);
       this.core.add(ring);
@@ -166,7 +161,8 @@ export class YardScene {
       group.add(new THREE.Mesh(boxGeo, body), new THREE.LineSegments(edgeGeo, edges));
       this.scene.add(group);
 
-      const curve = new THREE.QuadraticBezierCurve3(CORE_POS.clone(), CORE_POS.clone().lerp(home, 0.5).setY(2.6), home.clone());
+      // lines leave from the antenna, not through his face
+      const curve = new THREE.QuadraticBezierCurve3(ANTENNA.clone(), ANTENNA.clone().lerp(home, 0.5).setY(3.1), home.clone());
       const track = new THREE.ShaderMaterial({
         vertexShader: TRACK_VERT,
         fragmentShader: TRACK_FRAG,
@@ -191,12 +187,12 @@ export class YardScene {
     });
 
     const winnerHome = this.nodes.find((n) => n.spec.winner)?.home ?? CORE_POS;
-    this.ambience = new Ambience(this.scene, CORE_POS, winnerHome, opts.mobile);
+    this.ambience = new Ambience(this.scene, CORE_POS, ANTENNA, winnerHome, opts.mobile);
 
-    const lookHero: [number, number, number] = opts.mobile ? [0, 3.4, 3] : [-3.4, 1.1, 3];
+    const lookHero: [number, number, number] = opts.mobile ? [0, 2.6, 3] : [-3.1, 0.2, 3];
     this.keys = [
-      { p: 0.0, pos: [0, 2.0, 11.5], look: lookHero },
-      { p: 0.1, pos: [0, 2.4, 12], look: lookHero },
+      { p: 0.0, pos: [0, 1.2, 10.6], look: lookHero },
+      { p: 0.1, pos: [0, 1.5, 11], look: lookHero },
       { p: 0.22, pos: [0, 8.5, 17.5], look: [0, 0.2, -0.8] },
       { p: 0.46, pos: [0, 7.4, 16.5], look: [0, 0.2, -0.8] },
       { p: 0.6, pos: [0, 4.0, 10.5], look: [0, 0.9, -2.2] },
@@ -256,15 +252,17 @@ export class YardScene {
     const deliverMix = smooth(seg(p, 0.83, 0.88));
     const { signal, pay: payC, data, fail, paper, steel } = this.c;
 
-    // ---- core
+    // ---- the agent
     const coreColor = this.tC.copy(signal).lerp(payC, payMix);
-    (this.coreMat.uniforms.uColor.value as THREE.Color).copy(coreColor);
-    this.coreMat.uniforms.uTime.value = t;
-    this.coreMat.uniforms.uAmp.value = 0.06 + vet * (1 - hire) * 0.1 + Math.sin(deliver * Math.PI) * 0.18;
-    this.coreMat.uniforms.uBoost.value = Math.sin(deliver * Math.PI) * 0.8 + payMix * 0.25;
-    this.shellMat.color.copy(coreColor);
-    this.core.rotation.y = t * 0.25;
-    this.core.position.y = CORE_POS.y + Math.sin(t * 0.9) * 0.08;
+    this.mascot.update({
+      time: t,
+      mx,
+      scout: smooth(seg(p, 0.14, 0.18)) * (1 - smooth(seg(p, 0.29, 0.33))),
+      think: smooth(seg(p, 0.31, 0.35)) * (1 - smooth(seg(p, 0.48, 0.5))),
+      hop: seg(p, 0.5, 0.58),
+      pay: payMix,
+      party: smooth(seg(p, 0.88, 0.93)),
+    });
     this.rings.forEach((ring, i) => {
       ring.rotation.z = t * (i ? -0.5 : 0.7);
       ring.material.color.copy(coreColor);
@@ -361,7 +359,7 @@ export class YardScene {
     });
     // the agent "thinks" from the first arrival until it commits to a hire
     const coreFrame = this.frames[this.nodes.length];
-    this.tA.copy(this.core.position).y += 2.5;
+    this.tA.copy(this.core.position).y += 1.75 + this.mascot.height;
     this.tA.project(this.camera);
     coreFrame.x = (this.tA.x * 0.5 + 0.5) * this.width;
     coreFrame.y = (-this.tA.y * 0.5 + 0.5) * this.height;
