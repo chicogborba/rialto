@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Provider {
+  id              String        @id @default(cuid())
+  slug            String        @unique
+  name            String
+  description     String
+  network         String        @default("solana-devnet")
+  x402Enabled     Boolean       @default(true)
+  status          String        @default("online")
+  qualityScore    Float
+  reputationScore Float
+  successRate     Float
+  latencyMs       Int
+  requestCount    Int           @default(0)
+  isDemo          Boolean       @default(true)
+  payTo           String
+  createdAt       DateTime      @default(now())
+  services        Service[]
+  transactions    Transaction[]
+}
+
+model Service {
+  id                String        @id @default(cuid())
+  providerId        String
+  provider          Provider      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  capability        String
+  endpoint          String
+  priceMicro        Int
+  capabilityMatch   Float         @default(1)
+  demoFailFirstCall Boolean       @default(false)
+  inputSchema       String
+  outputSchema      String
+  transactions      Transaction[]
+
+  @@unique([providerId, capability])
+}
+
+model Agent {
+  id                String @id @default("agent_default")
+  name              String @default("Agent-01")
+  balanceMicro      Int
+  sessionSpendMicro Int    @default(0)
+  policy            String
+}
+
+model Run {
+  id                      String        @id
+  agentId                 String
+  goal                    String
+  constraints             String
+  status                  String
+  mode                    String
+  plan                    String?
+  result                  String?
+  totalCostMicro          Int           @default(0)
+  premiumBaselineMicro    Int           @default(0)
+  cheapestBaselineMicro   Int           @default(0)
+  qualityDeltaVsCheapest  Float         @default(0)
+  totalLatencyMs          Int           @default(0)
+  createdAt               DateTime      @default(now())
+  events                  RunEvent[]
+  transactions            Transaction[]
+}
+
+model RunEvent {
+  id      Int      @id @default(autoincrement())
+  runId   String
+  run     Run      @relation(fields: [runId], references: [id], onDelete: Cascade)
+  seq     Int
+  type    String
+  payload String
+  ts      DateTime
+
+  @@index([runId, seq])
+}
+
+model Transaction {
+  id           String   @id @default(cuid())
+  runId        String
+  run          Run      @relation(fields: [runId], references: [id], onDelete: Cascade)
+  stepId       String
+  agentId      String
+  providerId   String
+  provider     Provider @relation(fields: [providerId], references: [id])
+  serviceId    String
+  service      Service  @relation(fields: [serviceId], references: [id])
+  capability   String
+  amountMicro  Int
+  currency     String   @default("USDC")
+  network      String
+  status       String
+  mode         String
+  role         String   @default("primary")
+  txRef        String?
+  explorerUrl  String?
+  latencyMs    Int?
+  requirements String
+  result       String?
+  error        String?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+}

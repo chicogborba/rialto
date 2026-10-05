@@ -5,7 +5,7 @@ import type { Executor } from "@/lib/agent/run";
 export function createHttpExecutor(baseUrl: string): Executor {
   return {
     async call(service: Service, body: unknown, headers: Record<string, string>) {
-      const res = await fetch(`${baseUrl}${service.endpoint}`, {
+      const res = await fetch(/^https?:\/\//.test(service.endpoint) ? service.endpoint : `${baseUrl}${service.endpoint}`, {
         method: "POST",
         headers: { "content-type": "application/json", ...headers },
         body: JSON.stringify(body),

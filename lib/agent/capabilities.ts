@@ -26,3 +26,7 @@ export const ALL_CAPABILITIES = Object.keys(CAPABILITY_LABELS) as CapabilityId[]
 
 /** Capabilities where a second independent source is worth considering. */
 export const CORROBORABLE: ReadonlySet<CapabilityId> = new Set<CapabilityId>(["news.search"]);
+
+export function isCapabilityId(v: string): v is CapabilityId {
+  return (ALL_CAPABILITIES as string[]).includes(v);
+}

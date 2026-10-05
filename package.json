@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check": "npm run typecheck && npm run lint && npm run test",
-    "db:reset": "prisma db push --force-reset --skip-generate && tsx prisma/seed.ts",
+    "db:reset": "prisma db push --skip-generate && tsx prisma/seed.ts",
     "setup": "prisma generate && npm run db:reset",
     "mcp": "tsx mcp/server.ts",
     "record": "tsx scripts/record-runs.ts",
