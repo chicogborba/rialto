@@ -1,8 +1,7 @@
-import { replay } from "@/lib/agent/reducer";
 import type { RunEvent } from "@/lib/agent/events";
-import { RECORDED_RESEARCH_RUN } from "@/lib/agent/recorded/research";
 import { RECORDED_VISION_RUN } from "@/lib/agent/recorded/vision";
 import { formatUsd } from "@/lib/money";
+import { REJECTION_LABELS } from "@/lib/routing/qualify";
 import type { Candidate } from "@/lib/types";
 
 /** Everything the landing page shows is derived from the two recorded runs — no duplicated mock data. */
@@ -11,35 +10,50 @@ export function findEvent<T extends RunEvent["type"]>(events: RunEvent[], type: 
   return events.find((e): e is Extract<RunEvent, { type: T }> => e.type === type);
 }
 
-export { RECORDED_RESEARCH_RUN, RECORDED_VISION_RUN };
+export { RECORDED_VISION_RUN };
 
 export const VISION_FOUND: Candidate[] = findEvent(RECORDED_VISION_RUN, "discovery.completed")?.found ?? [];
 export const VISION_QUALIFIED: Candidate[] = findEvent(RECORDED_VISION_RUN, "qualification.completed")?.qualified ?? [];
 
-const researchFinal = replay(RECORDED_RESEARCH_RUN);
+// ---------- 3D story (hero) ----------
 
-/** Marquee lines from settled purchases in the recorded research run. */
-export const TICKER_ITEMS: string[] = Object.values(researchFinal.steps)
-  .flatMap((s) => s.attempts)
-  .filter((a) => a.stage === "settled")
-  .map((a) => {
-    const p = researchFinal.providers[a.providerId];
-    return `${p?.name ?? a.providerId} · ${a.requirements?.resource.split("/").pop() ?? ""} · ${formatUsd(a.amountMicro ?? 0)} · SIMULATED`;
-  });
+export interface StoryNode {
+  id: string;
+  name: string;
+  price: string;
+  quality: string;
+  rejected: boolean;
+  rejectLabel: string | null;
+  winner: boolean;
+  score: number;
+}
 
-/** Six marketplace rows spanning capabilities (first candidate of each capability group). */
-export const MARKET_PREVIEW: Candidate[] = (() => {
-  const seen = new Set<string>();
-  const out: Candidate[] = [];
-  for (const e of [...RECORDED_VISION_RUN, ...RECORDED_RESEARCH_RUN]) {
-    if (e.type !== "discovery.completed") continue;
-    for (const c of e.found) {
-      if (seen.has(c.service.capability)) continue;
-      seen.add(c.service.capability);
-      out.push(c);
-    }
-  }
-  const more = RECORDED_RESEARCH_RUN.filter((e) => e.type === "discovery.completed").flatMap((e) => (e.type === "discovery.completed" ? e.found : []));
-  for (const c of more) if (out.length < 6 && !out.includes(c)) out.push(c);
-  return out.slice(0, 6);
-})();
+const visionQual = findEvent(RECORDED_VISION_RUN, "qualification.completed");
+const visionScored = findEvent(RECORDED_VISION_RUN, "evaluation.scored");
+const visionDecision = findEvent(RECORDED_VISION_RUN, "decision.made");
+const visionExec = findEvent(RECORDED_VISION_RUN, "execution.completed");
+
+/** The five specialists of the recorded vision run, with their real outcome. */
+export const STORY_NODES: StoryNode[] = VISION_FOUND.map((c) => {
+  const rejection = visionQual?.rejected.find((r) => r.candidate.provider.id === c.provider.id);
+  const scored = visionScored?.scored.find((s) => s.candidate.provider.id === c.provider.id);
+  return {
+    id: c.provider.id,
+    name: c.provider.name,
+    price: formatUsd(c.service.priceMicro),
+    quality: `${c.provider.qualityScore}%`,
+    rejected: Boolean(rejection),
+    rejectLabel: rejection ? REJECTION_LABELS[rejection.reason] : null,
+    winner: visionDecision?.selectedId === c.provider.id,
+    score: scored?.score ?? 0,
+  };
+});
+
+const winnerNode = STORY_NODES.find((n) => n.winner);
+export const STORY_FACTS = {
+  found: STORY_NODES.length,
+  rejected: STORY_NODES.filter((n) => n.rejected).length,
+  winner: winnerNode?.name ?? "",
+  price: winnerNode?.price ?? "",
+  latencyMs: visionExec?.latencyMs ?? 0,
+};

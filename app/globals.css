@@ -184,3 +184,102 @@
     animation-iteration-count: 1 !important;
   }
 }
+
+/* ---------- landing: 3D story ---------- */
+
+.sy-stroke {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--color-paper);
+}
+.sy-stroke-pay {
+  color: transparent;
+  -webkit-text-stroke: 2px var(--color-pay);
+}
+
+/* story acts: only the active one is visible */
+.sy-act {
+  opacity: 0;
+  transform: translateY(28px);
+  pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.2, 0, 0, 1);
+}
+.sy-act[data-on="true"] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+/* labels pinned to 3D nodes (positioned from JS every frame) */
+.sy-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform, opacity;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  border-left: 2px solid var(--color-line-hi);
+  background: rgb(11 12 10 / 0.78);
+  padding: 4px 8px 5px;
+}
+.sy-label b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 13px;
+  line-height: 1.1;
+  color: var(--color-paper);
+}
+.sy-label span {
+  font-size: 10px;
+  color: var(--color-muted);
+}
+.sy-label i {
+  display: block;
+  margin-top: 4px;
+  height: 3px;
+  background: var(--color-line);
+}
+.sy-label i::after {
+  content: "";
+  display: block;
+  height: 100%;
+  background: var(--color-paper);
+  transform-origin: left;
+  transform: scaleX(var(--fill, 0));
+}
+.sy-label em {
+  display: none;
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+.sy-label[data-state="rejected"] { border-color: var(--color-fail); }
+.sy-label[data-state="rejected"] b { text-decoration: line-through; color: var(--color-fail); }
+.sy-label[data-state="rejected"] em { display: block; color: var(--color-fail); }
+.sy-label[data-state="rejected"] i { display: none; }
+.sy-label[data-state="winner"] { border-color: var(--color-signal); background: var(--color-signal); }
+.sy-label[data-state="winner"] b,
+.sy-label[data-state="winner"] span,
+.sy-label[data-state="winner"] em { color: var(--color-ink); }
+.sy-label[data-state="winner"] em { display: block; }
+.sy-label[data-state="winner"] i { background: rgb(11 12 10 / 0.25); }
+.sy-label[data-state="winner"] i::after { background: var(--color-ink); }
+@media (max-width: 767px) {
+  .sy-label { padding: 2px 5px 3px; }
+  .sy-label b { font-size: 10px; }
+  .sy-label span { display: none; }
+}
+
+@keyframes sy-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+.sy-bob {
+  animation: sy-bob 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sy-bob { animation: none !important; }
+}

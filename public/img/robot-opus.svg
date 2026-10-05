@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Robot drawn as SVG by Claude Opus 5.5">
+  <defs>
+    <linearGradient id="shell" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/><stop offset="0.55" stop-color="#d9dcdf"/><stop offset="1" stop-color="#8f959b"/>
+    </linearGradient>
+    <linearGradient id="dark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a4f55"/><stop offset="1" stop-color="#17191c"/>
+    </linearGradient>
+    <radialGradient id="eye" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff2b0"/><stop offset="0.45" stop-color="#ffb020"/><stop offset="1" stop-color="#7a4a00"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="#ffffff"/>
+  <!-- antennae + ears -->
+  <g stroke="#2b2e32" stroke-width="3" stroke-linecap="round">
+    <line x1="222" y1="62" x2="214" y2="26"/><line x1="290" y1="62" x2="298" y2="26"/>
+  </g>
+  <circle cx="214" cy="24" r="4" fill="#2b2e32"/><circle cx="298" cy="24" r="4" fill="#2b2e32"/>
+  <rect x="192" y="70" width="18" height="38" rx="8" fill="url(#dark)"/><rect x="302" y="70" width="18" height="38" rx="8" fill="url(#dark)"/>
+  <!-- head -->
+  <ellipse cx="256" cy="86" rx="52" ry="54" fill="url(#shell)" stroke="#6d7379" stroke-width="2"/>
+  <circle cx="236" cy="90" r="15" fill="url(#dark)"/><circle cx="276" cy="90" r="15" fill="url(#dark)"/>
+  <circle cx="236" cy="90" r="9" fill="url(#eye)"/><circle cx="276" cy="90" r="9" fill="url(#eye)"/>
+  <path d="M244 118 q12 6 24 0" fill="none" stroke="#3a3e43" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- neck + spine -->
+  <rect x="246" y="138" width="20" height="22" rx="4" fill="url(#dark)"/>
+  <g fill="url(#dark)"><rect x="232" y="236" width="48" height="10" rx="5"/><rect x="234" y="250" width="44" height="10" rx="5"/><rect x="236" y="264" width="40" height="10" rx="5"/></g>
+  <!-- chest -->
+  <path d="M190 164 q66 -22 132 0 l10 52 q-76 40 -152 0 z" fill="url(#shell)" stroke="#6d7379" stroke-width="2"/>
+  <path d="M214 218 q42 22 84 0 l-8 18 q-34 12 -68 0 z" fill="url(#dark)"/>
+  <rect x="226" y="176" width="22" height="6" rx="3" fill="#3a3e43"/><rect x="264" y="176" width="22" height="6" rx="3" fill="#3a3e43"/>
+  <!-- arms -->
+  <g>
+    <circle cx="180" cy="174" r="17" fill="url(#dark)"/><circle cx="332" cy="174" r="17" fill="url(#dark)"/>
+    <rect x="150" y="162" width="34" height="74" rx="16" fill="url(#shell)" stroke="#6d7379" stroke-width="2" transform="rotate(10 167 199)"/>
+    <rect x="328" y="162" width="34" height="74" rx="16" fill="url(#shell)" stroke="#6d7379" stroke-width="2" transform="rotate(-10 345 199)"/>
+    <circle cx="156" cy="246" r="12" fill="url(#dark)"/><circle cx="356" cy="246" r="12" fill="url(#dark)"/>
+    <rect x="128" y="250" width="30" height="72" rx="14" fill="url(#shell)" stroke="#6d7379" stroke-width="2" transform="rotate(8 143 286)"/>
+    <rect x="354" y="250" width="30" height="72" rx="14" fill="url(#shell)" stroke="#6d7379" stroke-width="2" transform="rotate(-8 369 286)"/>
+    <g stroke="#2b2e32" stroke-width="4" stroke-linecap="round" fill="none">
+      <path d="M130 330 l-6 24 M138 332 l-2 26 M146 332 l4 24"/><path d="M382 330 l6 24 M374 332 l2 26 M366 332 l-4 24"/>
+    </g>
+  </g>
+  <!-- pelvis + legs -->
+  <path d="M222 278 h68 l10 34 q-44 16 -88 0 z" fill="url(#shell)" stroke="#6d7379" stroke-width="2"/>
+  <circle cx="226" cy="312" r="14" fill="url(#dark)"/><circle cx="286" cy="312" r="14" fill="url(#dark)"/>
+  <rect x="206" y="318" width="38" height="74" rx="16" fill="url(#shell)" stroke="#6d7379" stroke-width="2"/>
+  <rect x="268" y="318" width="38" height="74" rx="16" fill="url(#shell)" stroke="#6d7379" stroke-width="2"/>
+  <circle cx="225" cy="398" r="13" fill="url(#dark)"/><circle cx="287" cy="398" r="13" fill="url(#dark)"/>
+  <rect x="210" y="404" width="30" height="56" rx="12" fill="url(#shell)" stroke="#6d7379" stroke-width="2"/>
+  <rect x="272" y="404" width="30" height="56" rx="12" fill="url(#shell)" stroke="#6d7379" stroke-width="2"/>
+  <path d="M196 478 q2 -22 28 -22 h18 v22 z" fill="url(#dark)"/><path d="M316 478 q-2 -22 -28 -22 h-18 v22 z" fill="url(#dark)"/>
+  <rect x="196" y="474" width="48" height="8" rx="3" fill="#d9dcdf"/><rect x="268" y="474" width="48" height="8" rx="3" fill="#d9dcdf"/>
+</svg>

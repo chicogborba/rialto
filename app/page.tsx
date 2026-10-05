@@ -1,30 +1,23 @@
-import { Composition } from "@/components/landing/Composition";
+import { BigStatement } from "@/components/landing/BigStatement";
+import { Compare } from "@/components/landing/Compare";
 import { DecisionEngineSection } from "@/components/landing/DecisionEngineSection";
 import { FinalCta } from "@/components/landing/FinalCta";
-import { Hero } from "@/components/landing/Hero";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LiveDemo } from "@/components/landing/LiveDemo";
-import { Network } from "@/components/landing/Network";
-import { ProgrammableMoney } from "@/components/landing/ProgrammableMoney";
-import { Thesis } from "@/components/landing/Thesis";
-import { TICKER_ITEMS } from "@/components/landing/data";
-import { Ticker } from "@/components/primitives";
+import { Story } from "@/components/landing/Story";
 
 export default function LandingPage() {
   return (
-    <>
+    <div className="relative">
       <LandingHeader />
       <main>
-        <Hero />
-        <Ticker items={TICKER_ITEMS} />
-        <Thesis />
+        <Story />
+        <Compare />
+        <BigStatement />
         <LiveDemo />
         <DecisionEngineSection />
-        <Composition />
-        <ProgrammableMoney />
-        <Network />
       </main>
       <FinalCta />
-    </>
+    </div>
   );
 }
