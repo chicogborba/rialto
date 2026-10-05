@@ -23,7 +23,7 @@ export function Panel({
   return (
     <section
       className={cn(
-        "border bg-surface",
+        "border bg-surface text-paper",
         selected ? "border-signal shadow-hard" : "border-line",
         tone === "pay" && "border-pay bg-pay text-ink",
         className,

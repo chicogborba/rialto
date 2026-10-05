@@ -65,7 +65,7 @@ function Particle({ from, to, tone }: { from: { x: number; y: number }; to: { x:
 const PAY_STAGES = new Set(["requested", "required_402", "policy_ok", "signing"]);
 const EXEC_STAGES = new Set(["verified", "executing"]);
 
-export function ExecutionGraph({ state, className }: { state: RunState; className?: string }) {
+export function ExecutionGraph({ state, className, compact = false }: { state: RunState; className?: string; compact?: boolean }) {
   const reduce = useReducedMotion();
   const layout = useMemo(
     () => layoutGraph(state.dag, (cap) => state.capabilities[cap]?.found.length ?? 0),
@@ -121,7 +121,7 @@ export function ExecutionGraph({ state, className }: { state: RunState; classNam
     <div className={cn("overflow-x-auto", className)}>
       <svg
         viewBox={`0 0 ${layout.width} ${layout.height}`}
-        className="mx-auto block h-auto min-w-[620px] w-full max-h-[78vh]"
+        className={cn("mx-auto block h-auto w-full max-h-[78vh]", !compact && "min-w-[620px]")}
         role="group"
         aria-label="Agent execution graph"
       >

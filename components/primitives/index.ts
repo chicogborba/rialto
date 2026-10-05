@@ -1,6 +1,6 @@
 export { Label } from "./Label";
 export { Panel } from "./Panel";
-export { HardButton } from "./HardButton";
+export { HardButton, hardButtonClass } from "./HardButton";
 export { ModeBadge } from "./ModeBadge";
 export { Sticker } from "./Sticker";
 export { StatusDot } from "./StatusDot";
