@@ -67,9 +67,9 @@ function SettingsForm({ data, providers }: { data: WalletResponse; providers: Pr
     <div className="grid gap-6 lg:grid-cols-2">
       <Panel title="Agent wallet" status={<ModeBadge mode={wallet.data.mode} />}>
         <div className="grid grid-cols-3 gap-4 font-mono">
-          <div><Label>Balance</Label><div className="tnum mt-1 text-2xl font-bold">{formatUsd(w.balanceMicro)}</div></div>
-          <div><Label>Session spend</Label><div className="tnum mt-1 text-2xl font-bold">{formatUsd(w.sessionSpendMicro)}</div></div>
-          <div><Label>Limit</Label><div className="tnum mt-1 text-2xl font-bold">{formatUsd(pol.sessionBudgetMicro)}</div></div>
+          <div><Label>Balance</Label><div className="tnum mt-1 text-xl font-bold sm:text-2xl">{formatUsd(w.balanceMicro)}</div></div>
+          <div><Label>Session spend</Label><div className="tnum mt-1 text-xl font-bold sm:text-2xl">{formatUsd(w.sessionSpendMicro)}</div></div>
+          <div><Label>Limit</Label><div className="tnum mt-1 text-xl font-bold sm:text-2xl">{formatUsd(pol.sessionBudgetMicro)}</div></div>
         </div>
         <div className="mt-4 flex items-center gap-2 font-mono text-xs uppercase tracking-wider"><StatusDot tone={within ? "ok" : "fail"} /> {within ? "Within policy" : "Over policy"}</div>
         <div className="mt-4"><HardButton variant="ghost" onClick={newSession}>New session</HardButton></div>

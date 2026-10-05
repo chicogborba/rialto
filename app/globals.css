@@ -123,6 +123,10 @@
     outline: 2px solid var(--color-signal);
     outline-offset: 2px;
   }
+  /* grid items must be allowed to shrink, otherwise wide children (graphs, tables) blow out the page */
+  .grid > * {
+    min-width: 0;
+  }
   .tnum {
     font-variant-numeric: tabular-nums;
   }
