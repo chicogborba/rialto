@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { Ambience } from "./ambience";
+import { Ambience, glowTexture } from "./ambience";
 import { Mascot } from "./mascot";
 import { FLOOR_FRAG, FLOOR_VERT, TRACK_FRAG, TRACK_VERT } from "./shaders";
 
@@ -7,12 +7,14 @@ import { FLOOR_FRAG, FLOOR_VERT, TRACK_FRAG, TRACK_VERT } from "./shaders";
  * The landing's 3D story: an agent core hires one specialist out of five.
  * A pure function of scroll progress `p` (0..1); time only drives ambient motion.
  *
- *   0.00  hero        core alone
- *   0.13  scout       specialists drop in, tracks draw
- *   0.31  vet         two fail policy (red, sink); the rest get scored
- *   0.49  hire        winner lights up, others dim
- *   0.65  pay         orange packets core → winner
- *   0.84  delivered   cyan packets winner → core, shockwave
+ *   0.00  hero        the agent alone in a huge market
+ *   0.10  search      a scan sweeps the whole market; the few that can do the job light up
+ *   0.22  shortlist   those fly in and line up
+ *   0.34  vet         policy check: two fail (red, sink)
+ *   0.46  compare     deep dive on the survivors: quality, price, speed, trust
+ *   0.60  hire        winner lights up, others dim
+ *   0.70  pay         money out along the hired track
+ *   0.85  shipped     goods back, shockwave, party
  *
  * Deliberately no post-processing: one forward pass, capped DPR.
  */
@@ -68,6 +70,10 @@ interface YardNode {
   rejectOrder: number;
   /** offset to where this cube sat in the market before it was called up */
   away: THREE.Vector3;
+  /** glow marking him in the market the moment the scan finds him */
+  ping: THREE.Sprite;
+  /** inspection ring that rides up and down the cube during the deep dive */
+  scan: THREE.Mesh<THREE.TorusGeometry, THREE.MeshBasicMaterial>;
 }
 
 export class YardScene {
@@ -153,6 +159,8 @@ export class YardScene {
     const edgeGeo = new THREE.EdgesGeometry(boxGeo);
     const packetGeo = new THREE.SphereGeometry(0.1, 10, 8);
     let rejectCount = 0;
+    const glow = glowTexture();
+    const scanGeo = new THREE.TorusGeometry(0.85, 0.025, 6, 40);
 
     specs.forEach((spec, i) => {
       const slot = slots[i];
@@ -184,7 +192,12 @@ export class YardScene {
         this.scene.add(m);
         return m;
       });
-      this.nodes.push({ spec, group, home, body, edges, curve, track, packets, order: i, rejectOrder: spec.rejected ? rejectCount++ : -1,
+      const ping = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: HEX.signal, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }));
+      this.scene.add(ping);
+      const scan = new THREE.Mesh(scanGeo, new THREE.MeshBasicMaterial({ color: HEX.data, transparent: true, opacity: 0 }));
+      scan.rotation.x = Math.PI / 2;
+      this.scene.add(scan);
+      this.nodes.push({ spec, group, home, body, edges, curve, track, packets, ping, scan, order: i, rejectOrder: spec.rejected ? rejectCount++ : -1,
         away: home.clone().sub(CORE_POS).setY(0).normalize().multiplyScalar(24).setY(5 + (slot % 3) * 1.5),
       });
     });
@@ -195,12 +208,19 @@ export class YardScene {
     const lookHero: [number, number, number] = opts.mobile ? [0, 2.6, 3] : [-2.6, 0.25, 3];
     this.keys = [
       { p: 0.0, pos: [0, 1.2, 12], look: lookHero },
-      { p: 0.1, pos: [0, 1.5, 12.4], look: lookHero },
-      { p: 0.22, pos: [0, 8.5, 17.5], look: [0, 0.2, -0.8] },
-      { p: 0.46, pos: [0, 7.4, 16.5], look: [0, 0.2, -0.8] },
-      { p: 0.6, pos: [0, 4.0, 10.5], look: [0, 0.9, -2.2] },
-      { p: 0.74, pos: [5.2, 2.4, 8.6], look: [0, 0.9, -0.2] },
-      { p: 0.9, pos: [0, 4.6, 13], look: [0, 0.3, 2.4] },
+      { p: 0.08, pos: [0, 1.5, 12.4], look: lookHero },
+      // search: rise and drift across the market
+      { p: 0.13, pos: [-9, 11, 23], look: [0, 2.5, -6] },
+      { p: 0.21, pos: [8, 12, 24], look: [0, 2.5, -6] },
+      // shortlist + vet: the line-up
+      { p: 0.3, pos: [0, 8.5, 17.5], look: [0, 0.2, -0.8] },
+      { p: 0.45, pos: [0, 7.4, 16.5], look: [0, 0.2, -0.8] },
+      // compare: slow pass along the survivors
+      { p: 0.49, pos: [-2.4, 3.4, 8.2], look: [-3.2, 0.9, -3] },
+      { p: 0.58, pos: [2.4, 3.4, 8.2], look: [3.2, 0.9, -3] },
+      { p: 0.66, pos: [0, 4.0, 10.5], look: [0, 0.9, -2.2] },
+      { p: 0.78, pos: [5.2, 2.4, 8.6], look: [0, 0.9, -0.2] },
+      { p: 0.92, pos: [0, 4.6, 13], look: [0, 0.3, 2.4] },
       { p: 1.0, pos: [0, 6.5, 15.5], look: [0, 0.3, 2] },
     ];
     // one frame per specialist, plus a last one for the agent core (the "thinking" emoji)
@@ -246,13 +266,15 @@ export class YardScene {
   /** Render one frame. `mx,my` are pointer offsets in -1..1. Returns per-node label frames (reused array). */
   render(p: number, time: number, dt: number, mx: number, my: number): LabelFrame[] {
     const t = this.opts.reduced ? 0 : time;
-    const discover = seg(p, 0.13, 0.29);
-    const vet = seg(p, 0.31, 0.47);
-    const hire = smooth(seg(p, 0.49, 0.6));
-    const pay = seg(p, 0.65, 0.8);
-    const deliver = seg(p, 0.84, 0.97);
-    const payMix = smooth(seg(p, 0.62, 0.67)) * (1 - smooth(seg(p, 0.81, 0.86)));
-    const deliverMix = smooth(seg(p, 0.83, 0.88));
+    const search = seg(p, 0.1, 0.21);
+    const discover = seg(p, 0.22, 0.33);
+    const vet = seg(p, 0.35, 0.45);
+    const deep = seg(p, 0.47, 0.59);
+    const hire = smooth(seg(p, 0.6, 0.67));
+    const pay = seg(p, 0.71, 0.83);
+    const deliver = seg(p, 0.86, 0.97);
+    const payMix = smooth(seg(p, 0.69, 0.73)) * (1 - smooth(seg(p, 0.83, 0.86)));
+    const deliverMix = smooth(seg(p, 0.85, 0.89));
     const { signal, pay: payC, data, fail, paper, steel } = this.c;
 
     // ---- the agent
@@ -261,11 +283,11 @@ export class YardScene {
       time: t,
       dt: this.opts.reduced ? 10 : dt,
       mx,
-      scout: smooth(seg(p, 0.14, 0.18)) * (1 - smooth(seg(p, 0.29, 0.33))),
-      think: smooth(seg(p, 0.31, 0.35)) * (1 - smooth(seg(p, 0.48, 0.5))),
-      hop: seg(p, 0.5, 0.58),
+      scout: smooth(seg(p, 0.1, 0.13)) * (1 - smooth(seg(p, 0.32, 0.35))),
+      think: smooth(seg(p, 0.35, 0.38)) * (1 - smooth(seg(p, 0.58, 0.6))),
+      hop: seg(p, 0.6, 0.67),
       pay: payMix,
-      party: smooth(seg(p, 0.88, 0.93)),
+      party: smooth(seg(p, 0.89, 0.93)),
     });
     this.rings.forEach((ring, i) => {
       ring.rotation.z = t * (i ? -0.5 : 0.7);
@@ -275,13 +297,14 @@ export class YardScene {
     // ---- floor + shockwave
     this.floorMat.uniforms.uTime.value = t;
     (this.floorMat.uniforms.uColor.value as THREE.Color).copy(coreColor).lerp(data, deliverMix * 0.35);
-    this.floorMat.uniforms.uEnergy.value = Math.max(vet * (1 - hire), payMix, Math.sin(deliver * Math.PI));
+    this.floorMat.uniforms.uEnergy.value = Math.max(Math.sin(search * Math.PI), deep * (1 - hire), payMix, Math.sin(deliver * Math.PI));
     this.shock.scale.setScalar(1 + deliver * 22);
     this.shock.material.opacity = deliver > 0 && deliver < 1 ? (1 - deliver) * 0.8 : 0;
 
     this.ambience.update({
       time: t,
       color: coreColor,
+      search,
       sweep: vet > 0 && hire < 1 ? smooth(seg(vet, 0, 0.15)) * (1 - hire) : 0,
       hire: hire * (1 - smooth(seg(p, 0.97, 1))),
       burst: Math.sin(deliver * Math.PI),
@@ -289,16 +312,18 @@ export class YardScene {
 
     // ---- specialists
     for (const n of this.nodes) {
+      // the scan finds him out in the market first, then he is called in
+      const found = seg(search, 0.2 + n.order * 0.14, 0.34 + n.order * 0.14);
       const appear = seg(discover, n.order * 0.14, n.order * 0.14 + 0.42);
       const pop = appear <= 0 ? 0 : easeOutBack(appear);
       const rej = n.spec.rejected ? smooth(seg(vet, 0.08 + n.rejectOrder * 0.22, 0.4 + n.rejectOrder * 0.22)) : 0;
       const win = n.spec.winner ? hire : 0;
       const dim = !n.spec.winner && !n.spec.rejected ? hire : 0;
 
-      const col = this.tC.copy(steel).lerp(paper, appear).lerp(fail, rej).lerp(signal, win);
+      const col = this.tC.copy(steel).lerp(signal, found).lerp(paper, appear).lerp(fail, rej).lerp(signal, win);
       n.edges.color.copy(col);
       n.body.color.copy(col).multiplyScalar(0.16 + win * 0.3);
-      const alpha = clamp01(appear * 2) * (1 - rej * 0.7) * (1 - dim * 0.7);
+      const alpha = clamp01(Math.max(found, appear * 2)) * (1 - rej * 0.7) * (1 - dim * 0.7);
       n.edges.opacity = alpha;
       n.body.opacity = alpha;
       // called up from the market: flies in from far away, growing from market size to full size
@@ -308,7 +333,18 @@ export class YardScene {
         n.home.y + n.away.y * fly - rej * 1.1 + win * 0.6 + Math.sin(t * 1.1 + n.order) * 0.07,
         n.home.z + n.away.z * fly,
       );
-      n.group.scale.setScalar(Math.max(0.0001, (appear <= 0 ? 0 : 0.3 + 0.7 * pop) * (1 + win * 0.7) * (1 - rej * 0.3)));
+      const inspected = !n.spec.rejected && deep > 0 && hire < 1 ? Math.sin(deep * Math.PI) : 0;
+      const base = appear <= 0 ? 0.3 * easeOutBack(found) * (1 + 0.2 * Math.sin(t * 7 + n.order)) : 0.3 + 0.7 * pop;
+      n.group.scale.setScalar(Math.max(0.0001, base * (1 + win * 0.7 + inspected * 0.18) * (1 - rej * 0.3)));
+
+      // "found you" glow out in the market, fading as he flies in
+      n.ping.position.copy(n.group.position);
+      n.ping.material.opacity = found * (1 - appear) * (0.55 + 0.35 * Math.sin(t * 8 + n.order));
+      n.ping.scale.setScalar(3 + Math.sin(t * 8 + n.order) * 0.6);
+
+      // inspection ring during the deep dive
+      n.scan.position.set(n.group.position.x, n.group.position.y + Math.sin(t * 3.2 + n.order * 2) * 0.6, n.group.position.z);
+      n.scan.material.opacity = inspected * 0.9;
       n.group.rotation.set(t * 0.3 + n.order, t * 0.45 + n.order * 1.7, rej * 0.5);
 
       const u = n.track.uniforms;
@@ -321,7 +357,7 @@ export class YardScene {
       u.uFlow.value = n.spec.winner ? 0.5 + (payMix + deliverMix) * 0.5 : 0.4 * (1 - dim);
       u.uDir.value = n.spec.winner && deliverMix > 0.5 ? -1 : 1;
 
-      const scanning = !n.spec.rejected && vet > 0.45 && vet < 1 && hire === 0;
+      const scanning = !n.spec.rejected && deep > 0 && deep < 1 && hire === 0;
       const paying = n.spec.winner && pay > 0 && deliver <= 0;
       const returning = n.spec.winner && deliver > 0 && deliver < 1;
       const active = scanning || paying || returning;
@@ -357,7 +393,8 @@ export class YardScene {
       const rejected = n.spec.rejected && vet > 0.1 + n.rejectOrder * 0.22;
       f.state = rejected ? "rejected" : n.spec.winner && hire > 0.3 ? "winner" : hire > 0.3 && !n.spec.rejected ? "dim" : "idle";
       f.opacity = this.tA.z > 1 ? 0 : appear * (f.state === "dim" ? 0.35 : f.state === "rejected" ? 0.75 : 1);
-      f.fill = n.spec.rejected ? 0 : smooth(seg(vet, 0.45, 0.95)) * n.spec.score;
+      // 0..1 progress of the deep dive (the page turns it into per-dimension bars)
+      f.fill = n.spec.rejected ? 0 : deep;
       // hired: star-struck → paid → shipped
       f.mood = n.spec.winner ? (deliver > 0.6 ? 2 : payMix > 0.5 ? 1 : 0) : 0;
     });
@@ -367,7 +404,7 @@ export class YardScene {
     this.tA.project(this.camera);
     coreFrame.x = (this.tA.x * 0.5 + 0.5) * this.width;
     coreFrame.y = (-this.tA.y * 0.5 + 0.5) * this.height;
-    const thinking = smooth(seg(p, 0.15, 0.19)) * (1 - smooth(seg(p, 0.49, 0.53)));
+    const thinking = smooth(seg(p, 0.11, 0.14)) * (1 - smooth(seg(p, 0.59, 0.62)));
     const celebrating = smooth(seg(p, 0.9, 0.94));
     coreFrame.opacity = this.tA.z > 1 ? 0 : Math.max(thinking, payMix, celebrating);
     coreFrame.mood = celebrating > 0.5 ? 2 : payMix > 0.5 ? 1 : 0;

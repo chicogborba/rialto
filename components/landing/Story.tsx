@@ -10,15 +10,22 @@ import { Slap } from "./Stickers";
 import type { YardScene } from "./scene/YardScene";
 
 /** Scroll thresholds where each act begins (0 = hero). Must match YardScene's timeline. */
-const ACT_STARTS = [0, 0.13, 0.31, 0.49, 0.65, 0.84] as const;
+const ACT_STARTS = [0, 0.1, 0.22, 0.34, 0.46, 0.6, 0.7, 0.85] as const;
 
+const PASSED = STORY_FACTS.found - STORY_FACTS.rejected;
+
+/** One beat per act: the big word, the plain-English line, and the funnel chip in the tracker. */
 const ACTS = [
-  { title: "SCOUT", line: `Pulls ${STORY_FACTS.found} APIs out of the market.`, emoji: "👀", tone: "" },
-  { title: "VET", line: `${STORY_FACTS.rejected} break the rules. Cooked.`, emoji: "💀", tone: "" },
-  { title: "HIRE", line: `Scores the rest. ${STORY_FACTS.winner} wins.`, emoji: "🤩", tone: "text-signal" },
-  { title: "PAY", line: `Pays ${STORY_FACTS.price} USDC. x402 on Solana.`, emoji: "🤑", tone: "text-pay" },
-  { title: "SHIPPED", line: `Sprite sheet back in ${(STORY_FACTS.latencyMs / 1000).toFixed(1)} s.`, emoji: "📦", tone: "text-signal" },
+  { title: "SEARCH", line: "Scans the whole market for the skill.", emoji: "🛰️", chip: "🌐 whole market", tone: "" },
+  { title: "SHORTLIST", line: `${STORY_FACTS.found} can make sprites. Called in.`, emoji: "👀", chip: `🎯 ${STORY_FACTS.found} match`, tone: "" },
+  { title: "VET", line: `${STORY_FACTS.rejected} break the rules. Cooked.`, emoji: "💀", chip: `🛡️ ${PASSED} pass`, tone: "" },
+  { title: "COMPARE", line: "Deep dive: quality, price, speed, trust.", emoji: "🔬", chip: "🔬 deep dive", tone: "text-data" },
+  { title: "HIRE", line: `${STORY_FACTS.winner} wins.`, emoji: "🤩", chip: "🏆 1 hired", tone: "text-signal" },
+  { title: "PAY", line: `${STORY_FACTS.price} USDC. x402 on Solana.`, emoji: "🤑", chip: "💸 paid", tone: "text-pay" },
+  { title: "SHIPPED", line: `Sprite sheet back in ${(STORY_FACTS.latencyMs / 1000).toFixed(1)} s.`, emoji: "📦", chip: "📦 shipped", tone: "text-signal" },
 ] as const;
+
+const DIM_NAMES = ["QUALITY", "PRICE", "SPEED", "TRUST"] as const;
 
 function actOf(p: number): number {
   let a = 0;
@@ -50,6 +57,7 @@ export function Story() {
     const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
     const states: string[] = [];
     const moods: number[] = [];
+    const fills: number[] = [];
 
     const progress = () => {
       const r = wrap.getBoundingClientRect();
@@ -75,7 +83,15 @@ export function Story() {
         const f = frames[i];
         el.style.transform = `translate3d(${f.x.toFixed(1)}px, ${f.y.toFixed(1)}px, 0) translate(-50%, -100%)`;
         el.style.opacity = f.opacity.toFixed(2);
-        el.style.setProperty("--fill", f.fill.toFixed(3));
+        // deep dive: one dimension at a time, then the final score
+        const node = STORY_NODES[i];
+        if (node && fills[i] !== f.fill) {
+          fills[i] = f.fill;
+          for (let d = 0; d < 4; d++) el.style.setProperty(`--d${d}`, (Math.min(1, Math.max(0, f.fill * 5 - d)) * node.dims[d]).toFixed(3));
+          el.style.setProperty("--fill", (Math.min(1, Math.max(0, f.fill * 5 - 4)) * node.score).toFixed(3));
+          const deep = f.fill > 0.01 ? "1" : "0";
+          if (el.dataset.deep !== deep) el.dataset.deep = deep;
+        }
         if (states[i] !== f.state) {
           states[i] = f.state;
           el.dataset.state = f.state;
@@ -130,11 +146,11 @@ export function Story() {
     if (!wrap) return;
     const total = wrap.offsetHeight - window.innerHeight;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({ top: wrap.offsetTop + total * (ACT_STARTS[i] + 0.08), behavior: reduced ? "auto" : "smooth" });
+    window.scrollTo({ top: wrap.offsetTop + total * (ACT_STARTS[i] + 0.06), behavior: reduced ? "auto" : "smooth" });
   };
 
   return (
-    <section ref={wrapRef} aria-label="How an agent hires an API to make game sprites: scout, vet, hire, pay, shipped" className="relative h-[520vh]">
+    <section ref={wrapRef} aria-label="How an agent hires an API to make game sprites: scout, vet, hire, pay, shipped" className="relative h-[780vh]">
       <div className="sticky top-0 h-[100svh] overflow-hidden">
         <canvas ref={canvasRef} aria-hidden className={cn("absolute inset-0 size-full transition-opacity duration-700", ready ? "opacity-100" : "opacity-0")} />
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgb(11_12_10/0.9)_0%,transparent_42%)]" />
@@ -145,6 +161,11 @@ export function Story() {
             <div key={n.id} ref={(el) => { labelRefs.current[i] = el; }} className="sy-label" data-state="idle">
               <b>{n.name}</b>
               <span>{n.price} · {n.quality}</span>
+              <ol>
+                {DIM_NAMES.map((d, k) => (
+                  <li key={d} style={{ "--k": `var(--d${k})` } as React.CSSProperties}>{d}</li>
+                ))}
+              </ol>
               <i />
               <em>{n.winner ? "HIRED" : n.rejectLabel}</em>
               <u>
@@ -191,7 +212,7 @@ export function Story() {
                   aria-current={act === i + 1 ? "step" : undefined}
                   className={cn("min-h-9 whitespace-nowrap border-2 px-2 md:px-3", act === i + 1 ? "border-ink bg-signal text-ink" : act > i + 1 ? "border-line-hi bg-ink/80 text-paper" : "border-line bg-ink/80 text-muted")}
                 >
-                  {act > i + 1 ? "✓ " : `${i + 1} `}{a.title}
+                  {a.chip}
                 </button>
               </li>
             ))}
@@ -199,11 +220,11 @@ export function Story() {
         </div>
 
         {/* what came back: a little sprite strip */}
-        <div aria-hidden className={cn("pointer-events-none absolute right-[4vw] top-[30vh] transition-[opacity,transform] duration-300 md:right-[8vw]", act === 5 ? "translate-y-0 rotate-3 opacity-100" : "translate-y-6 opacity-0")}>
+        <div aria-hidden className={cn("pointer-events-none absolute right-[4vw] top-[30vh] transition-[opacity,transform] duration-300 md:right-[8vw]", act === 7 ? "translate-y-0 rotate-3 opacity-100" : "translate-y-6 opacity-0")}>
           <SpriteStrip />
         </div>
 
-        <div aria-hidden className={cn("sy-stroke-pay pointer-events-none absolute right-[4vw] top-[12vh] font-mono text-[34vw] font-bold leading-none tracking-tighter transition-[opacity,transform] duration-300 md:text-[20vw]", act === 4 ? "scale-100 opacity-90" : "scale-90 opacity-0")}>
+        <div aria-hidden className={cn("sy-stroke-pay pointer-events-none absolute right-[4vw] top-[12vh] font-mono text-[34vw] font-bold leading-none tracking-tighter transition-[opacity,transform] duration-300 md:text-[20vw]", act === 6 ? "scale-100 opacity-90" : "scale-90 opacity-0")}>
           402
         </div>
 
@@ -234,6 +255,10 @@ export function Story() {
             <p className="mt-2 text-2xl font-bold md:text-4xl">{a.line} <span aria-hidden>{a.emoji}</span></p>
           </div>
         ))}
+
+        <p className={cn("absolute bottom-2 right-3 max-w-[60vw] text-right font-mono text-[9px] uppercase tracking-[0.1em] text-muted transition-opacity duration-300", act === 1 ? "opacity-100" : "opacity-0")}>
+          Market shown is illustrative · this demo&apos;s registry holds 25 providers
+        </p>
 
         {/* progress */}
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-1 bg-line">

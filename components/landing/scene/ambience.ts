@@ -10,6 +10,8 @@ import { TRACK_FRAG, TRACK_VERT } from "./shaders";
 export interface AmbienceState {
   time: number;
   color: THREE.Color;
+  /** 0..1 progress of the market-wide search */
+  search: number;
   /** 0..1 while the agent is vetting */
   sweep: number;
   /** 0..1 once a specialist is hired */
@@ -26,7 +28,7 @@ const rnd = (i: number, n: number) => {
   return x - Math.floor(x);
 };
 
-function glowTexture(): THREE.CanvasTexture {
+export function glowTexture(): THREE.CanvasTexture {
   const c = document.createElement("canvas");
   c.width = c.height = 128;
   const g = c.getContext("2d");
@@ -46,6 +48,8 @@ export class Ambience {
   private readonly beacons: THREE.PointsMaterial;
   private readonly dust: THREE.Points;
   private readonly traffic: THREE.ShaderMaterial[] = [];
+  private readonly marketMat = new THREE.MeshBasicMaterial();
+  private readonly scanRings: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>[] = [];
   private readonly sweepPivot = new THREE.Group();
   private readonly sweepMat: THREE.MeshBasicMaterial;
   private readonly pillar: THREE.Mesh<THREE.CylinderGeometry, THREE.MeshBasicMaterial>;
@@ -67,7 +71,7 @@ export class Ambience {
 
     // ---- the market: a few hundred anonymous APIs drifting around the yard
     const count = mobile ? 280 : 800;
-    const cubes = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial(), count);
+    const cubes = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), this.marketMat, count);
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
     const e = new THREE.Euler();
@@ -139,7 +143,19 @@ export class Ambience {
       scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(from, mid, intake.clone()), 40, 0.014, 5), mat));
     }
 
-    // ---- radar sweep (vetting)
+    // ---- search pulses: rings racing out across the whole market
+    for (let k = 0; k < 3; k++) {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.985, 1, 96),
+        new THREE.MeshBasicMaterial({ color: SIGNAL, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(core.x, -1.5, core.z);
+      this.scanRings.push(ring);
+      scene.add(ring);
+    }
+
+    // ---- radar sweep (searching, vetting)
     this.sweepMat = new THREE.MeshBasicMaterial({ color: SIGNAL, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
     const wedge = new THREE.Mesh(new THREE.CircleGeometry(11, 20, 0, 0.55), this.sweepMat);
     wedge.rotation.x = -Math.PI / 2;
@@ -165,8 +181,17 @@ export class Ambience {
       mat.uniforms.uTime.value = t;
       (mat.uniforms.uColor.value as THREE.Color).copy(s.color);
     }
-    this.sweepPivot.rotation.y = -t * 1.7;
-    this.sweepMat.opacity = s.sweep * 0.16;
+    // searching: pulses race outward, the sweep widens to the horizon, the whole market flickers
+    const searching = s.search > 0 && s.search < 1 ? Math.min(1, Math.sin(s.search * Math.PI) * 3) : 0;
+    this.scanRings.forEach((ring, k) => {
+      const f = (s.search * 3 + k / this.scanRings.length) % 1;
+      ring.scale.setScalar(1 + f * 46);
+      ring.material.opacity = searching * (1 - f) * 0.9;
+    });
+    this.marketMat.color.setScalar(1 + searching * (1.1 + 0.7 * Math.sin(t * 9)));
+    this.sweepPivot.rotation.y = -t * (1.7 + searching * 1.3);
+    this.sweepPivot.scale.setScalar(1 + searching * 3.2);
+    this.sweepMat.opacity = Math.max(s.sweep * 0.16, searching * 0.1);
     this.pillar.material.opacity = s.hire * 0.16 + s.burst * 0.12;
     this.pillar.material.color.copy(s.color);
     this.coreGlow.material.color.copy(s.color);

@@ -27,6 +27,8 @@ export interface StoryNode {
   rejectLabel: string | null;
   winner: boolean;
   score: number;
+  /** normalised 0..1 scores for the deep-dive bars: quality, price, speed, trust */
+  dims: [number, number, number, number];
 }
 
 // The hero story replays the recorded sprite-generation run.
@@ -49,6 +51,7 @@ export const STORY_NODES: StoryNode[] = storyFound.map((c) => {
     rejectLabel: rejection ? REJECTION_LABELS[rejection.reason] : null,
     winner: storyDecision?.selectedId === c.provider.id,
     score: scored?.score ?? 0,
+    dims: scored ? [scored.normalized.quality, scored.normalized.price, scored.normalized.latency, scored.normalized.trust] : [0, 0, 0, 0],
   };
 });
 
