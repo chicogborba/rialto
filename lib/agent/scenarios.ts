@@ -12,6 +12,13 @@ export interface Scenario {
 /** First matching scenario wins; `generic` is the fallback. */
 export const SCENARIOS: Scenario[] = [
   {
+    id: "sprites",
+    keywords: ["sprite", "pixel art", "pixel-art", "game asset", "spritesheet"],
+    dag: [{ id: "s1", capability: "image.sprites", dependsOn: [] }],
+    defaultPreset: "accuracy",
+    confidenceCap: 1,
+  },
+  {
     id: "vision",
     keywords: ["image", "photo", "picture", "damage", "container", "inspect"],
     dag: [{ id: "s1", capability: "vision.damage_detection", dependsOn: [] }],
@@ -63,6 +70,7 @@ export const GOAL_CHIPS: { label: string; goal: string }[] = [
   { label: "Analyze an image", goal: "Analyze this image and determine whether the container has structural damage." },
   { label: "Research a stock move", goal: "Research why NVIDIA dropped today and produce a sourced explanation." },
   { label: "Translate + summarize", goal: "Translate this document to Portuguese and summarize the important parts." },
+  { label: "Make game sprites", goal: "Make a pixel-art sprite sheet for my game's hero: idle, run and jump." },
 ];
 
 export function presetFromGoal(goal: string): PriorityPreset | null {

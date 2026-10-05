@@ -5,6 +5,7 @@ export type PaymentMode = "simulated" | "live";
 export type Network = "solana-devnet";
 
 export type CapabilityId =
+  | "image.sprites"
   | "vision.damage_detection"
   | "market.quotes"
   | "news.search"
@@ -158,7 +159,7 @@ export interface ExecutionPlan {
   plannerKind: "demo" | "llm";
 }
 
-export type ScenarioId = "vision" | "research" | "translate" | "generic";
+export type ScenarioId = "sprites" | "vision" | "research" | "translate" | "generic";
 
 export type ProviderHistory = Record<string, { recentSuccessRate: number; samples: number }>;
 

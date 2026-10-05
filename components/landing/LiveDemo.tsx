@@ -13,11 +13,11 @@ import { cn } from "@/lib/utils";
 import { Section } from "./Section";
 
 /** Real ephemeral runs (/api/runs): in-memory wallet, nothing persisted. Speeds keep each run short. */
-const SPEEDS = [0.55, 0.2, 0.45] as const;
+const SPEEDS = [0.55, 0.2, 0.45, 0.55] as const;
 
 export function LiveDemo() {
   const { state, start } = useAgentRun();
-  const [idx, setIdx] = useState(0);
+  const [idx, setIdx] = useState(3); // start on the sprite job, same as the story above
   const running = state.status === "running";
   const hires = Object.values(state.steps).flatMap((s) => s.attempts).filter((a) => a.stage === "settled").length;
 

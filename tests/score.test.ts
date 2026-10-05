@@ -18,6 +18,8 @@ describe("expected winners", () => {
     ["vision.damage_detection", "cost", Infinity, "BalancedVision"],
     ["vision.damage_detection", "speed", Infinity, "FastVision"],
     ["vision.damage_detection", "accuracy", 5_000, "BalancedVision"],
+    ["image.sprites", "accuracy", Infinity, "SpriteForge"],
+    ["image.sprites", "speed", Infinity, "QuickSprite"],
     ["text.translate", "cost", Infinity, "LinguaFlash"],
     ["text.translate", "balanced", Infinity, "PolyglotPro"],
   ] as const)("%s / %s / budget %s → %s", (cap, preset, budget, expected) => {

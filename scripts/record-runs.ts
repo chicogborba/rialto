@@ -24,6 +24,7 @@ async function record(file: string, exportName: string, goal: string, preset: "a
 
 async function main() {
   await record("vision.ts", "RECORDED_VISION_RUN", GOAL_CHIPS[0].goal, "accuracy", 100_000);
+  await record("sprites.ts", "RECORDED_SPRITES_RUN", GOAL_CHIPS[3].goal, "accuracy", 100_000);
   await record("research.ts", "RECORDED_RESEARCH_RUN", GOAL_CHIPS[1].goal, "balanced", 100_000);
 }
 

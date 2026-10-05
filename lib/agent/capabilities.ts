@@ -1,6 +1,7 @@
 import type { CapabilityId } from "@/lib/types";
 
 export const CAPABILITY_LABELS: Record<CapabilityId, string> = {
+  "image.sprites": "Sprite generation",
   "vision.damage_detection": "Damage detection",
   "market.quotes": "Market data",
   "news.search": "News search",
@@ -12,6 +13,7 @@ export const CAPABILITY_LABELS: Record<CapabilityId, string> = {
 };
 
 export const CAPABILITY_SHORT: Record<CapabilityId, string> = {
+  "image.sprites": "SPRITES",
   "vision.damage_detection": "VISION",
   "market.quotes": "MARKET",
   "news.search": "NEWS",

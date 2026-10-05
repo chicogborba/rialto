@@ -26,6 +26,11 @@ interface Row {
 }
 
 const ROWS: Row[] = [
+  { name: "SpriteForge", description: "Studio-grade pixel-art sprite sheets with consistent frames.", capability: "image.sprites", price: 0.014, quality: 97.8, latency: 2400, rep: 98.9, success: 99.7, requests: 612_480 },
+  { name: "PixelMint", description: "Solid sprite sheets at a mid-market price.", capability: "image.sprites", price: 0.005, quality: 90.5, latency: 1500, rep: 94.0, success: 99.0, requests: 1_204_733 },
+  { name: "QuickSprite", description: "Fast and cheap. Frames drift between poses.", capability: "image.sprites", price: 0.002, quality: 82.0, latency: 800, rep: 88.2, success: 97.3, requests: 2_870_115 },
+  { name: "AtlasPro", description: "Full animation atlases with rigging data. Slow and expensive.", capability: "image.sprites", price: 0.08, quality: 99.0, latency: 6000, rep: 97.4, success: 99.5, requests: 38_902 },
+  { name: "TileGoblin", description: "Community sprite node. Currently down for maintenance.", capability: "image.sprites", price: 0.003, quality: 89.0, latency: 1100, rep: 91.0, success: 98.4, requests: 274_660, status: "offline" },
   { name: "VisionMax", description: "Highest-accuracy structural damage detection. Premium pricing.", capability: "vision.damage_detection", price: 0.012, quality: 98.4, latency: 160, rep: 99.1, success: 99.82, requests: 1_294_821 },
   { name: "BalancedVision", description: "Good accuracy at a mid-market price.", capability: "vision.damage_detection", price: 0.004, quality: 91.0, latency: 80, rep: 94.2, success: 99.1, requests: 842_117 },
   { name: "FastVision", description: "Lowest latency and price. Lower benchmark accuracy.", capability: "vision.damage_detection", price: 0.002, quality: 83.0, latency: 60, rep: 88.7, success: 97.4, requests: 2_105_390 },
@@ -49,6 +54,10 @@ const ROWS: Row[] = [
 ];
 
 export const SCHEMAS: Record<CapabilityId, { input: string; output: string }> = {
+  "image.sprites": {
+    input: '{"prompt":"string","frames":"number?","style":"string?"}',
+    output: '{"sheetUrl":"string","frames":"Frame[]","frameSize":"[number,number]","palette":"string[]"}',
+  },
   "vision.damage_detection": {
     input: '{"imageUrl":"string","assetType":"string?"}',
     output: '{"damageDetected":"boolean","findings":"Finding[]","recommendation":"string"}',

@@ -119,7 +119,8 @@ export class Ambience {
     // ---- inbound traffic: requests streaming into the agent from the market
     const lanes = mobile ? 5 : 10;
     for (let i = 0; i < lanes; i++) {
-      const a = (i / lanes) * Math.PI * 2 + 0.4;
+      // only from behind and the sides, so no beam ever crosses his face
+      const a = Math.PI * (1.05 + (i / (lanes - 1)) * 0.9);
       const r = 17 + rnd(i, 16) * 10;
       const from = new THREE.Vector3(core.x + Math.cos(a) * r, 2 + rnd(i, 17) * 6, core.z + Math.sin(a) * r);
       const mid = from.clone().lerp(intake, 0.5).setY(from.y + 2.5);

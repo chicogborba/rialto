@@ -40,7 +40,8 @@ export interface YardOptions {
 
 const HEX = { ink: 0x0b0c0a, signal: 0xc6ff3d, pay: 0xff5b1f, data: 0x5ce1e6, fail: 0xff3b3b, paper: 0xedebe3, steel: 0x8c8e84 };
 const CORE_POS = new THREE.Vector3(0, 0, 4);
-const ANTENNA = new THREE.Vector3(CORE_POS.x + 0.35, CORE_POS.y + 1.15, CORE_POS.z);
+/** where lines meet the agent: the top of his head, so nothing crosses his face */
+const ANTENNA = new THREE.Vector3(CORE_POS.x, CORE_POS.y + 0.72, CORE_POS.z);
 const PACKETS_PER_TRACK = 4;
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
@@ -117,12 +118,12 @@ export class YardScene {
     floor.position.y = -1.6;
     this.scene.add(floor);
 
-    // ---- the agent: a little orange critter standing on a ringed pad
+    // ---- the agent: the orange critter standing on a ringed pad
     this.core.add(this.mascot.group);
     for (let i = 0; i < 2; i++) {
       const ring = new THREE.Mesh(new THREE.TorusGeometry(1.9 + i * 0.4, 0.02, 6, 96), new THREE.MeshBasicMaterial({ color: HEX.signal }));
       ring.rotation.x = Math.PI / 2;
-      ring.position.y = -0.92;
+      ring.position.y = -1.05;
       // a satellite riding each ring
       const sat = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), new THREE.MeshBasicMaterial({ color: HEX.paper }));
       sat.position.x = 1.9 + i * 0.4;
@@ -161,7 +162,7 @@ export class YardScene {
       group.add(new THREE.Mesh(boxGeo, body), new THREE.LineSegments(edgeGeo, edges));
       this.scene.add(group);
 
-      // lines leave from the antenna, not through his face
+      // lines leave from the top of his head, not through his face
       const curve = new THREE.QuadraticBezierCurve3(ANTENNA.clone(), ANTENNA.clone().lerp(home, 0.5).setY(3.1), home.clone());
       const track = new THREE.ShaderMaterial({
         vertexShader: TRACK_VERT,
@@ -189,10 +190,10 @@ export class YardScene {
     const winnerHome = this.nodes.find((n) => n.spec.winner)?.home ?? CORE_POS;
     this.ambience = new Ambience(this.scene, CORE_POS, ANTENNA, winnerHome, opts.mobile);
 
-    const lookHero: [number, number, number] = opts.mobile ? [0, 2.6, 3] : [-3.1, 0.2, 3];
+    const lookHero: [number, number, number] = opts.mobile ? [0, 2.6, 3] : [-2.6, 0.25, 3];
     this.keys = [
-      { p: 0.0, pos: [0, 1.2, 10.6], look: lookHero },
-      { p: 0.1, pos: [0, 1.5, 11], look: lookHero },
+      { p: 0.0, pos: [0, 1.2, 12], look: lookHero },
+      { p: 0.1, pos: [0, 1.5, 12.4], look: lookHero },
       { p: 0.22, pos: [0, 8.5, 17.5], look: [0, 0.2, -0.8] },
       { p: 0.46, pos: [0, 7.4, 16.5], look: [0, 0.2, -0.8] },
       { p: 0.6, pos: [0, 4.0, 10.5], look: [0, 0.9, -2.2] },

@@ -1,4 +1,5 @@
 import type { RunEvent } from "@/lib/agent/events";
+import { RECORDED_SPRITES_RUN } from "@/lib/agent/recorded/sprites";
 import { RECORDED_VISION_RUN } from "@/lib/agent/recorded/vision";
 import { formatUsd } from "@/lib/money";
 import { REJECTION_LABELS } from "@/lib/routing/qualify";
@@ -28,15 +29,17 @@ export interface StoryNode {
   score: number;
 }
 
-const visionQual = findEvent(RECORDED_VISION_RUN, "qualification.completed");
-const visionScored = findEvent(RECORDED_VISION_RUN, "evaluation.scored");
-const visionDecision = findEvent(RECORDED_VISION_RUN, "decision.made");
-const visionExec = findEvent(RECORDED_VISION_RUN, "execution.completed");
+// The hero story replays the recorded sprite-generation run.
+const storyFound = findEvent(RECORDED_SPRITES_RUN, "discovery.completed")?.found ?? [];
+const storyQual = findEvent(RECORDED_SPRITES_RUN, "qualification.completed");
+const storyScored = findEvent(RECORDED_SPRITES_RUN, "evaluation.scored");
+const storyDecision = findEvent(RECORDED_SPRITES_RUN, "decision.made");
+const storyExec = findEvent(RECORDED_SPRITES_RUN, "execution.completed");
 
-/** The five specialists of the recorded vision run, with their real outcome. */
-export const STORY_NODES: StoryNode[] = VISION_FOUND.map((c) => {
-  const rejection = visionQual?.rejected.find((r) => r.candidate.provider.id === c.provider.id);
-  const scored = visionScored?.scored.find((s) => s.candidate.provider.id === c.provider.id);
+/** The five specialists of the recorded sprite run, with their real outcome. */
+export const STORY_NODES: StoryNode[] = storyFound.map((c) => {
+  const rejection = storyQual?.rejected.find((r) => r.candidate.provider.id === c.provider.id);
+  const scored = storyScored?.scored.find((s) => s.candidate.provider.id === c.provider.id);
   return {
     id: c.provider.id,
     name: c.provider.name,
@@ -44,7 +47,7 @@ export const STORY_NODES: StoryNode[] = VISION_FOUND.map((c) => {
     quality: `${c.provider.qualityScore}%`,
     rejected: Boolean(rejection),
     rejectLabel: rejection ? REJECTION_LABELS[rejection.reason] : null,
-    winner: visionDecision?.selectedId === c.provider.id,
+    winner: storyDecision?.selectedId === c.provider.id,
     score: scored?.score ?? 0,
   };
 });
@@ -55,5 +58,6 @@ export const STORY_FACTS = {
   rejected: STORY_NODES.filter((n) => n.rejected).length,
   winner: winnerNode?.name ?? "",
   price: winnerNode?.price ?? "",
-  latencyMs: visionExec?.latencyMs ?? 0,
+  latencyMs: storyExec?.latencyMs ?? 0,
+  goal: findEvent(RECORDED_SPRITES_RUN, "run.started")?.goal ?? "",
 };

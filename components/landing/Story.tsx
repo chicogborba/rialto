@@ -5,6 +5,7 @@ import { hardButtonClass } from "@/components/primitives";
 import { cn } from "@/lib/utils";
 import { STORY_FACTS, STORY_NODES } from "./data";
 import { Scramble } from "./Scramble";
+import { SpriteStrip } from "./SpriteStrip";
 import { Slap } from "./Stickers";
 import type { YardScene } from "./scene/YardScene";
 
@@ -16,7 +17,7 @@ const ACTS = [
   { title: "VET", line: `${STORY_FACTS.rejected} break the rules. Cooked.`, emoji: "💀", tone: "" },
   { title: "HIRE", line: `Scores the rest. ${STORY_FACTS.winner} wins.`, emoji: "🤩", tone: "text-signal" },
   { title: "PAY", line: `Pays ${STORY_FACTS.price} USDC. x402 on Solana.`, emoji: "🤑", tone: "text-pay" },
-  { title: "SHIPPED", line: `Answer back in ${STORY_FACTS.latencyMs} ms.`, emoji: "📦", tone: "text-signal" },
+  { title: "SHIPPED", line: `Sprite sheet back in ${(STORY_FACTS.latencyMs / 1000).toFixed(1)} s.`, emoji: "📦", tone: "text-signal" },
 ] as const;
 
 function actOf(p: number): number {
@@ -133,7 +134,7 @@ export function Story() {
   };
 
   return (
-    <section ref={wrapRef} aria-label="How an agent hires an API: scout, vet, hire, pay, shipped" className="relative h-[520vh]">
+    <section ref={wrapRef} aria-label="How an agent hires an API to make game sprites: scout, vet, hire, pay, shipped" className="relative h-[520vh]">
       <div className="sticky top-0 h-[100svh] overflow-hidden">
         <canvas ref={canvasRef} aria-hidden className={cn("absolute inset-0 size-full transition-opacity duration-700", ready ? "opacity-100" : "opacity-0")} />
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgb(11_12_10/0.9)_0%,transparent_42%)]" />
@@ -179,7 +180,7 @@ export function Story() {
           <p className="max-w-full border-2 border-ink bg-paper px-4 py-2.5 text-center text-base font-bold text-ink shadow-[5px_5px_0_var(--color-signal)] md:px-6 md:py-3 md:text-2xl">
             <span aria-hidden>🎯 </span>
             <span className="font-mono text-[10px] uppercase tracking-[0.16em] opacity-60 md:text-xs">The job</span>{" "}
-            &ldquo;Is this container damaged?&rdquo;
+            &ldquo;Make sprites for my game&apos;s hero&rdquo;
           </p>
           <ol className="flex max-w-full gap-1 overflow-x-auto font-mono text-[10px] font-bold uppercase tracking-[0.1em] md:gap-2 md:text-xs" aria-label="Steps">
             {ACTS.map((a, i) => (
@@ -195,6 +196,11 @@ export function Story() {
               </li>
             ))}
           </ol>
+        </div>
+
+        {/* what came back: a little sprite strip */}
+        <div aria-hidden className={cn("pointer-events-none absolute right-[4vw] top-[30vh] transition-[opacity,transform] duration-300 md:right-[8vw]", act === 5 ? "translate-y-0 rotate-3 opacity-100" : "translate-y-6 opacity-0")}>
+          <SpriteStrip />
         </div>
 
         <div aria-hidden className={cn("sy-stroke-pay pointer-events-none absolute right-[4vw] top-[12vh] font-mono text-[34vw] font-bold leading-none tracking-tighter transition-[opacity,transform] duration-300 md:text-[20vw]", act === 4 ? "scale-100 opacity-90" : "scale-90 opacity-0")}>

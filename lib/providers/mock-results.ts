@@ -23,6 +23,19 @@ export function buildMockResult(capability: CapabilityId, provider: string, body
   const base = { simulatedOutput: true as const, provider };
 
   switch (capability) {
+    case "image.sprites":
+      return {
+        ...base,
+        sheetUrl: "https://assets.example.com/sprites/hero-sheet.png",
+        frameSize: [32, 32],
+        frames: [
+          { name: "idle", count: 4 },
+          { name: "run", count: 8 },
+          { name: "jump", count: 6 },
+        ],
+        palette: ["#d97757", "#1a120e", "#f2a08a", "#c6ff3d"],
+        note: "18 frames, consistent silhouette across poses, transparent background.",
+      };
     case "vision.damage_detection":
       return {
         ...base,
