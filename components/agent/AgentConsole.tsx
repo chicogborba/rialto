@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useAgentRun } from "@/hooks/useAgentRun";
 import type { RunPhase } from "@/lib/agent/reducer";
 import { Panel, SegTabs } from "@/components/primitives";
@@ -22,21 +22,13 @@ const TAB_FOR_PHASE: Record<RunPhase, Tab> = {
 export function AgentConsole() {
   const { state, start } = useAgentRun();
   const [form, setForm] = useState<ConsoleFormState>(DEFAULT_FORM);
-  const [tab, setTab] = useState<Tab>("decision");
-  const userPicked = useRef(false);
+  // The tab follows the run's phase until the user picks one during this run.
+  const [picked, setPicked] = useState<Tab | null>(null);
   const running = state.status === "running";
-
-  // auto-follow the run's phase until the user clicks a tab during this run
-  useEffect(() => {
-    if (state.status === "idle") userPicked.current = false;
-    if (!userPicked.current && state.status !== "idle") setTab(TAB_FOR_PHASE[state.phase]);
-  }, [state.phase, state.status]);
-  useEffect(() => {
-    if (state.status === "failed") setTab("result");
-  }, [state.status]);
+  const tab: Tab = picked ?? (state.status === "failed" ? "result" : state.status === "idle" ? "decision" : TAB_FOR_PHASE[state.phase]);
 
   const run = (input = toStartInput(form)) => {
-    userPicked.current = false;
+    setPicked(null);
     void start(input);
   };
 
@@ -63,7 +55,7 @@ export function AgentConsole() {
           <SegTabs
             label="Run details"
             value={tab}
-            onChange={(t) => { userPicked.current = true; setTab(t); }}
+            onChange={setPicked}
             tabs={[{ id: "decision", label: "Decision" }, { id: "payment", label: "Payment" }, { id: "result", label: "Result" }]}
           />
           <div role="tabpanel">

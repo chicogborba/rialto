@@ -15,13 +15,11 @@ export function useFetch<T>(url: string | null): FetchState<T> {
   const version = useDataVersion();
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(url !== null);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
     if (url === null) return;
     const ctrl = new AbortController();
-    setLoading(true);
     fetch(url, { signal: ctrl.signal, cache: "no-store" })
       .then(async (r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -34,13 +32,11 @@ export function useFetch<T>(url: string | null): FetchState<T> {
       .catch((e: unknown) => {
         if (e instanceof DOMException && e.name === "AbortError") return;
         setError(e instanceof Error ? e.message : "request failed");
-      })
-      .finally(() => {
-        if (!ctrl.signal.aborted) setLoading(false);
       });
     return () => ctrl.abort();
   }, [url, version, tick]);
 
   const refetch = useCallback(() => setTick((n) => n + 1), []);
+  const loading = url !== null && data === null && error === null;
   return { data, error, loading, refetch };
 }

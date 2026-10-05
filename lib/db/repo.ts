@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { RegisterProviderSchema, type RegisterProviderInput } from "@/lib/provider-schema";
 import { isCapabilityId } from "@/lib/agent/capabilities";
 import type { RunEvent } from "@/lib/agent/events";
 import type { RunDeps, TransactionRecord } from "@/lib/agent/run";
@@ -96,18 +96,7 @@ export async function setProviderStatus(id: string, status: ProviderStatus): Pro
   return res.count > 0;
 }
 
-export const RegisterProviderSchema = z.object({
-  name: z.string().trim().min(2).max(40),
-  description: z.string().trim().min(5).max(200),
-  capabilities: z.array(z.string().refine(isCapabilityId, "unknown capability")).min(1),
-  endpoint: z.string().url().refine((u) => /^https?:\/\//.test(u), "must be http(s)"),
-  priceUsd: z.number().min(0.0001).max(5),
-  latencyMs: z.number().int().min(1).max(60_000),
-  quality: z.number().min(0).max(100),
-  network: z.literal("solana-devnet").default("solana-devnet"),
-  x402Enabled: z.boolean().default(true),
-});
-export type RegisterProviderInput = z.infer<typeof RegisterProviderSchema>;
+export { RegisterProviderSchema, type RegisterProviderInput };
 
 export async function registerProvider(input: RegisterProviderInput): Promise<ProviderWithServices> {
   let slug = slugify(input.name) || "provider";

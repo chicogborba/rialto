@@ -8,7 +8,6 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 declare global {
-  // eslint-disable-next-line no-var
   var __simFailedOnce: Set<string> | undefined;
 }
 const failedOnce = (globalThis.__simFailedOnce ??= new Set<string>());
