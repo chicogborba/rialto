@@ -1,26 +1,177 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@custom-variant dark (&:is(.dark *));
+
+/* ---- SWITCHYARD design tokens (single source of truth) ---- */
+@theme {
+  --color-ink: #0b0c0a;
+  --color-surface: #121310;
+  --color-raised: #1a1b17;
+  --color-line: #2b2d27;
+  --color-line-hi: #4a4d44;
+  --color-paper: #edebe3;
+  --color-muted: #8c8e84;
+  --color-signal: #c6ff3d;
+  --color-pay: #ff5b1f;
+  --color-data: #5ce1e6;
+  --color-fail: #ff3b3b;
+
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
+
+  --shadow-hard: 4px 4px 0 var(--color-signal);
+  --shadow-hard-pay: 4px 4px 0 var(--color-pay);
 }
 
+/* shadcn semantic mapping -> our tokens */
 @theme inline {
+  --font-sans: var(--font-space-grotesk);
+  --font-heading: var(--font-space-grotesk);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --radius: 0px;
+  --background: #0b0c0a;
+  --foreground: #edebe3;
+  --card: #121310;
+  --card-foreground: #edebe3;
+  --popover: #121310;
+  --popover-foreground: #edebe3;
+  --primary: #c6ff3d;
+  --primary-foreground: #0b0c0a;
+  --secondary: #1a1b17;
+  --secondary-foreground: #edebe3;
+  --muted: #1a1b17;
+  --muted-foreground: #8c8e84;
+  --accent: #1a1b17;
+  --accent-foreground: #edebe3;
+  --destructive: #ff3b3b;
+  --border: #2b2d27;
+  --input: #2b2d27;
+  --ring: #c6ff3d;
+  --chart-1: #c6ff3d;
+  --chart-2: #5ce1e6;
+  --chart-3: #ff5b1f;
+  --chart-4: #8c8e84;
+  --chart-5: #edebe3;
+  --sidebar: #121310;
+  --sidebar-foreground: #edebe3;
+  --sidebar-primary: #c6ff3d;
+  --sidebar-primary-foreground: #0b0c0a;
+  --sidebar-accent: #1a1b17;
+  --sidebar-accent-foreground: #edebe3;
+  --sidebar-border: #2b2d27;
+  --sidebar-ring: #c6ff3d;
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    @apply font-sans;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-ink text-paper;
+    background-image:
+      linear-gradient(to right, rgb(237 235 227 / 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(237 235 227 / 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-attachment: fixed;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 2px;
+  }
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  ::selection {
+    background: var(--color-signal);
+    color: var(--color-ink);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Light sections (contrast breaks) — grid lines flip to ink */
+.section-light {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  background-image:
+    linear-gradient(to right, rgb(11 12 10 / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(11 12 10 / 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Ticker marquee */
+@keyframes sy-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.sy-marquee {
+  animation: sy-marquee 40s linear infinite;
+}
+.sy-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Idle pulse used on the hero graph */
+@keyframes sy-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.sy-pulse {
+  animation: sy-pulse 1.4s steps(2, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .sy-marquee,
+  .sy-pulse {
+    animation: none !important;
+  }
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
