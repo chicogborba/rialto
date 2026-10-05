@@ -66,7 +66,7 @@ export class Ambience {
     this.hireGlow.position.copy(winner);
 
     // ---- the market: a few hundred anonymous APIs drifting around the yard
-    const count = mobile ? 90 : 220;
+    const count = mobile ? 280 : 800;
     const cubes = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial(), count);
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
@@ -74,10 +74,10 @@ export class Ambience {
     const col = new THREE.Color();
     for (let i = 0; i < count; i++) {
       const a = rnd(i, 1) * Math.PI * 2;
-      const r = 12 + rnd(i, 2) * 32;
-      const s = 0.12 + rnd(i, 3) * 0.42;
+      const r = 10 + Math.pow(rnd(i, 2), 0.8) * 36;
+      const s = 0.1 + rnd(i, 3) * 0.4;
       e.set(rnd(i, 4) * 3, rnd(i, 5) * 3, 0);
-      m.compose(new THREE.Vector3(core.x + Math.cos(a) * r, -1 + rnd(i, 6) * 9, core.z + Math.sin(a) * r), q.setFromEuler(e), new THREE.Vector3(s, s, s));
+      m.compose(new THREE.Vector3(core.x + Math.cos(a) * r, -1 + rnd(i, 6) * 11, core.z + Math.sin(a) * r), q.setFromEuler(e), new THREE.Vector3(s, s, s));
       cubes.setMatrixAt(i, m);
       const k = rnd(i, 7);
       cubes.setColorAt(i, k > 0.9 ? col.setHex(SIGNAL).multiplyScalar(0.7) : k > 0.8 ? col.setHex(0x5ce1e6).multiplyScalar(0.5) : col.setHex(0x8c8e84).multiplyScalar(0.2 + rnd(i, 8) * 0.35));

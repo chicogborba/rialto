@@ -133,8 +133,10 @@ export function Story() {
               <span>{n.price} · {n.quality}</span>
               <i />
               <em>{n.winner ? "HIRED" : n.rejectLabel}</em>
+              {(n.winner || n.rejected) && <u>{n.winner ? "🤩" : "💀"}</u>}
             </div>
           ))}
+          <div ref={(el) => { labelRefs.current[STORY_NODES.length] = el; }} className="sy-think">🤔</div>
         </div>
 
         <div className={cn("absolute inset-x-0 top-20 flex justify-center px-4 transition-opacity duration-300", act === 0 ? "opacity-0" : "opacity-100")}>
@@ -147,21 +149,18 @@ export function Story() {
           402
         </div>
 
-        {/* hero stickers */}
-        <div aria-hidden className={cn("pointer-events-none absolute inset-0 transition-opacity duration-300", act === 0 ? "opacity-100" : "opacity-0")}>
-          <Slap tone="signal" rotate={-7} className="absolute left-[6%] top-[22%] md:left-[10%] md:top-[20%] md:text-base">⚡ x402-native</Slap>
-          <Slap tone="pay" rotate={6} delay={0.8} className="absolute right-[5%] top-[14%] md:right-[30%] md:top-[14%] md:text-base">💸 pay-per-call</Slap>
-          <Slap tone="paper" rotate={-3} delay={1.6} className="absolute right-[8%] top-[38%] hidden md:inline-flex md:right-[4%] md:top-[70%] md:text-base">🤖 no humans in the loop</Slap>
-        </div>
-
         {/* hero: three words */}
         <div className="sy-act absolute inset-x-0 bottom-0 px-4 pb-10 md:px-10 md:pb-16" data-on={act === 0}>
-          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-signal">Autonomous procurement · x402-native</p>
-          <h1 className="mt-3 text-[clamp(3.6rem,15vw,14rem)] font-bold uppercase leading-[0.8] tracking-[-0.06em]">
+          <h1 className="text-[clamp(3.6rem,15vw,14rem)] font-bold uppercase leading-[0.8] tracking-[-0.06em]">
             Agents
             <span className="block text-signal">that hire.</span>
           </h1>
-          <div className="mt-8 flex flex-wrap items-center gap-5">
+          <ul className="mt-6 flex flex-wrap gap-3" aria-label="What it is">
+            <li><Slap still tone="signal" rotate={-2}>⚡ x402-native</Slap></li>
+            <li><Slap still tone="pay" rotate={1.5}>💸 pay-per-call</Slap></li>
+            <li><Slap still tone="paper" rotate={-1}>🤖 no humans in the loop</Slap></li>
+          </ul>
+          <div className="mt-7 flex flex-wrap items-center gap-5">
             <a href="#demo" className={hardButtonClass("primary", "lg")}>Run it</a>
             <a href="#why" className={hardButtonClass("ghost", "lg")}>Why tho?</a>
             <span className="sy-bob font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Scroll ↓</span>

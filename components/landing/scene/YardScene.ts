@@ -60,6 +60,8 @@ interface YardNode {
   packets: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>[];
   order: number;
   rejectOrder: number;
+  /** offset to where this cube sat in the market before it was called up */
+  away: THREE.Vector3;
 }
 
 export class YardScene {
@@ -181,7 +183,9 @@ export class YardScene {
         this.scene.add(m);
         return m;
       });
-      this.nodes.push({ spec, group, home, body, edges, curve, track, packets, order: i, rejectOrder: spec.rejected ? rejectCount++ : -1 });
+      this.nodes.push({ spec, group, home, body, edges, curve, track, packets, order: i, rejectOrder: spec.rejected ? rejectCount++ : -1,
+        away: home.clone().sub(CORE_POS).setY(0).normalize().multiplyScalar(24).setY(5 + (slot % 3) * 1.5),
+      });
     });
 
     const winnerHome = this.nodes.find((n) => n.spec.winner)?.home ?? CORE_POS;
@@ -198,7 +202,8 @@ export class YardScene {
       { p: 0.9, pos: [0, 4.6, 13], look: [0, 0.3, 2.4] },
       { p: 1.0, pos: [0, 6.5, 15.5], look: [0, 0.3, 2] },
     ];
-    this.frames = specs.map(() => ({ x: 0, y: 0, opacity: 0, fill: 0, state: "idle" as LabelState }));
+    // one frame per specialist, plus a last one for the agent core (the "thinking" emoji)
+    this.frames = [...specs, null].map(() => ({ x: 0, y: 0, opacity: 0, fill: 0, state: "idle" as LabelState }));
   }
 
   /** Winner in the centre, rejected at the edges. */
@@ -291,8 +296,14 @@ export class YardScene {
       const alpha = clamp01(appear * 2) * (1 - rej * 0.7) * (1 - dim * 0.7);
       n.edges.opacity = alpha;
       n.body.opacity = alpha;
-      n.group.position.set(n.home.x, n.home.y + (1 - appear) * 7 - rej * 1.1 + win * 0.6 + Math.sin(t * 1.1 + n.order) * 0.07, n.home.z);
-      n.group.scale.setScalar(Math.max(0.0001, pop * (1 + win * 0.7) * (1 - rej * 0.3)));
+      // called up from the market: flies in from far away, growing from market size to full size
+      const fly = 1 - smooth(appear);
+      n.group.position.set(
+        n.home.x + n.away.x * fly,
+        n.home.y + n.away.y * fly - rej * 1.1 + win * 0.6 + Math.sin(t * 1.1 + n.order) * 0.07,
+        n.home.z + n.away.z * fly,
+      );
+      n.group.scale.setScalar(Math.max(0.0001, (appear <= 0 ? 0 : 0.3 + 0.7 * pop) * (1 + win * 0.7) * (1 - rej * 0.3)));
       n.group.rotation.set(t * 0.3 + n.order, t * 0.45 + n.order * 1.7, rej * 0.5);
 
       const u = n.track.uniforms;
@@ -343,6 +354,13 @@ export class YardScene {
       f.opacity = this.tA.z > 1 ? 0 : appear * (f.state === "dim" ? 0.35 : f.state === "rejected" ? 0.75 : 1);
       f.fill = n.spec.rejected ? 0 : smooth(seg(vet, 0.45, 0.95)) * n.spec.score;
     });
+    // the agent "thinks" from the first arrival until it commits to a hire
+    const coreFrame = this.frames[this.nodes.length];
+    this.tA.copy(this.core.position).y += 2.5;
+    this.tA.project(this.camera);
+    coreFrame.x = (this.tA.x * 0.5 + 0.5) * this.width;
+    coreFrame.y = (-this.tA.y * 0.5 + 0.5) * this.height;
+    coreFrame.opacity = this.tA.z > 1 ? 0 : smooth(seg(p, 0.15, 0.19)) * (1 - smooth(seg(p, 0.49, 0.53)));
     return this.frames;
   }
 

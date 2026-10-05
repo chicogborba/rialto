@@ -364,3 +364,54 @@
   .sy-sticker, .sy-emoji, .sy-marquee-rev { animation: none !important; }
   .sy-pop:hover { transform: none; }
 }
+
+/* emoji verdicts pinned to the 3D specialists + the agent's thinking bubble */
+@keyframes sy-pop-in {
+  0% { transform: translate(-50%, 0) scale(0) rotate(-30deg); }
+  70% { transform: translate(-50%, 0) scale(1.25) rotate(8deg); }
+  100% { transform: translate(-50%, 0) scale(1) rotate(0deg); }
+}
+.sy-label u {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translate(-50%, 0);
+  text-decoration: none;
+  font-size: 44px;
+  line-height: 1;
+  filter: drop-shadow(3px 3px 0 var(--color-ink));
+}
+.sy-label[data-state="rejected"] u,
+.sy-label[data-state="winner"] u {
+  display: block;
+  animation: sy-pop-in 0.35s cubic-bezier(0.2, 0, 0, 1) both;
+}
+.sy-label[data-state="winner"] u {
+  font-size: 60px;
+}
+.sy-think {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  font-size: 64px;
+  line-height: 1;
+  filter: drop-shadow(4px 4px 0 var(--color-ink));
+}
+.sy-sticker.sy-still {
+  animation: none;
+}
+.sy-sticker.sy-still:hover {
+  animation: sy-wiggle 0.4s ease-in-out infinite;
+}
+@media (max-width: 767px) {
+  .sy-label u { font-size: 28px; }
+  .sy-label[data-state="winner"] u { font-size: 38px; }
+  .sy-think { font-size: 40px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sy-label u { animation: none !important; }
+}

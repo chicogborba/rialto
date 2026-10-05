@@ -16,13 +16,15 @@ interface StickerProps {
   rotate?: number;
   /** animation delay in seconds, so stickers don't bob in sync */
   delay?: number;
+  /** no floating animation: for stickers that sit in a row */
+  still?: boolean;
   className?: string;
 }
 
 /** Slap-on text sticker. Decorative unless it carries the only copy of a label. */
-export function Slap({ children, tone = "signal", rotate = -4, delay = 0, className }: StickerProps) {
+export function Slap({ children, tone = "signal", rotate = -4, delay = 0, still, className }: StickerProps) {
   return (
-    <span className={cn("sy-sticker px-3 py-2 text-xs md:text-sm", TONES[tone], className)} style={{ "--r": `${rotate}deg`, "--d": `${delay}s` } as React.CSSProperties}>
+    <span className={cn("sy-sticker px-3 py-2 text-xs md:text-sm", still && "sy-still", TONES[tone], className)} style={{ "--r": `${rotate}deg`, "--d": `${delay}s` } as React.CSSProperties}>
       {children}
     </span>
   );
