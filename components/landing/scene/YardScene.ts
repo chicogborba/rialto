@@ -216,9 +216,10 @@ export class YardScene {
       { p: 0.3, pos: [0, 8.5, 17.5], look: [0, 0.2, -0.8] },
       { p: 0.45, pos: [0, 7.4, 16.5], look: [0, 0.2, -0.8] },
       // compare: slow pass along the survivors
-      { p: 0.49, pos: [-2.4, 3.4, 8.2], look: [-3.2, 0.9, -3] },
-      { p: 0.58, pos: [2.4, 3.4, 8.2], look: [3.2, 0.9, -3] },
-      { p: 0.66, pos: [0, 4.0, 10.5], look: [0, 0.9, -2.2] },
+      // wide enough to keep the agent (with his clipboard) and all the specialists in frame
+      { p: 0.49, pos: [-2.2, 4.4, 14.5], look: [0, 0.7, 0.4] },
+      { p: 0.58, pos: [2.2, 4.4, 14.5], look: [0, 0.7, 0.4] },
+      { p: 0.66, pos: [0, 4.6, 13.5], look: [0, 0.8, 0.2] },
       { p: 0.78, pos: [5.2, 2.4, 8.6], look: [0, 0.9, -0.2] },
       { p: 0.92, pos: [0, 4.6, 13], look: [0, 0.3, 2.4] },
       { p: 1.0, pos: [0, 6.5, 15.5], look: [0, 0.3, 2] },

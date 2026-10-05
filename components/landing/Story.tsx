@@ -224,13 +224,13 @@ export function Story() {
           <SpriteStrip />
         </div>
 
-        <div aria-hidden className={cn("sy-stroke-pay pointer-events-none absolute right-[4vw] top-[12vh] font-mono text-[34vw] font-bold leading-none tracking-tighter transition-[opacity,transform] duration-300 md:text-[20vw]", act === 6 ? "scale-100 opacity-90" : "scale-90 opacity-0")}>
+        <div aria-hidden className={cn("sy-stroke-pay pointer-events-none absolute right-[4vw] top-[22vh] font-mono text-[22vw] font-bold leading-none tracking-tighter transition-[opacity,transform] duration-300 md:text-[9vw]", act === 6 ? "scale-100 opacity-70" : "scale-90 opacity-0")}>
           402
         </div>
 
         {/* hero: three words */}
         <div className="sy-act absolute inset-x-0 bottom-0 px-4 pb-10 md:px-10 md:pb-16" data-on={act === 0}>
-          <h1 className="text-[clamp(3.6rem,15vw,14rem)] font-bold uppercase leading-[0.8] tracking-[-0.06em]">
+          <h1 className="text-[clamp(3rem,11vw,9.5rem)] font-bold uppercase leading-[0.8] tracking-[-0.06em]">
             Agents
             <span className="block text-signal">that hire.</span>
           </h1>
@@ -248,11 +248,11 @@ export function Story() {
         </div>
 
         {ACTS.map((a, i) => (
-          <div key={a.title} className="sy-act absolute inset-x-0 bottom-0 px-4 pb-10 md:px-10 md:pb-14" data-on={act === i + 1}>
-            <h2 className={cn("text-[clamp(3.4rem,15vw,13rem)] font-bold uppercase leading-[0.82] tracking-[-0.06em]", a.tone)}>
+          <div key={a.title} className="sy-act absolute inset-x-0 bottom-0 px-4 pb-8 md:px-10 md:pb-10" data-on={act === i + 1}>
+            <h2 className={cn("text-[clamp(1.6rem,4.2vw,3.4rem)] font-bold uppercase leading-none tracking-[-0.03em]", a.tone)}>
               <Scramble text={a.title} active={act === i + 1} />
             </h2>
-            <p className="mt-2 text-2xl font-bold md:text-4xl">{a.line} <span aria-hidden>{a.emoji}</span></p>
+            <p className="mt-1 text-sm font-medium text-paper/80 md:text-lg">{a.line} <span aria-hidden>{a.emoji}</span></p>
           </div>
         ))}
 
