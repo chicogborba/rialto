@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { hardButtonClass } from "@/components/primitives";
+import { isMuted, pokeSound, setMuted } from "@/lib/client/sfx";
 import { cn } from "@/lib/utils";
 import { STORY_FACTS, STORY_NODES } from "./data";
 import { Scramble } from "./Scramble";
@@ -39,6 +40,7 @@ export function Story() {
   const labelRefs = useRef<(HTMLDivElement | null)[]>([]);
   const barRef = useRef<HTMLDivElement>(null);
   const [act, setAct] = useState(0);
+  const [sound, setSound] = useState(true);
   const [bursts, setBursts] = useState<{ id: number; x: number; y: number; e: string }[]>([]);
   const [ready, setReady] = useState(false);
 
@@ -125,6 +127,7 @@ export function Story() {
       while (pokes.length && now - pokes[0] > 2500) pokes.shift();
       const variant = pokes.length >= 5 ? 3 : pokeCount++ % 3;
       scene.poke(variant);
+      pokeSound(variant);
       const rect = canvas.getBoundingClientRect();
       const batch = REACTIONS[variant].map((emoji, k) => ({ id: ++burstId, x: e.clientX - rect.left + (k - 1) * 34, y: e.clientY - rect.top - 20 - k * 8, e: emoji }));
       setBursts((b) => [...b.slice(-6), ...batch]);
@@ -133,6 +136,7 @@ export function Story() {
     const hover = (e: PointerEvent) => {
       wrap.style.cursor = scene && !interactive(e.target) && scene.pick(e.clientX, e.clientY) ? "pointer" : "";
     };
+    setSound(!isMuted());
     wrap.addEventListener("pointerdown", onPoke);
     if (!reduced) wrap.addEventListener("pointermove", hover, { passive: true });
     const onMove = (e: PointerEvent) => {
@@ -293,6 +297,19 @@ export function Story() {
             <span key={b.id} className="sy-burst" style={{ left: b.x, top: b.y }}>{b.e}</span>
           ))}
         </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            setMuted(sound);
+            setSound(!sound);
+          }}
+          aria-pressed={!sound}
+          aria-label={sound ? "Mute critter sounds" : "Unmute critter sounds"}
+          className="absolute bottom-3 left-3 z-10 grid size-10 place-items-center border-2 border-line-hi bg-ink/80 text-base hover:border-signal md:bottom-4 md:left-4"
+        >
+          <span aria-hidden>{sound ? "🔊" : "🔇"}</span>
+        </button>
 
         {/* progress */}
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-1 bg-line">
