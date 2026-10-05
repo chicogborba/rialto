@@ -548,3 +548,20 @@
   .sy-label ol { min-width: 96px; }
   .sy-label ol li { font-size: 7px; padding: 1px 3px; }
 }
+
+/* emoji that pops out when you poke the mascot */
+@keyframes sy-burst {
+  0% { transform: translate(-50%, 0) scale(0.2) rotate(-20deg); opacity: 0; }
+  20% { transform: translate(-50%, -14px) scale(1.25) rotate(8deg); opacity: 1; }
+  100% { transform: translate(-50%, -90px) scale(0.9) rotate(-6deg); opacity: 0; }
+}
+.sy-burst {
+  position: absolute;
+  font-size: 34px;
+  line-height: 1;
+  animation: sy-burst 1.2s cubic-bezier(0.2, 0, 0, 1) forwards;
+  filter: drop-shadow(3px 3px 0 var(--color-ink));
+}
+@media (prefers-reduced-motion: reduce) {
+  .sy-burst { animation: none; opacity: 0.9; transform: translate(-50%, -30px); }
+}

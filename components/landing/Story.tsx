@@ -39,6 +39,7 @@ export function Story() {
   const labelRefs = useRef<(HTMLDivElement | null)[]>([]);
   const barRef = useRef<HTMLDivElement>(null);
   const [act, setAct] = useState(0);
+  const [bursts, setBursts] = useState<{ id: number; x: number; y: number; e: string }[]>([]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -110,6 +111,30 @@ export function Story() {
     };
 
     const resize = () => scene?.resize(canvas.clientWidth, canvas.clientHeight);
+
+    // click the critter: he reacts (hop, shiver, squash, or dizzy if you keep poking) and a reaction emoji floats up
+    const pokes: number[] = [];
+    let pokeCount = 0;
+    let burstId = 0;
+    const REACTIONS = [["😆", "✨", "💖"], ["🤣", "💦", "🫠"], ["😳", "💢", "⭐"], ["🥴", "😵‍💫", "💫"]];
+    const interactive = (el: EventTarget | null) => el instanceof Element && el.closest("a, button, input, [role=tab]") !== null;
+    const onPoke = (e: PointerEvent) => {
+      if (!scene || interactive(e.target) || !scene.pick(e.clientX, e.clientY)) return;
+      const now = performance.now();
+      pokes.push(now);
+      while (pokes.length && now - pokes[0] > 2500) pokes.shift();
+      const variant = pokes.length >= 5 ? 3 : pokeCount++ % 3;
+      scene.poke(variant);
+      const rect = canvas.getBoundingClientRect();
+      const batch = REACTIONS[variant].map((emoji, k) => ({ id: ++burstId, x: e.clientX - rect.left + (k - 1) * 34, y: e.clientY - rect.top - 20 - k * 8, e: emoji }));
+      setBursts((b) => [...b.slice(-6), ...batch]);
+      setTimeout(() => setBursts((b) => b.filter((x) => !batch.some((n) => n.id === x.id))), 1300);
+    };
+    const hover = (e: PointerEvent) => {
+      wrap.style.cursor = scene && !interactive(e.target) && scene.pick(e.clientX, e.clientY) ? "pointer" : "";
+    };
+    wrap.addEventListener("pointerdown", onPoke);
+    if (!reduced) wrap.addEventListener("pointermove", hover, { passive: true });
     const onMove = (e: PointerEvent) => {
       mouse.tx = (e.clientX / window.innerWidth) * 2 - 1;
       mouse.ty = (e.clientY / window.innerHeight) * 2 - 1;
@@ -137,6 +162,8 @@ export function Story() {
       io.disconnect();
       ro.disconnect();
       window.removeEventListener("pointermove", onMove);
+      wrap.removeEventListener("pointerdown", onPoke);
+      wrap.removeEventListener("pointermove", hover);
       scene?.dispose();
     };
   }, []);
@@ -243,7 +270,7 @@ export function Story() {
           <div className="mt-7 flex flex-wrap items-center gap-5">
             <a href="#demo" className={hardButtonClass("primary", "lg")}>Run it</a>
             <a href="#why" className={hardButtonClass("ghost", "lg")}>Why tho?</a>
-            <span className="sy-bob font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Scroll ↓</span>
+            <span className="sy-bob font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Scroll ↓ <span className="hidden sm:inline">· or poke the critter</span></span>
           </div>
         </div>
 
@@ -259,6 +286,13 @@ export function Story() {
         <p className={cn("absolute bottom-2 right-3 max-w-[60vw] text-right font-mono text-[9px] uppercase tracking-[0.1em] text-muted transition-opacity duration-300", act === 1 ? "opacity-100" : "opacity-0")}>
           Market shown is illustrative · this demo&apos;s registry holds 25 providers
         </p>
+
+        {/* reaction emojis from poking the mascot */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          {bursts.map((b) => (
+            <span key={b.id} className="sy-burst" style={{ left: b.x, top: b.y }}>{b.e}</span>
+          ))}
+        </div>
 
         {/* progress */}
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-1 bg-line">

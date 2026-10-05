@@ -68,6 +68,8 @@ export class Mascot {
   readonly group = new THREE.Group();
   /** current hop height, so labels can follow him */
   height = 0;
+  /** invisible box used for click picking; moves with the mascot */
+  readonly hitBox = new THREE.Mesh(new THREE.BoxGeometry(2.6, 2.4, 1.6), new THREE.MeshBasicMaterial({ visible: false }));
 
   private readonly body = new THREE.Group();
   private readonly eyes: Eye[] = [];
@@ -93,6 +95,9 @@ export class Mascot {
   private yaw = 0;
   private yawVel = 0;
   private lean = 0;
+  private pokeActive = false;
+  private pokeT = 0;
+  private pokeVariant = 0;
 
   constructor() {
     this.body.add(shadedBox(BODY.w, BODY.h, BODY.d, ORANGE));
@@ -176,6 +181,17 @@ export class Mascot {
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadow.position.y = -(BODY.h / 2 + LEG.h) + 0.03;
     this.group.add(this.body, this.shadow);
+    this.hitBox.position.y = -0.1;
+    this.group.add(this.hitBox);
+  }
+
+  /**
+   * React to a click. 0 = hop + spin, 1 = ticklish shake, 2 = squash and pop, 3 = dizzy (after rage-clicking).
+   */
+  poke(variant: number): void {
+    this.pokeActive = true;
+    this.pokeT = 0;
+    this.pokeVariant = variant;
   }
 
   update(s: MascotState): void {
@@ -195,7 +211,41 @@ export class Mascot {
     // ---- hops: one big one on the decision, a string of small ones at the party
     const decision = sin(clamp01(s.hop) * Math.PI) * 1.2;
     const partyHop = Math.abs(sin(t * 6.5)) * 0.55 * party;
-    const hop = decision + partyHop;
+
+    // ---- poke reaction (click): overrides whatever he was doing for a moment
+    let pokeP = -1;
+    let pokeHop = 0;
+    let pokeSpin = 0;
+    let pokeShake = 0;
+    let pokeSquash = 0;
+    if (this.pokeActive) {
+      this.pokeT += Math.min(dt, 0.05);
+      const dur = this.pokeVariant === 3 ? 2.2 : 1.2;
+      if (this.pokeT >= dur) this.pokeActive = false;
+      else pokeP = this.pokeT / dur;
+    }
+    if (pokeP >= 0) {
+      const pt = this.pokeT;
+      switch (this.pokeVariant) {
+        case 0: // eyes shut, hop, full spin
+          pokeHop = sin(clamp01(pokeP / 0.7) * Math.PI) * 1.0;
+          pokeSpin = clamp01(pokeP / 0.85) ** 2 * (3 - 2 * clamp01(pokeP / 0.85)) * Math.PI * 2;
+          break;
+        case 1: // ticklish: little bounces and a shiver
+          pokeHop = Math.abs(sin(pt * 18)) * 0.28 * (1 - pokeP);
+          pokeShake = sin(pt * 46) * 0.3 * (1 - pokeP);
+          break;
+        case 2: // squash, then pop
+          pokeSquash = pokeP < 0.25 ? clamp01(pokeP / 0.25) ** 2 : Math.max(0, 1 - (pokeP - 0.25) * 6);
+          pokeHop = pokeP > 0.25 ? sin(clamp01((pokeP - 0.25) / 0.5) * Math.PI) * 1.5 : 0;
+          break;
+        default: // dizzy: spins, wobbles, never quite lands
+          pokeSpin = pokeP * Math.PI * 8;
+          pokeShake = sin(pt * 7) * 0.22 * (1 - pokeP);
+          pokeHop = Math.abs(sin(pt * 3.5)) * 0.2 * (1 - pokeP);
+      }
+    }
+    const hop = decision + partyHop + pokeHop;
     this.height = hop;
     const landing = Math.max(0, 0.14 - hop) * (s.hop > 0 && s.hop < 1 ? 1 : party);
 
@@ -217,14 +267,18 @@ export class Mascot {
     const breathe = sin(t * 2.1) * 0.018;
     const sway = sin(t * 1.1) * 0.05 * idle; // weight shifting foot to foot
     this.body.position.set(sway, sin(t * 2.1) * 0.035 + hop - landing * 0.5, 0);
-    this.body.scale.set(1 - breathe + landing * 0.7 - hop * 0.04, 1 + breathe - landing + hop * 0.08, 1 - breathe + landing * 0.7);
-    this.body.rotation.y = this.yaw;
-    this.body.rotation.z = this.lean + sway * 0.6 + sin(t * 1.3) * 0.07 * think + sin(t * 31) * 0.015 * pay;
+    this.body.scale.set(
+      1 - breathe + landing * 0.7 - hop * 0.04 + pokeSquash * 0.25,
+      1 + breathe - landing + hop * 0.08 - pokeSquash * 0.35,
+      1 - breathe + landing * 0.7 + pokeSquash * 0.25,
+    );
+    this.body.rotation.y = this.yaw + pokeSpin;
+    this.body.rotation.z = pokeShake + this.lean + sway * 0.6 + sin(t * 1.3) * 0.07 * think + sin(t * 31) * 0.015 * pay;
     this.body.rotation.x = -0.14 * scout + 0.16 * think * (1 - glance) - 0.2 * pay + sin(t * 2.1) * 0.02;
 
     // ---- eyes
     const blink = t % 3.4 < 0.13 || (t + 1.7) % 7.3 < 0.11;
-    const happy = party > 0.4 || decision > 0.1;
+    const happy = party > 0.4 || decision > 0.1 || pokeP >= 0;
     for (const eye of this.eyes) {
       const x = eye.side * 0.47 + s.mx * 0.06 * idle + sin(t * 1.9) * 0.06 * scout - 0.07 * think * (1 - glance);
       const y = 0.13 + scout * 0.06 - think * 0.09 * (1 - glance) + glance * 0.05;
@@ -238,7 +292,7 @@ export class Mascot {
 
     // ---- arms
     const [left, right] = this.arms;
-    const up = Math.max(decision > 0.05 ? 1 : 0, party);
+    const up = Math.max(decision > 0.05 ? 1 : 0, party, pokeP >= 0 && this.pokeVariant !== 1 ? 1 : 0);
     const flap = sin(t * 2.1) * 0.08;
     // a little wave hello every so often when he has nothing to do
     const wave = idle * (t % 7 < 1.3 ? sin(((t % 7) / 1.3) * Math.PI) : 0);

@@ -78,6 +78,9 @@ interface YardNode {
 
 export class YardScene {
   private readonly renderer: THREE.WebGLRenderer;
+  private readonly canvasEl: HTMLCanvasElement;
+  private readonly raycaster = new THREE.Raycaster();
+  private readonly ndc = new THREE.Vector2();
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(46, 1, 0.1, 160);
   private readonly nodes: YardNode[] = [];
@@ -104,6 +107,7 @@ export class YardScene {
   private first = true;
 
   constructor(canvas: HTMLCanvasElement, specs: YardNodeSpec[], private readonly opts: YardOptions) {
+    this.canvasEl = canvas;
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, opts.mobile ? 1.25 : 1.5));
     this.renderer.setClearColor(HEX.ink, 1);
@@ -240,6 +244,19 @@ export class YardScene {
       out[r.i] = free[k];
     });
     return out;
+  }
+
+  /** Is the pointer (client coordinates) over the mascot? */
+  pick(clientX: number, clientY: number): boolean {
+    const r = this.canvasEl.getBoundingClientRect();
+    this.ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    this.raycaster.setFromCamera(this.ndc, this.camera);
+    return this.raycaster.intersectObject(this.mascot.hitBox, false).length > 0;
+  }
+
+  /** Make the mascot react to a click. */
+  poke(variant: number): void {
+    this.mascot.poke(variant);
   }
 
   resize(width: number, height: number): void {
