@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "switchyard": {
+      "command": "npm",
+      "args": ["run", "--silent", "mcp"],
+      "cwd": "<absolute path to this repo>"
+    }
+  }
+}
