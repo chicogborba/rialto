@@ -5,17 +5,18 @@ import { hardButtonClass } from "@/components/primitives";
 import { cn } from "@/lib/utils";
 import { STORY_FACTS, STORY_NODES } from "./data";
 import { Scramble } from "./Scramble";
+import { Slap } from "./Stickers";
 import type { YardScene } from "./scene/YardScene";
 
 /** Scroll thresholds where each act begins (0 = hero). Must match YardScene's timeline. */
 const ACT_STARTS = [0, 0.13, 0.31, 0.49, 0.65, 0.84] as const;
 
 const ACTS = [
-  { title: "SCOUT", line: `${STORY_FACTS.found} APIs answer.`, tone: "" },
-  { title: "VET", line: `${STORY_FACTS.rejected} fail policy.`, tone: "" },
-  { title: "HIRE", line: `${STORY_FACTS.winner} wins.`, tone: "text-signal" },
-  { title: "PAY", line: `${STORY_FACTS.price} USDC · x402.`, tone: "text-pay" },
-  { title: "SHIPPED", line: `${STORY_FACTS.latencyMs} ms.`, tone: "text-signal" },
+  { title: "SCOUT", line: `${STORY_FACTS.found} APIs slid in.`, emoji: "👀", tone: "" },
+  { title: "VET", line: `${STORY_FACTS.rejected} got cooked by policy.`, emoji: "💀", tone: "" },
+  { title: "HIRE", line: `${STORY_FACTS.winner} understood the assignment.`, emoji: "✅", tone: "text-signal" },
+  { title: "PAY", line: `${STORY_FACTS.price} over x402. No subscription.`, emoji: "💸", tone: "text-pay" },
+  { title: "SHIPPED", line: `Done in ${STORY_FACTS.latencyMs} ms.`, emoji: "⚡", tone: "text-signal" },
 ] as const;
 
 function actOf(p: number): number {
@@ -146,6 +147,13 @@ export function Story() {
           402
         </div>
 
+        {/* hero stickers */}
+        <div aria-hidden className={cn("pointer-events-none absolute inset-0 transition-opacity duration-300", act === 0 ? "opacity-100" : "opacity-0")}>
+          <Slap tone="signal" rotate={-7} className="absolute left-[6%] top-[22%] md:left-[10%] md:top-[20%] md:text-base">⚡ x402-native</Slap>
+          <Slap tone="pay" rotate={6} delay={0.8} className="absolute right-[5%] top-[14%] md:right-[30%] md:top-[14%] md:text-base">💸 pay-per-call</Slap>
+          <Slap tone="paper" rotate={-3} delay={1.6} className="absolute right-[8%] top-[38%] hidden md:inline-flex md:right-[4%] md:top-[70%] md:text-base">🤖 no humans in the loop</Slap>
+        </div>
+
         {/* hero: three words */}
         <div className="sy-act absolute inset-x-0 bottom-0 px-4 pb-10 md:px-10 md:pb-16" data-on={act === 0}>
           <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-signal">Autonomous procurement · x402-native</p>
@@ -155,6 +163,7 @@ export function Story() {
           </h1>
           <div className="mt-8 flex flex-wrap items-center gap-5">
             <a href="#demo" className={hardButtonClass("primary", "lg")}>Run it</a>
+            <a href="#why" className={hardButtonClass("ghost", "lg")}>Why tho?</a>
             <span className="sy-bob font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Scroll ↓</span>
           </div>
         </div>
@@ -165,7 +174,7 @@ export function Story() {
             <h2 className={cn("text-[clamp(3.4rem,15vw,13rem)] font-bold uppercase leading-[0.82] tracking-[-0.06em]", a.tone)}>
               <Scramble text={a.title} active={act === i + 1} />
             </h2>
-            <p className="mt-2 text-xl font-medium md:text-3xl">{a.line}</p>
+            <p className="mt-2 text-xl font-medium md:text-3xl">{a.line} <span aria-hidden>{a.emoji}</span></p>
           </div>
         ))}
 

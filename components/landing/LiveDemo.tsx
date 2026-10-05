@@ -22,7 +22,7 @@ export function LiveDemo() {
   const hires = Object.values(state.steps).flatMap((s) => s.attempts).filter((a) => a.stage === "settled").length;
 
   return (
-    <Section id="demo" index="LIVE · SIMULATED PAYMENTS" title={<>Your turn.<span className="text-signal"> Run it.</span></>}>
+    <Section id="demo" index="LIVE · SIMULATED PAYMENTS" title={<>Your turn. <span className="sy-mark">Cook.</span> 👨‍🍳</>}>
       <div className="space-y-5">
         <div className="flex flex-wrap items-center gap-3">
           {GOAL_CHIPS.map((c, i) => (

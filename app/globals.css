@@ -283,3 +283,84 @@
 @media (prefers-reduced-motion: reduce) {
   .sy-bob { animation: none !important; }
 }
+
+/* ---------- landing: stickers, tapes, highlights ---------- */
+
+@keyframes sy-float {
+  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50% { transform: translateY(-9px) rotate(calc(var(--r, 0deg) + 2deg)); }
+}
+@keyframes sy-wiggle {
+  0%, 100% { transform: rotate(var(--r, 0deg)) scale(1.08); }
+  25% { transform: rotate(calc(var(--r, 0deg) - 8deg)) scale(1.12); }
+  75% { transform: rotate(calc(var(--r, 0deg) + 8deg)) scale(1.12); }
+}
+.sy-sticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  transform: rotate(var(--r, 0deg));
+  border: 2px solid var(--color-ink);
+  box-shadow: 4px 4px 0 var(--color-ink), 4px 4px 0 1px rgb(237 235 227 / 0.25);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  white-space: nowrap;
+  animation: sy-float 4.5s ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+  user-select: none;
+}
+.sy-sticker:hover {
+  animation: sy-wiggle 0.4s ease-in-out infinite;
+}
+.sy-emoji {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 9999px;
+  border: 3px solid var(--color-ink);
+  box-shadow: 5px 5px 0 var(--color-ink);
+  transform: rotate(var(--r, 0deg));
+  animation: sy-float 3.6s ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+  line-height: 1;
+  user-select: none;
+}
+.sy-emoji:hover {
+  animation: sy-wiggle 0.4s ease-in-out infinite;
+}
+
+/* highlighter */
+.sy-mark {
+  display: inline-block;
+  background: var(--color-signal);
+  color: var(--color-ink);
+  padding: 0 0.12em;
+  transform: rotate(-1.5deg);
+}
+.sy-mark-pay {
+  display: inline-block;
+  background: var(--color-pay);
+  color: var(--color-ink);
+  padding: 0 0.12em;
+  transform: rotate(1.2deg);
+}
+
+.sy-marquee-rev {
+  animation: sy-marquee 34s linear infinite reverse;
+}
+
+/* card that lifts on hover */
+.sy-pop {
+  transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.12s cubic-bezier(0.2, 0, 0, 1);
+}
+.sy-pop:hover {
+  transform: translate(-4px, -4px) rotate(-0.6deg);
+  box-shadow: 10px 10px 0 var(--color-signal);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sy-sticker, .sy-emoji, .sy-marquee-rev { animation: none !important; }
+  .sy-pop:hover { transform: none; }
+}

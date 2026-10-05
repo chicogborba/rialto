@@ -12,7 +12,7 @@ export function FinalCta() {
         <h2 id="cta-title" className="text-[clamp(3rem,11vw,11rem)] font-bold uppercase leading-[0.84] tracking-[-0.06em]">
           Give it a goal.
           <br />
-          It hires the rest.
+          It hires the rest. 🫡
         </h2>
         <Link href="/app" className="mt-10 inline-flex min-h-16 items-center border-2 border-ink bg-ink px-10 font-mono text-base font-bold uppercase tracking-[0.1em] text-signal shadow-[8px_8px_0_var(--color-paper)] transition-[transform,box-shadow] duration-75 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[11px_11px_0_var(--color-paper)] active:translate-x-1 active:translate-y-1 active:shadow-[3px_3px_0_var(--color-paper)]">
           Open the console →

@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { Ambience } from "./ambience";
 import { CORE_FRAG, CORE_VERT, FLOOR_FRAG, FLOOR_VERT, TRACK_FRAG, TRACK_VERT } from "./shaders";
 
 /**
@@ -72,6 +73,7 @@ export class YardScene {
   private readonly rings: THREE.Mesh<THREE.TorusGeometry, THREE.MeshBasicMaterial>[] = [];
   private readonly floorMat: THREE.ShaderMaterial;
   private readonly shock: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
+  private readonly ambience: Ambience;
   private readonly keys: CamKey[];
   private readonly camPos = new THREE.Vector3();
   private readonly camLook = new THREE.Vector3();
@@ -122,6 +124,10 @@ export class YardScene {
     for (let i = 0; i < 2; i++) {
       const ring = new THREE.Mesh(new THREE.TorusGeometry(2.0 + i * 0.35, 0.014, 6, 96), new THREE.MeshBasicMaterial({ color: HEX.signal }));
       ring.rotation.x = Math.PI / 2 + (i ? 0.5 : -0.35);
+      // a satellite riding each ring
+      const sat = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), new THREE.MeshBasicMaterial({ color: HEX.paper }));
+      sat.position.x = 2.0 + i * 0.35;
+      ring.add(sat);
       this.rings.push(ring);
       this.core.add(ring);
     }
@@ -177,6 +183,9 @@ export class YardScene {
       });
       this.nodes.push({ spec, group, home, body, edges, curve, track, packets, order: i, rejectOrder: spec.rejected ? rejectCount++ : -1 });
     });
+
+    const winnerHome = this.nodes.find((n) => n.spec.winner)?.home ?? CORE_POS;
+    this.ambience = new Ambience(this.scene, CORE_POS, winnerHome, opts.mobile);
 
     const lookHero: [number, number, number] = opts.mobile ? [0, 3.4, 3] : [-3.4, 1.1, 3];
     this.keys = [
@@ -259,6 +268,14 @@ export class YardScene {
     this.floorMat.uniforms.uEnergy.value = Math.max(vet * (1 - hire), payMix, Math.sin(deliver * Math.PI));
     this.shock.scale.setScalar(1 + deliver * 22);
     this.shock.material.opacity = deliver > 0 && deliver < 1 ? (1 - deliver) * 0.8 : 0;
+
+    this.ambience.update({
+      time: t,
+      color: coreColor,
+      sweep: vet > 0 && hire < 1 ? smooth(seg(vet, 0, 0.15)) * (1 - hire) : 0,
+      hire: hire * (1 - smooth(seg(p, 0.97, 1))),
+      burst: Math.sin(deliver * Math.PI),
+    });
 
     // ---- specialists
     for (const n of this.nodes) {
