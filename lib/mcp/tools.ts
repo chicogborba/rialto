@@ -4,7 +4,7 @@ import { realClock } from "@/lib/agent/clock";
 import { resolveConstraints } from "@/lib/agent/constraints";
 import { DemoAgentPlanner } from "@/lib/agent/demo-planner";
 import { runAgent } from "@/lib/agent/run";
-import { createRun, getHistory, getWallet, listCandidates, listTransactions, persistentDeps, recentOutcomes } from "@/lib/db/repo";
+import { createRun, DEFAULT_AGENT_ID, getHistory, getWallet, listCandidates, listTransactions, persistentDepsFor, recentOutcomes } from "@/lib/db/repo";
 import { explain } from "@/lib/routing/explain";
 import { scoreCandidates } from "@/lib/routing/score";
 import { weightsFor } from "@/lib/routing/weights";
@@ -19,6 +19,16 @@ const WeightsShape = z.object({ quality: z.number().min(0), price: z.number().mi
 export const CapabilitySchema = z.enum(ALL_CAPABILITIES as [CapabilityId, ...CapabilityId[]]);
 
 export class ToolError extends Error {}
+
+/** Who is calling and where the platform lives. */
+export interface ToolCtx {
+  agentId: string;
+  baseUrl: string;
+  /** stdio only: verify the web server (which hosts the providers) is running */
+  checkReachable?: boolean;
+}
+
+export const localCtx = (): ToolCtx => ({ agentId: DEFAULT_AGENT_ID, baseUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000", checkReachable: true });
 
 const usd = (micro: number) => toDollars(micro);
 
@@ -132,8 +142,8 @@ export const planInput = {
   budgetUsd: z.number().min(0).optional(),
   preset: PresetSchema.optional(),
 };
-export async function planExecution(args: { goal: string; budgetUsd?: number; preset?: z.infer<typeof PresetSchema> }) {
-  const wallet = await getWallet();
+export async function planExecution(args: { goal: string; budgetUsd?: number; preset?: z.infer<typeof PresetSchema> }, ctx: ToolCtx = localCtx()) {
+  const wallet = await getWallet(ctx.agentId);
   const constraints = resolveConstraints({ goal: args.goal, policy: wallet.policy, budgetMicro: args.budgetUsd === undefined ? undefined : toMicro(args.budgetUsd), preset: args.preset });
   try {
     const plan = await new DemoAgentPlanner().plan(args.goal, constraints, await listCandidates(), await getHistory());
@@ -146,35 +156,37 @@ export async function planExecution(args: { goal: string; budgetUsd?: number; pr
   }
 }
 
-export async function executeService(args: { goal: string; budgetUsd?: number; preset?: z.infer<typeof PresetSchema> }) {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  try {
-    await fetch(`${base}/api/wallet`, { signal: AbortSignal.timeout(3000) });
-  } catch {
-    throw new ToolError(`Switchyard web server not reachable at ${base}. Start it with \`npm run dev\` (providers are served by it), then retry.`);
+export async function executeService(args: { goal: string; budgetUsd?: number; preset?: z.infer<typeof PresetSchema> }, ctx: ToolCtx = localCtx()) {
+  const base = ctx.baseUrl;
+  if (ctx.checkReachable) {
+    try {
+      await fetch(`${base}/api/wallet`, { signal: AbortSignal.timeout(3000) });
+    } catch {
+      throw new ToolError(`Switchyard web server not reachable at ${base}. Start it with \`npm run dev\` (providers are served by it), then retry.`);
+    }
   }
-  const wallet = await getWallet();
+  const wallet = await getWallet(ctx.agentId);
   const constraints = resolveConstraints({ goal: args.goal, policy: wallet.policy, budgetMicro: args.budgetUsd === undefined ? undefined : toMicro(args.budgetUsd), preset: args.preset });
   const clock = realClock(0);
   const rail = getRail(clock);
   const runId = clock.id("run");
-  await createRun({ runId, goal: args.goal, constraints, mode: rail.mode });
-  const deps = { planner: new DemoAgentPlanner(), rail, clock, executor: createHttpExecutor(base), ...persistentDeps };
+  await createRun({ runId, goal: args.goal, constraints, mode: rail.mode, agentId: ctx.agentId });
+  const deps = { planner: new DemoAgentPlanner(), rail, clock, executor: createHttpExecutor(base), ...persistentDepsFor(ctx.agentId) };
   let last;
   for await (const e of runAgent({ goal: args.goal, constraints, runId }, deps)) last = e;
   if (!last || last.type === "run.failed") throw new ToolError(last?.type === "run.failed" ? last.error : "Run produced no events");
   if (last.type !== "run.completed") throw new ToolError("Run ended unexpectedly");
-  const txs = (await listTransactions(50)).rows.filter((t) => t.runId === runId);
+  const txs = (await listTransactions(50, undefined, ctx.agentId)).rows.filter((t) => t.runId === runId);
   return { runId, mode: rail.mode, totalCostUsd: usd(last.totalCostMicro), savedVsPremiumUsd: usd(last.savings.savedMicro), result: last.result, transactions: txs };
 }
 
 export const transactionsInput = { limit: z.number().int().min(1).max(100).optional() };
-export async function getTransactions(args: { limit?: number }) {
-  return (await listTransactions(args.limit ?? 10)).rows;
+export async function getTransactions(args: { limit?: number }, ctx: ToolCtx = localCtx()) {
+  return (await listTransactions(args.limit ?? 10, undefined, ctx.agentId)).rows;
 }
 
-export async function getWalletStatus() {
-  const w = await getWallet();
+export async function getWalletStatus(ctx: ToolCtx = localCtx()) {
+  const w = await getWallet(ctx.agentId);
   return {
     balanceUsd: usd(w.balanceMicro),
     sessionSpendUsd: usd(w.sessionSpendMicro),

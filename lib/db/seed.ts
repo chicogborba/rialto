@@ -26,11 +26,14 @@ const HISTORY: { goal: number; preset: "accuracy" | "balanced" | "cost" | "speed
 
 /** Wipes and reseeds everything. Safe to call from the reset route. */
 export async function seedDatabase(prisma: PrismaClient, now: Date = new Date()): Promise<void> {
+  await prisma.ledgerEntry.deleteMany();
+  await prisma.payout.deleteMany();
   await prisma.transaction.deleteMany();
   await prisma.runEvent.deleteMany();
   await prisma.run.deleteMany();
   await prisma.service.deleteMany();
   await prisma.provider.deleteMany();
+  await prisma.seller.deleteMany();
   await prisma.agent.deleteMany();
 
   for (const p of SEED_PROVIDERS) {

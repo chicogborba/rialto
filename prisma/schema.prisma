@@ -22,6 +22,8 @@ model Provider {
   requestCount    Int           @default(0)
   isDemo          Boolean       @default(true)
   payTo           String
+  sellerId        String?
+  seller          Seller?       @relation(fields: [sellerId], references: [id])
   createdAt       DateTime      @default(now())
   services        Service[]
   transactions    Transaction[]
@@ -36,6 +38,15 @@ model Service {
   priceMicro        Int
   capabilityMatch   Float         @default(1)
   demoFailFirstCall Boolean       @default(false)
+  /// what the seller receives per call; priceMicro is what the buyer pays (seller price + platform fee)
+  sellerPriceMicro  Int           @default(0)
+  upstreamUrl       String?
+  upstreamMethod    String        @default("GET")
+  upstreamBody      String?
+  /// AES-GCM encrypted JSON of headers the seller wants sent upstream (e.g. their API key)
+  upstreamHeaders   String?
+  /// "name,sprite=path.to.field" — what to return to the agent (empty = whole JSON, capped)
+  resultPick        String?
   inputSchema       String
   outputSchema      String
   transactions      Transaction[]
@@ -44,11 +55,58 @@ model Service {
 }
 
 model Agent {
-  id                String @id @default("agent_default")
-  name              String @default("Agent-01")
+  id                String   @id @default("agent_default")
+  name              String   @default("Agent-01")
   balanceMicro      Int
-  sessionSpendMicro Int    @default(0)
+  sessionSpendMicro Int      @default(0)
   policy            String
+  /// sha256 of the buyer API key; null for the built-in local demo agent
+  keyHash           String?  @unique
+  keyPrefix         String?
+  createdAt         DateTime @default(now())
+}
+
+model Seller {
+  id            String   @id @default(cuid())
+  name          String
+  email         String?
+  payoutAddress String
+  keyHash       String   @unique
+  keyPrefix     String
+  /// earned and not yet paid out
+  balanceMicro  Int      @default(0)
+  paidOutMicro  Int      @default(0)
+  createdAt     DateTime @default(now())
+  providers     Provider[]
+  payouts       Payout[]
+}
+
+model Payout {
+  id          String   @id @default(cuid())
+  sellerId    String
+  seller      Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  amountMicro Int
+  address     String
+  status      String   @default("pending")
+  mode        String   @default("simulated")
+  txRef       String?
+  createdAt   DateTime @default(now())
+}
+
+/// Append-only. Positive = credit to that party, negative = debit.
+model LedgerEntry {
+  id            Int      @id @default(autoincrement())
+  createdAt     DateTime @default(now())
+  /// topup | purchase | seller_earning | platform_fee | payout
+  kind          String
+  agentId       String?
+  sellerId      String?
+  amountMicro   Int
+  transactionId String?
+  note          String?
+
+  @@index([agentId, createdAt])
+  @@index([sellerId, createdAt])
 }
 
 model Run {
@@ -99,6 +157,9 @@ model Transaction {
   status       String
   mode         String
   role         String   @default("primary")
+  sellerId     String?
+  sellerMicro  Int      @default(0)
+  feeMicro     Int      @default(0)
   txRef        String?
   explorerUrl  String?
   latencyMs    Int?

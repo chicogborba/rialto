@@ -15,7 +15,7 @@
     "mcp": "tsx mcp/server.ts",
     "record": "tsx scripts/record-runs.ts",
     "postinstall": "prisma generate",
-    "demo:pokeapi": "tsx scripts/register-pokeapi.ts"
+    "e2e": "tsx scripts/e2e-platform.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

@@ -4,7 +4,9 @@ import { resolveConstraints } from "@/lib/agent/constraints";
 import { DemoAgentPlanner } from "@/lib/agent/demo-planner";
 import type { RunEvent } from "@/lib/agent/events";
 import { runAgent, type RunDeps } from "@/lib/agent/run";
-import { createRun, persistentDeps, getWallet, listCandidates, getHistory } from "@/lib/db/repo";
+import { buyerFromRequest } from "@/lib/auth/session";
+import { createRun, persistentDepsFor, getWallet, listCandidates, getHistory } from "@/lib/db/repo";
+import { errorResponse } from "@/lib/http";
 import { createHttpExecutor } from "@/lib/providers/http-executor";
 import { getRail } from "@/lib/x402";
 import type { WalletState } from "@/lib/types";
@@ -36,9 +38,15 @@ export async function POST(req: Request): Promise<Response> {
   }
   const body = parsed.data;
 
+  let buyer;
+  try {
+    buyer = await buyerFromRequest(req);
+  } catch (e) {
+    return errorResponse(e);
+  }
   let wallet: WalletState;
   try {
-    wallet = await getWallet();
+    wallet = await getWallet(buyer.agentId);
   } catch (e) {
     return Response.json({ error: e instanceof Error ? e.message : "wallet_unavailable" }, { status: 503 });
   }
@@ -74,8 +82,8 @@ export async function POST(req: Request): Promise<Response> {
       executor,
     };
   } else {
-    await createRun({ runId, goal: body.goal, constraints, mode: rail.mode });
-    deps = { planner: new DemoAgentPlanner(), rail, clock, executor, ...persistentDeps };
+    await createRun({ runId, goal: body.goal, constraints, mode: rail.mode, agentId: buyer.agentId });
+    deps = { planner: new DemoAgentPlanner(), rail, clock, executor, ...persistentDepsFor(buyer.agentId) };
   }
 
   const encoder = new TextEncoder();

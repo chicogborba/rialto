@@ -14,6 +14,7 @@ import type {
 import type { ReputationUpdate } from "@/lib/reputation/update";
 import { slugify, SCHEMAS } from "../../prisma/seed-data";
 import { toMicro } from "@/lib/money";
+import { splitFromCharge } from "@/lib/billing/fees";
 import { parsePaymentRequired } from "@/lib/x402/sim-protocol";
 import { PolicySchema, parsePolicy } from "@/lib/wallet/policy-schema";
 import type {
@@ -144,19 +145,21 @@ export async function applyReputation(providerId: string, update: ReputationUpda
 
 // ---------- wallet ----------
 
-async function ensureAgent() {
-  const a = await prisma.agent.findUnique({ where: { id: AGENT_ID } });
-  if (!a) throw new Error("Database not seeded. Run `npm run setup`.");
+export const DEFAULT_AGENT_ID = AGENT_ID;
+
+async function ensureAgent(agentId: string) {
+  const a = await prisma.agent.findUnique({ where: { id: agentId } });
+  if (!a) throw new Error(agentId === AGENT_ID ? "Database not seeded. Run `npm run setup`." : "Unknown agent");
   return a;
 }
 
-export async function getWallet(): Promise<WalletState> {
-  const a = await ensureAgent();
+export async function getWallet(agentId: string = AGENT_ID): Promise<WalletState> {
+  const a = await ensureAgent(agentId);
   return { balanceMicro: a.balanceMicro, sessionSpendMicro: a.sessionSpendMicro, policy: parsePolicy(a.policy) };
 }
 
-export async function getWalletResponse(): Promise<WalletResponse> {
-  const a = await ensureAgent();
+export async function getWalletResponse(agentId: string = AGENT_ID): Promise<WalletResponse> {
+  const a = await ensureAgent(agentId);
   return {
     wallet: { balanceMicro: a.balanceMicro, sessionSpendMicro: a.sessionSpendMicro, policy: parsePolicy(a.policy) },
     mode: currentMode(),
@@ -164,29 +167,46 @@ export async function getWalletResponse(): Promise<WalletResponse> {
   };
 }
 
-export async function debitWallet(amountMicro: MicroUsdc): Promise<WalletState> {
-  const a = await prisma.agent.update({
-    where: { id: AGENT_ID },
+export class InsufficientFundsError extends Error {
+  constructor() {
+    super("Insufficient balance");
+  }
+}
+
+/** Atomic: the balance check and the decrement are one statement, so concurrent calls can't overdraw. */
+export async function debitWallet(amountMicro: MicroUsdc, agentId: string = AGENT_ID): Promise<WalletState> {
+  const res = await prisma.agent.updateMany({
+    where: { id: agentId, balanceMicro: { gte: amountMicro } },
     data: { balanceMicro: { decrement: amountMicro }, sessionSpendMicro: { increment: amountMicro } },
   });
-  return { balanceMicro: a.balanceMicro, sessionSpendMicro: a.sessionSpendMicro, policy: parsePolicy(a.policy) };
+  if (res.count === 0) throw new InsufficientFundsError();
+  return getWallet(agentId);
 }
 
-export async function updatePolicy(policy: SpendingPolicy): Promise<void> {
-  await prisma.agent.update({ where: { id: AGENT_ID }, data: { policy: JSON.stringify(PolicySchema.parse(policy)) } });
+/** Test-mode credit. Real deposits land here once the live rail is connected. */
+export async function topUpWallet(agentId: string, amountMicro: MicroUsdc, note = "test credit"): Promise<WalletState> {
+  await prisma.$transaction([
+    prisma.agent.update({ where: { id: agentId }, data: { balanceMicro: { increment: amountMicro } } }),
+    prisma.ledgerEntry.create({ data: { kind: "topup", agentId, amountMicro, note } }),
+  ]);
+  return getWallet(agentId);
 }
 
-export async function newSession(): Promise<void> {
-  await prisma.agent.update({ where: { id: AGENT_ID }, data: { sessionSpendMicro: 0 } });
+export async function updatePolicy(policy: SpendingPolicy, agentId: string = AGENT_ID): Promise<void> {
+  await prisma.agent.update({ where: { id: agentId }, data: { policy: JSON.stringify(PolicySchema.parse(policy)) } });
+}
+
+export async function newSession(agentId: string = AGENT_ID): Promise<void> {
+  await prisma.agent.update({ where: { id: agentId }, data: { sessionSpendMicro: 0 } });
 }
 
 // ---------- runs + ledger ----------
 
-export async function createRun(args: { runId: string; goal: string; constraints: Constraints; mode: PaymentMode }) {
+export async function createRun(args: { runId: string; goal: string; constraints: Constraints; mode: PaymentMode; agentId?: string }) {
   await prisma.run.create({
     data: {
       id: args.runId,
-      agentId: AGENT_ID,
+      agentId: args.agentId ?? AGENT_ID,
       goal: args.goal,
       constraints: JSON.stringify(args.constraints),
       status: "running",
@@ -219,40 +239,72 @@ export async function persistEvent(e: RunEvent): Promise<void> {
   }
 }
 
+/**
+ * Records an attempt. For a settled purchase it also splits the money in the same DB transaction:
+ * the seller is credited exactly their price, Switchyard keeps the difference, and the append-only
+ * ledger gets one entry per party. Failed attempts move no money.
+ */
 export async function recordTransaction(tx: TransactionRecord): Promise<void> {
-  await prisma.transaction.create({
-    data: {
-      runId: tx.runId,
-      stepId: tx.stepId,
-      agentId: AGENT_ID,
-      providerId: tx.providerId,
-      serviceId: tx.serviceId,
-      capability: tx.capability,
-      amountMicro: tx.amountMicro,
-      network: tx.network,
-      status: tx.status,
-      mode: tx.mode,
-      role: tx.role,
-      txRef: tx.txRef,
-      explorerUrl: tx.explorerUrl,
-      latencyMs: tx.latencyMs,
-      requirements: JSON.stringify(tx.requirements),
-      result: tx.result === null || tx.result === undefined ? null : JSON.stringify(tx.result),
-      error: tx.error,
-    },
+  const [run, service, provider] = await Promise.all([
+    prisma.run.findUnique({ where: { id: tx.runId }, select: { agentId: true } }),
+    prisma.service.findUnique({ where: { id: tx.serviceId }, select: { sellerPriceMicro: true } }),
+    prisma.provider.findUnique({ where: { id: tx.providerId }, select: { sellerId: true } }),
+  ]);
+  const agentId = run?.agentId ?? AGENT_ID;
+  const sellerId = provider?.sellerId ?? null;
+  const settled = tx.status === "settled";
+  const split = sellerId && settled ? splitFromCharge(tx.amountMicro, service?.sellerPriceMicro ?? 0) : { sellerMicro: 0, feeMicro: settled ? tx.amountMicro : 0, buyerMicro: tx.amountMicro };
+
+  await prisma.$transaction(async (db) => {
+    const row = await db.transaction.create({
+      data: {
+        runId: tx.runId,
+        stepId: tx.stepId,
+        agentId,
+        providerId: tx.providerId,
+        serviceId: tx.serviceId,
+        capability: tx.capability,
+        amountMicro: tx.amountMicro,
+        network: tx.network,
+        status: tx.status,
+        mode: tx.mode,
+        role: tx.role,
+        sellerId,
+        sellerMicro: split.sellerMicro,
+        feeMicro: split.feeMicro,
+        txRef: tx.txRef,
+        explorerUrl: tx.explorerUrl,
+        latencyMs: tx.latencyMs,
+        requirements: JSON.stringify(tx.requirements),
+        result: tx.result === null || tx.result === undefined ? null : JSON.stringify(tx.result),
+        error: tx.error,
+      },
+    });
+    if (!settled) return;
+    interface Entry { kind: string; agentId?: string; sellerId?: string; amountMicro: number; transactionId: string; note: string }
+    const entries: Entry[] = [{ kind: "purchase", agentId, amountMicro: -tx.amountMicro, transactionId: row.id, note: tx.capability }];
+    if (sellerId) {
+      await db.seller.update({ where: { id: sellerId }, data: { balanceMicro: { increment: split.sellerMicro } } });
+      entries.push({ kind: "seller_earning", sellerId, amountMicro: split.sellerMicro, transactionId: row.id, note: tx.capability });
+    }
+    if (split.feeMicro > 0) entries.push({ kind: "platform_fee", amountMicro: split.feeMicro, transactionId: row.id, note: sellerId ? "commission" : "house provider" });
+    await db.ledgerEntry.createMany({ data: entries });
   });
 }
 
-/** Persistent deps pieces (ephemeral runs omit ledger/reputation/sink). */
-export const persistentDeps: Pick<RunDeps, "registry" | "reputation" | "ledger" | "sink"> & {
-  wallet: RunDeps["wallet"];
-} = {
-  registry: { listCandidates, history: getHistory },
-  wallet: { get: getWallet, debit: debitWallet },
-  reputation: { apply: applyReputation },
-  ledger: { record: recordTransaction },
-  sink: { onEvent: persistEvent },
-};
+/** Persistent deps for one buyer (ephemeral runs omit ledger/reputation/sink). */
+export function persistentDepsFor(agentId: string): Pick<RunDeps, "registry" | "reputation" | "ledger" | "sink"> & { wallet: RunDeps["wallet"] } {
+  return {
+    registry: { listCandidates, history: getHistory },
+    wallet: { get: () => getWallet(agentId), debit: (amt) => debitWallet(amt, agentId) },
+    reputation: { apply: applyReputation },
+    ledger: { record: recordTransaction },
+    sink: { onEvent: persistEvent },
+  };
+}
+
+/** The built-in local demo agent (the console without an API key). */
+export const persistentDeps = persistentDepsFor(AGENT_ID);
 
 // ---------- transactions ----------
 
@@ -278,8 +330,9 @@ function toRow(t: TxWithProvider): TransactionRow | null {
   };
 }
 
-export async function listTransactions(limit = 50, cursor?: string): Promise<{ rows: TransactionRow[]; next: string | null }> {
+export async function listTransactions(limit = 50, cursor?: string, agentId?: string): Promise<{ rows: TransactionRow[]; next: string | null }> {
   const rows = await prisma.transaction.findMany({
+    where: agentId ? { agentId } : undefined,
     include: { provider: true },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: limit + 1,
@@ -350,10 +403,10 @@ export async function recentOutcomes(): Promise<Record<string, TxStatus[]>> {
 
 // ---------- stats ----------
 
-export async function getStats(): Promise<StatsResponse> {
+export async function getStats(agentId?: string): Promise<StatsResponse> {
   const [txs, runs, providerTotal] = await Promise.all([
-    prisma.transaction.findMany({ select: { status: true, amountMicro: true, latencyMs: true, providerId: true, capability: true } }),
-    prisma.run.findMany({ where: { status: "completed" }, orderBy: { createdAt: "asc" } }),
+    prisma.transaction.findMany({ where: agentId ? { agentId } : undefined, select: { status: true, amountMicro: true, latencyMs: true, providerId: true, capability: true } }),
+    prisma.run.findMany({ where: { status: "completed", ...(agentId ? { agentId } : {}) }, orderBy: { createdAt: "asc" } }),
     prisma.provider.count(),
   ]);
   const settled = txs.filter((t) => t.status === "settled");
