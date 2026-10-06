@@ -25,6 +25,8 @@ export interface SimCallArgs {
   rail: PaymentRail;
   /** Mutable set of "runId:serviceId" keys that already failed once. */
   failedOnce: Set<string>;
+  /** Real work to run instead of the canned result (e.g. calling an actual public API). A throw means "failed, not charged". */
+  produce?: (body: unknown) => Promise<unknown>;
 }
 
 /**
@@ -62,7 +64,13 @@ export async function handleSimCall(a: SimCallArgs): Promise<SimResponse> {
     return { status: 503, json: { error: "upstream_timeout", simulated: true }, headers: {} };
   }
 
-  const result = buildMockResult(a.service.capability, a.provider.name, a.body);
+  let result: unknown;
+  try {
+    result = a.produce ? await a.produce(a.body) : buildMockResult(a.service.capability, a.provider.name, a.body);
+  } catch (e) {
+    // failed after verification: nothing is settled, the agent is not charged
+    return { status: 502, json: { error: e instanceof Error ? e.message : "upstream_error", simulated: true }, headers: {} };
+  }
   const settlement = await a.rail.settlePayment(auth, requirements);
   const body: SimSuccessBody = { result, settlement };
   return { status: 200, json: body, headers: { [SIM_SETTLEMENT_HEADER]: settlement.txRef } };

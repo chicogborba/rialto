@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { Section } from "./Section";
 
 /** Real ephemeral runs (/api/runs): in-memory wallet, nothing persisted. Speeds keep each run short. */
-const SPEEDS = [0.55, 0.2, 0.45, 0.55] as const;
+const SPEEDS = [0.55, 0.2, 0.45, 0.55, 0.5] as const;
 
 export function LiveDemo() {
   const { state, start } = useAgentRun();

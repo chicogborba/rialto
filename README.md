@@ -169,3 +169,14 @@ Design tokens live in `app/globals.css` (near-black / off-white, one accent `sig
 ## Future extensions
 
 LLM planner (propose DAG, keep scoring deterministic) · real x402 rail on Solana devnet/mainnet · x402 service discovery ingestion · provider onboarding with benchmark verification · on-chain reputation attestations · result-quality verification and refunds · multi-network and multi-asset support · per-agent wallets with delegated keys.
+
+## Try it with a real public API (PokéAPI)
+
+`PokeAPI Bridge` shows how to plug a *real* API in: `app/api/ext/pokeapi/route.ts` speaks the simulated 402 flow and, after the (simulated) payment verifies, calls https://pokeapi.co for real. If PokéAPI fails, nothing is settled.
+
+```bash
+npm run dev            # terminal 1
+npm run demo:pokeapi   # terminal 2: registers the provider via POST /api/providers (idempotent)
+```
+
+Then in `/app` pick **Look up a Pokémon** (or type "Look up the Pokémon charizard."), or call the MCP tools (`discover_services` with `data.lookup`, `execute_service`). **Reset demo** removes the registration; run the script again. Payment is simulated; the data is live.

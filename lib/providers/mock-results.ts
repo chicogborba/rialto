@@ -23,6 +23,8 @@ export function buildMockResult(capability: CapabilityId, provider: string, body
   const base = { simulatedOutput: true as const, provider };
 
   switch (capability) {
+    case "data.lookup":
+      return { ...base, note: "No live data source behind this demo provider." };
     case "image.sprites":
       return {
         ...base,

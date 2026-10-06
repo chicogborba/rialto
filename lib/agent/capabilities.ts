@@ -1,6 +1,7 @@
 import type { CapabilityId } from "@/lib/types";
 
 export const CAPABILITY_LABELS: Record<CapabilityId, string> = {
+  "data.lookup": "Public data lookup",
   "image.sprites": "Sprite generation",
   "vision.damage_detection": "Damage detection",
   "market.quotes": "Market data",
@@ -13,6 +14,7 @@ export const CAPABILITY_LABELS: Record<CapabilityId, string> = {
 };
 
 export const CAPABILITY_SHORT: Record<CapabilityId, string> = {
+  "data.lookup": "LOOKUP",
   "image.sprites": "SPRITES",
   "vision.damage_detection": "VISION",
   "market.quotes": "MARKET",

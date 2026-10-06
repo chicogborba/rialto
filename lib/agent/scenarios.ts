@@ -12,6 +12,13 @@ export interface Scenario {
 /** First matching scenario wins; `generic` is the fallback. */
 export const SCENARIOS: Scenario[] = [
   {
+    id: "lookup",
+    keywords: ["pokemon", "pokémon", "pikachu", "pokedex", "pokédex"],
+    dag: [{ id: "s1", capability: "data.lookup", dependsOn: [] }],
+    defaultPreset: "balanced",
+    confidenceCap: 1,
+  },
+  {
     id: "sprites",
     keywords: ["sprite", "pixel art", "pixel-art", "game asset", "spritesheet"],
     dag: [{ id: "s1", capability: "image.sprites", dependsOn: [] }],
@@ -71,6 +78,7 @@ export const GOAL_CHIPS: { label: string; goal: string }[] = [
   { label: "Research a stock move", goal: "Research why NVIDIA dropped today and produce a sourced explanation." },
   { label: "Translate + summarize", goal: "Translate this document to Portuguese and summarize the important parts." },
   { label: "Make game sprites", goal: "Make a pixel-art sprite sheet for my game's hero: idle, run and jump." },
+  { label: "Look up a Pokémon", goal: "Look up the Pokémon pikachu." },
 ];
 
 export function presetFromGoal(goal: string): PriorityPreset | null {

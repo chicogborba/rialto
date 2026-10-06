@@ -18,6 +18,7 @@ export const GROUP_W = NODE_W + GROUP_PAD * 2;
  * results arrive. The real count (found.length) wins when larger.
  */
 const SLOT_HINT: Record<CapabilityId, number> = {
+  "data.lookup": 2,
   "image.sprites": 5,
   "vision.damage_detection": 5,
   "market.quotes": 3,

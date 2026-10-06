@@ -14,7 +14,8 @@
     "setup": "prisma generate && npm run db:reset",
     "mcp": "tsx mcp/server.ts",
     "record": "tsx scripts/record-runs.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "demo:pokeapi": "tsx scripts/register-pokeapi.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

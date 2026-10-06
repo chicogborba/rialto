@@ -54,6 +54,10 @@ const ROWS: Row[] = [
 ];
 
 export const SCHEMAS: Record<CapabilityId, { input: string; output: string }> = {
+  "data.lookup": {
+    input: '{"query":"string"}',
+    output: '{"name":"string","id":"number","types":"string[]","sprite":"string"}',
+  },
   "image.sprites": {
     input: '{"prompt":"string","frames":"number?","style":"string?"}',
     output: '{"sheetUrl":"string","frames":"Frame[]","frameSize":"[number,number]","palette":"string[]"}',

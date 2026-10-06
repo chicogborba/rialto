@@ -30,6 +30,20 @@ function StepOutput({ step }: { step: RunResultStep }) {
           <p className="text-sm text-muted">{str(o.recommendation)}</p>
         </div>
       );
+    case "data.lookup":
+      return (
+        <div className="flex items-center gap-4">
+          {typeof o.sprite === "string" && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={o.sprite} alt={str(o.name)} width={96} height={96} className="size-24 border border-line bg-paper" style={{ imageRendering: "pixelated" }} />
+          )}
+          <div className="space-y-1 text-sm">
+            <p className="text-lg font-bold capitalize">{str(o.name)} <span className="font-mono text-xs text-muted">#{String(o.id)}</span></p>
+            <p className="font-mono text-xs">{arr(o.types).map(String).join(" · ")}</p>
+            <p className="font-mono text-[11px] text-signal">LIVE DATA from {str(o.source)} · payment simulated</p>
+          </div>
+        </div>
+      );
     case "llm.analysis":
       return <p className="text-sm leading-relaxed">{str(o.analysis)}</p>;
     case "text.translate":
