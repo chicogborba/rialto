@@ -15,9 +15,14 @@ export function FinalCta() {
           <br />
           It hires the rest. 🫡
         </h2>
-        <Link href="/app" className="mt-10 inline-flex min-h-16 items-center border-2 border-ink bg-ink px-10 font-mono text-base font-bold uppercase tracking-[0.1em] text-signal shadow-[8px_8px_0_var(--color-paper)] transition-[transform,box-shadow] duration-75 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[11px_11px_0_var(--color-paper)] active:translate-x-1 active:translate-y-1 active:shadow-[3px_3px_0_var(--color-paper)]">
-          Open the console →
+        <div className="mt-10 flex flex-wrap items-center gap-5">
+        <Link href="/publish" className="inline-flex min-h-16 items-center border-2 border-ink bg-paper px-8 font-mono text-base font-bold uppercase tracking-[0.1em] text-ink shadow-[8px_8px_0_var(--color-ink)] transition-[transform,box-shadow] duration-75 hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-[3px_3px_0_var(--color-ink)]">
+          Publish my API
         </Link>
+        <Link href="/connect" className="inline-flex min-h-16 items-center border-2 border-ink bg-ink px-10 font-mono text-base font-bold uppercase tracking-[0.1em] text-signal shadow-[8px_8px_0_var(--color-paper)] transition-[transform,box-shadow] duration-75 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[11px_11px_0_var(--color-paper)] active:translate-x-1 active:translate-y-1 active:shadow-[3px_3px_0_var(--color-paper)]">
+          Connect my Claude →
+        </Link>
+        </div>
         <Buddy mood="wave" className="absolute bottom-6 right-4 w-28 md:right-16 md:w-64" />
       </div>
       <footer className="relative border-t border-ink/30 bg-signal">

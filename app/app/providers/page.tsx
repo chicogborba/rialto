@@ -1,6 +1,6 @@
-import { PageHeader } from "@/components/primitives";
+import Link from "next/link";
+import { hardButtonClass, PageHeader } from "@/components/primitives";
 import { ProviderList } from "@/components/providers/ProviderList";
-import { RegisterForm } from "@/components/providers/RegisterForm";
 
 export const metadata = { title: "Providers — SWITCHYARD" };
 
@@ -8,9 +8,12 @@ export default function ProvidersPage() {
   return (
     <div className="space-y-6">
       <PageHeader index="03 / SUPPLY" title="Providers">
-        Publish a service. It becomes discoverable by every agent immediately — with an unproven reputation until it earns one.
+        Everything the agent can hire. Demo providers are fictional; APIs published by sellers are live and earn per call.
       </PageHeader>
-      <RegisterForm />
+      <div className="flex flex-wrap items-center gap-4 border-2 border-ink bg-surface p-4 shadow-[6px_6px_0_var(--color-signal)]">
+        <p className="min-w-0 flex-1 text-lg font-bold">Got an API? Publish it, set your price, get paid per call. 💸</p>
+        <Link href="/publish" className={hardButtonClass("primary")}>Publish an API</Link>
+      </div>
       <ProviderList />
     </div>
   );

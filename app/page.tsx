@@ -8,6 +8,7 @@ import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LiveDemo } from "@/components/landing/LiveDemo";
 import { Solana } from "@/components/landing/Solana";
 import { Story } from "@/components/landing/Story";
+import { TwoWays } from "@/components/landing/TwoWays";
 import { Why } from "@/components/landing/Why";
 
 export default function LandingPage() {
@@ -17,6 +18,7 @@ export default function LandingPage() {
       <LandingHeader />
       <main>
         <Story />
+        <TwoWays />
         <Why />
         <Solana />
         <Compare />

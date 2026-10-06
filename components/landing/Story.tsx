@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { hardButtonClass } from "@/components/primitives";
 import { isMuted, pokeSound, setMuted } from "@/lib/client/sfx";
@@ -272,8 +273,8 @@ export function Story() {
             <li><Slap still tone="paper" rotate={1}>🤖 no humans in the loop</Slap></li>
           </ul>
           <div className="mt-7 flex flex-wrap items-center gap-5">
-            <a href="#demo" className={hardButtonClass("primary", "lg")}>Run it</a>
-            <a href="#why" className={hardButtonClass("ghost", "lg")}>Why tho?</a>
+            <Link href="/connect" className={hardButtonClass("primary", "lg")}>Connect my Claude</Link>
+            <Link href="/publish" className={hardButtonClass("ghost", "lg")}>Publish my API</Link>
             <span className="sy-bob font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Scroll ↓ <span className="hidden sm:inline">· or poke the critter</span></span>
           </div>
         </div>

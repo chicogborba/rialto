@@ -1,4 +1,3 @@
-import { RegisterProviderSchema, type RegisterProviderInput } from "@/lib/provider-schema";
 import { isCapabilityId } from "@/lib/agent/capabilities";
 import type { RunEvent } from "@/lib/agent/events";
 import type { RunDeps, TransactionRecord } from "@/lib/agent/run";
@@ -12,8 +11,6 @@ import type {
   WalletResponse,
 } from "@/lib/api-types";
 import type { ReputationUpdate } from "@/lib/reputation/update";
-import { slugify, SCHEMAS } from "../../prisma/seed-data";
-import { toMicro } from "@/lib/money";
 import { splitFromCharge } from "@/lib/billing/fees";
 import { parsePaymentRequired } from "@/lib/x402/sim-protocol";
 import { PolicySchema, parsePolicy } from "@/lib/wallet/policy-schema";
@@ -95,48 +92,6 @@ export async function getProviderBySlug(slug: string) {
 export async function setProviderStatus(id: string, status: ProviderStatus): Promise<boolean> {
   const res = await prisma.provider.updateMany({ where: { id }, data: { status } });
   return res.count > 0;
-}
-
-export { RegisterProviderSchema, type RegisterProviderInput };
-
-export async function registerProvider(input: RegisterProviderInput): Promise<ProviderWithServices> {
-  let slug = slugify(input.name) || "provider";
-  const taken = await prisma.provider.count({ where: { slug: { startsWith: slug } } });
-  if (taken > 0) slug = `${slug}${taken + 1}`;
-  const caps = input.capabilities.filter(isCapabilityId);
-  const created = await prisma.provider.create({
-    data: {
-      slug,
-      name: input.name,
-      description: input.description,
-      network: input.network,
-      x402Enabled: input.x402Enabled,
-      status: "online",
-      qualityScore: input.quality,
-      reputationScore: 50,
-      successRate: 100,
-      latencyMs: input.latencyMs,
-      requestCount: 0,
-      isDemo: false,
-      payTo: "UNSET",
-      services: {
-        create: caps.map((capability: CapabilityId) => ({
-          capability,
-          endpoint: input.endpoint,
-          priceMicro: toMicro(input.priceUsd),
-          capabilityMatch: 1,
-          inputSchema: SCHEMAS[capability].input,
-          outputSchema: SCHEMAS[capability].output,
-        })),
-      },
-    },
-    include: { services: true },
-  });
-  return {
-    provider: toProvider(created),
-    services: created.services.map(toService).filter((s) => s !== null),
-    unproven: true,
-  };
 }
 
 export async function applyReputation(providerId: string, update: ReputationUpdate): Promise<void> {

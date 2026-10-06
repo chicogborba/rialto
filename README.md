@@ -170,13 +170,45 @@ Design tokens live in `app/globals.css` (near-black / off-white, one accent `sig
 
 LLM planner (propose DAG, keep scoring deterministic) · real x402 rail on Solana devnet/mainnet · x402 service discovery ingestion · provider onboarding with benchmark verification · on-chain reputation attestations · result-quality verification and refunds · multi-network and multi-asset support · per-agent wallets with delegated keys.
 
-## Try it with a real public API (PokéAPI)
+## The platform: two sides
 
-`PokeAPI Bridge` shows how to plug a *real* API in: `app/api/ext/pokeapi/route.ts` speaks the simulated 402 flow and, after the (simulated) payment verifies, calls https://pokeapi.co for real. If PokéAPI fails, nothing is settled.
+**Sellers** publish an API; **buyers** connect their Claude Code / Codex and let their agent hire it. Switchyard sits in the middle (gateway, wallet, ledger) and takes a small commission.
 
-```bash
-npm run dev            # terminal 1
-npm run demo:pokeapi   # terminal 2: registers the provider via POST /api/providers (idempotent)
+```
+buyer's Claude ──MCP (Bearer sy_buyer_…)──▶ /api/mcp ──▶ agent: plan → pick → policy check
+                                                     └─▶ /api/gw/{api}/{capability}   (402 → verify → call seller → settle)
+                                                                  └─▶ seller's real HTTPS API
+money: buyer wallet −(seller price + fee) · seller balance +(seller price) · platform +fee · append-only ledger
 ```
 
-Then in `/app` pick **Look up a Pokémon** (or type "Look up the Pokémon charizard."), or call the MCP tools (`discover_services` with `data.lookup`, `execute_service`). **Reset demo** removes the registration; run the script again. Payment is simulated; the data is live.
+| Flow | Where | What happens |
+|---|---|---|
+| Publish | `/publish` | Create seller account (name + Solana payout address) → publish endpoint, price, optional secret header and result fields → test it → watch earnings → withdraw |
+| Connect | `/connect` | Create buyer key (starter test credit) → paste one command → ask your agent for things |
+| Console | `/app` | The visual console (uses the local demo agent unless you send a key) |
+
+**Install (verified against the Claude Code and Codex docs):**
+
+```bash
+# Claude Code
+claude mcp add --transport http switchyard https://YOUR-HOST/api/mcp --header "Authorization: Bearer sy_buyer_…"
+```
+```toml
+# Codex: ~/.codex/config.toml  (and export SWITCHYARD_KEY=sy_buyer_…)
+[mcp_servers.switchyard]
+url = "https://YOUR-HOST/api/mcp"
+bearer_token_env_var = "SWITCHYARD_KEY"
+```
+
+**Commission.** Buyer pays `sellerPrice + max(PLATFORM_MIN_FEE_MICRO, ceil(sellerPrice × PLATFORM_FEE_BPS / 10000))`; the seller always receives exactly their price. Defaults: 5%, floor $0.001. The publish page previews it live. All money is integer micro-USDC.
+
+**Security model.** API keys are random, shown once, stored as sha256. Seller upstream secrets are encrypted at rest (AES-256-GCM, `SECRETS_KEY` required in production). Seller URLs are fetched by *our* servers, so they are https-only, resolved and rejected if non-public (SSRF guard, re-checked after placeholder substitution), no redirects, 8 s timeout, 1 MB upstream / 64 KB result caps. The gateway only accepts calls carrying an internal token, so a forged simulated payment can't hit a seller's API. Wallet debits are atomic (no overdraw). Per-key rate limits (in-memory: use Redis when running several instances).
+
+**Verify everything end to end** (needs `npm run dev`): `npm run e2e` publishes the PokéAPI as a seller, uses it as a buyer through the hosted MCP endpoint and checks the money to the micro-USDC, SSRF rejection, failed-call-not-charged, payout, and isolation between accounts.
+
+### Not built yet (be honest in the pitch)
+- **Real money.** Everything is simulated: top-ups, settlement and payouts. The live Solana rail (x402 + USDC on devnet) is the next milestone; the architecture expects buyers to pay a platform treasury and sellers to be paid out from it.
+- **Auth is key-only** (no email/password/recovery). Lose the key, lose the account.
+- **The planner is rule-based** and derives the API input from the goal heuristically (`{query}`); a real LLM planner would build typed input from each service's schema.
+- **Integers:** balances are Prisma `Int` (SQLite), capping at about $2,147 per account.
+- Seller APIs are self-reported quality; reputation starts at 50 and is earned.
