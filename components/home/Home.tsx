@@ -29,21 +29,23 @@ export function Header() {
   );
 }
 
+/** The video's title card: the name, the line, and the critter on the stage the story plays on. */
 export function Hero() {
   return (
-    <section className={`${WRAP} grid items-center gap-2 pb-10 pt-2 md:grid-cols-2 md:gap-8 md:pb-14 md:pt-8`}>
-      <div>
-        <h1 className="text-[clamp(3.2rem,10vw,7.5rem)] font-bold leading-[0.9] tracking-[-0.055em]">
-          Agents <span className="home-mark">that hire.</span>
+    <section className="relative overflow-hidden">
+      <div className={`${WRAP} flex flex-col items-center pt-4 text-center md:pt-8`}>
+        <h1 className="flex flex-col items-center">
+          <span className="border-4 border-coal bg-lime px-6 pb-1 text-[clamp(4rem,14vw,9.5rem)] font-bold uppercase leading-[0.98] tracking-[-0.06em] shadow-[8px_8px_0_var(--color-coal)] md:border-[6px] md:px-10 md:shadow-[14px_14px_0_var(--color-coal)]">Rialto</span>
+          <span className="relative z-10 mt-3 -rotate-2 bg-coal px-5 pb-1.5 pt-1 text-[clamp(1.6rem,4.6vw,3.4rem)] font-bold tracking-[-0.03em] text-cream md:mt-5">Agents that hire.</span>
         </h1>
-        <p className="mt-6 max-w-md text-xl leading-snug text-coal/75 md:text-2xl">The marketplace where AI agents find, compare and pay for APIs. On their own.</p>
-        <div className="mt-8 flex flex-wrap gap-3">
+        <p className="mt-7 max-w-xl text-lg leading-snug text-coal/80 md:text-2xl">The marketplace where AI agents find, compare and pay for APIs. On their own.</p>
+        <div className="mt-7 flex flex-wrap justify-center gap-3">
           <Link href={flowHref("/connect")} className="home-btn home-btn-ink">Connect my agent</Link>
-          <Link href={flowHref("/publish")} className="home-btn home-btn-line">Publish an API</Link>
+          <Link href={flowHref("/publish")} className="home-btn home-btn-line bg-cream">Publish an API</Link>
         </div>
-        <p className="home-bob mt-10 font-mono text-xs font-bold uppercase tracking-[0.16em] text-coal/50">↓ Scroll to see it work</p>
       </div>
-      <HeroCritter className="order-first h-60 w-full md:order-none md:h-[30rem]" />
+      <HeroCritter className="block h-[30svh] min-h-[210px] w-full md:h-[34svh]" />
+      <p className="home-bob absolute inset-x-0 bottom-3 text-center font-mono text-xs font-bold uppercase tracking-[0.16em] text-coal/55">↓ Scroll to see it work</p>
     </section>
   );
 }
@@ -51,7 +53,7 @@ export function Hero() {
 /** The scroll-driven scene; people who prefer reduced motion get three stills with the same lines. */
 export function Story() {
   return (
-    <section id="story" aria-label="How Rialto works, as a story" className="border-y-2 border-coal/10 bg-sand/50">
+    <section id="story" aria-label="How Rialto works, as a story" className="border-b-2 border-coal/10">
       <div className="motion-reduce:hidden">
         <StoryScroll />
       </div>
@@ -108,24 +110,24 @@ const SOLANA_FACTS = [
 
 export function Solana() {
   return (
-    <section id="solana" aria-labelledby="solana-title" className="scroll-mt-6 bg-coal py-16 text-cream md:py-24">
+    <section id="solana" aria-labelledby="solana-title" className="scroll-mt-6 border-y-2 border-coal/10 bg-sand/50 py-16 md:py-24">
       <div className={WRAP}>
         <h2 id="solana-title" className="text-[clamp(2.8rem,8vw,6rem)] font-bold leading-[0.92] tracking-[-0.05em]">
           Why <span className="home-sol">Solana?</span>
         </h2>
-        <p className="mt-3 max-w-3xl text-xl font-bold leading-snug text-cream/85 md:text-3xl">It is paid before the others leave the start line.</p>
+        <p className="mt-3 max-w-3xl text-xl font-bold leading-snug text-coal/80 md:text-3xl">It is paid before the others leave the start line.</p>
         <div className="mt-8 md:mt-10">
           <SolanaRace />
         </div>
-        <dl className="mt-8 grid grid-cols-3 gap-4 md:mt-12 md:gap-8">
+        <dl className="mt-10 grid grid-cols-3 gap-4 md:mt-12 md:gap-8">
           {SOLANA_FACTS.map((fact) => (
             <div key={fact.value}>
               <dt className="tnum home-sol inline-block whitespace-nowrap font-mono text-xl font-bold md:text-5xl">{fact.value}</dt>
-              <dd className="mt-1 text-xs leading-snug text-cream/65 md:text-base">{fact.label}</dd>
+              <dd className="mt-1 text-xs leading-snug text-coal/65 md:text-base">{fact.label}</dd>
             </div>
           ))}
         </dl>
-        <p className="mt-8 text-xs text-cream/40">Typical settlement times; they vary by provider. Built for x402 on Solana. Payments are simulated in this build.</p>
+        <p className="mt-8 text-xs text-coal/45">Typical settlement times; they vary by provider. Built for x402 on Solana. Payments are simulated in this build.</p>
       </div>
     </section>
   );

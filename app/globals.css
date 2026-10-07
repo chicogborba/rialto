@@ -220,7 +220,8 @@
 .home :focus-visible { outline-color: var(--color-coal); }
 .home ::selection { background: var(--color-lime); color: var(--color-coal); }
 .home-sol {
-  background: linear-gradient(90deg, #9945ff, #14f195);
+  /* the Solana gradient, with the green deepened so it reads on the cream page */
+  background: linear-gradient(90deg, #9945ff, #0fb877);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -250,11 +251,18 @@
 
 /* ---- the Solana race: one lap a second, everything else keeps time with it */
 @keyframes sol-lap { from { left: -16%; } to { left: 100%; } }
-@keyframes sol-tick { 0% { opacity: 1; transform: scaleY(1.5); } 35%, 100% { opacity: 0.4; transform: scaleY(1); } }
 @keyframes sol-bump { 0% { transform: scale(1.16); } 30%, 100% { transform: scale(1); } }
 @keyframes sol-step { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
 .sol-runner { position: absolute; top: 50%; translate: 0 -50%; animation: sol-lap 1s linear infinite; }
-.sol-finish { animation: sol-tick 1s linear infinite; }
+/* chequered finish strip (6px squares) and the flag that waves once a lap */
+.sol-check {
+  background-color: #fffdf7;
+  background-image: linear-gradient(45deg, #17120f 25%, transparent 25%, transparent 75%, #17120f 75%), linear-gradient(45deg, #17120f 25%, transparent 25%, transparent 75%, #17120f 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 6px 6px;
+}
+@keyframes sol-wave { 0% { transform: skewY(-10deg) translateY(-1px); } 30%, 100% { transform: none; } }
+.sol-flag { transform-origin: 2px 5px; animation: sol-wave 1s ease-out infinite; }
 .sol-count { display: inline-block; transform-origin: right center; animation: sol-bump 1s ease-out infinite; }
 .sol-leg-a { animation: sol-step 0.16s steps(2, jump-none) infinite; }
 .sol-leg-b { animation: sol-step 0.16s steps(2, jump-none) infinite 0.08s; }

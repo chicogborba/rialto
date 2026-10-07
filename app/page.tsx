@@ -8,10 +8,15 @@ export default function LandingPage() {
     <div className="home min-h-screen bg-cream text-coal">
       <Preloader />
       <StaticBanner />
-      <Header />
+      {/* the top of the page is one stage: title card, then the story plays on it */}
+      <div className="bg-sand/50">
+        <Header />
+      </div>
       <main>
-        <Hero />
-        <Story />
+        <div className="bg-sand/50">
+          <Hero />
+          <Story />
+        </div>
         <Wins />
         <Pitch />
         <Solana />

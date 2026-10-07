@@ -7,14 +7,15 @@ const rnd = (i: number, n: number) => {
   return x - Math.floor(x);
 };
 
-/** The hero: the critter idling among a few floating blocks. Transparent background, one draw pass. */
+/** The hero: the critter standing among blocks resting on the ground, like the video's title card. */
+const GROUND = -1.085; // the mascot's feet
 export class HeroScene {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly canvas: HTMLCanvasElement;
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(30, 1, 0.1, 60);
   private readonly mascot = new Mascot();
-  private readonly cubes: { mesh: THREE.Mesh; x: number; y: number; z: number; phase: number }[] = [];
+  private readonly cubes: { mesh: THREE.Mesh; x: number; y: number; z: number; phase: number; hop: number }[] = [];
   private readonly raycaster = new THREE.Raycaster();
   private readonly ndc = new THREE.Vector2();
 
@@ -25,25 +26,27 @@ export class HeroScene {
     this.renderer.setClearColor(0x000000, 0);
     this.scene.add(this.mascot.group);
 
-    const count = mobile ? 8 : 12;
+    const count = mobile ? 12 : 24;
     for (let i = 0; i < count; i++) {
-      const size = 0.22 + rnd(i, 1) * 0.3;
+      const size = 0.28 + rnd(i, 1) * 0.42;
       const hex = PALETTE[i % PALETTE.length];
       // per-face shades fake the lighting, same trick as the mascot
       const mats = [0.84, 0.72, 1.05, 0.5, 0.95, 0.62].map((k) => new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k) }));
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(size, size, size), mats);
       const side = i % 2 ? 1 : -1;
-      const cube = { mesh, x: side * (1.7 + rnd(i, 2) * 1.5), y: -0.9 + rnd(i, 3) * 2.3, z: -0.4 - rnd(i, 4) * 2.2, phase: rnd(i, 5) * 6.28 };
+      mesh.rotation.y = rnd(i, 6) * 3;
+      const cube = { mesh, x: side * (1.9 + rnd(i, 2) * (mobile ? 2.2 : 5.4)), y: GROUND + size / 2, z: -0.2 - rnd(i, 4) * 3.2, phase: rnd(i, 5) * 6.28, hop: 0.1 + rnd(i, 3) * 0.2 };
       this.cubes.push(cube);
       this.scene.add(mesh);
     }
-    this.camera.position.set(0, 0.5, 8.6);
-    this.camera.lookAt(0, -0.15, 0);
+    this.camera.position.set(0, 0.35, 6.2);
+    this.camera.lookAt(0, -0.3, 0);
   }
 
   resize(w: number, h: number): void {
     this.camera.aspect = Math.max(1, w) / Math.max(1, h);
-    this.camera.position.z = 8.6 * Math.max(1, 1.15 / this.camera.aspect);
+    // the stage is a wide strip on desktop; pull back on narrow screens
+    this.camera.position.z = 6.2 * Math.max(1, 2.2 / this.camera.aspect);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
   }
@@ -51,8 +54,8 @@ export class HeroScene {
   render(time: number, dt: number, mx: number): void {
     this.mascot.update({ time, dt, mx, scout: 0, think: 0, hop: 0, pay: 0, party: 0 });
     for (const c of this.cubes) {
-      c.mesh.position.set(c.x, c.y + Math.sin(time * 0.8 + c.phase) * 0.14, c.z);
-      c.mesh.rotation.set(time * 0.2 + c.phase, time * 0.3 + c.phase, 0);
+      // they rest on the ground and give a little hop now and then
+      c.mesh.position.set(c.x, c.y + Math.max(0, Math.sin(time * 1.1 + c.phase)) * c.hop, c.z);
     }
     this.renderer.render(this.scene, this.camera);
   }
