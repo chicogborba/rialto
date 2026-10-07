@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * A pixel-art race between payment rails. Solana runs in real time (about one second); after that
- * the clock becomes a time-lapse so the card, the bank transfer and the wire can finish in "days".
+ * A pixel-art race between payment rails, in real time and on a loop. Solana finishes a lap about
+ * once a second; the others move at their true speed, which on this track is nowhere. No time-lapse:
+ * the counter just keeps climbing for as long as you watch.
  */
 
 interface Sprite {
@@ -90,34 +91,19 @@ const GLOBE: Sprite = {
   palette: { o: "#3d8bfd", l: "#3fbf6f", w: "#9ec5ff" },
 };
 
-const LANES = [
-  { name: "Solana", note: "USDC", sprite: SOLANA, finish: 1.0, fps: 16, result: "≈ 1 second", fee: "fee under 1¢" },
-  { name: "Card", note: "Visa, Mastercard", sprite: CARD, finish: 5.6, fps: 5, result: "≈ 2 days", fee: "2.9% + 30¢" },
-  { name: "Bank transfer", note: "ACH", sprite: BANK, finish: 6.8, fps: 4, result: "1–3 days", fee: "≈ 0.8%" },
-  { name: "International wire", note: "SWIFT", sprite: GLOBE, finish: 8.2, fps: 3, result: "up to 5 days", fee: "$15–50" },
-] as const;
-const END = 8.6;
-const SPRITE_W = 20;
 const DAY = 86_400;
-/** [real seconds, simulated seconds]: real time for the first second, then a time-lapse */
-const CLOCK: [number, number][] = [[1, 1], [2.2, 60], [3.4, 3600], [4.6, DAY], [5.6, 2 * DAY], [6.8, 3 * DAY], [8.2, 5 * DAY]];
+/** seconds for the money to reach the seller: one lap of the track */
+const LANES = [
+  { name: "Solana", note: "USDC", sprite: SOLANA, lap: 1, fee: "fee under 1¢", fps: 16 },
+  { name: "Card", note: "Visa, Mastercard", sprite: CARD, lap: 2 * DAY, fee: "2.9% + 30¢", fps: 3 },
+  { name: "Bank transfer", note: "ACH", sprite: BANK, lap: 3 * DAY, fee: "≈ 0.8%", fps: 2.5 },
+  { name: "International wire", note: "SWIFT", sprite: GLOBE, lap: 5 * DAY, fee: "$15–50", fps: 2 },
+] as const;
+const SPRITE_W = 20;
 
-function simulated(t: number): number {
-  if (t <= 1) return t;
-  for (let i = 1; i < CLOCK.length; i++) {
-    const [t0, s0] = CLOCK[i - 1];
-    const [t1, s1] = CLOCK[i];
-    if (t <= t1) return Math.exp(Math.log(s0) + ((t - t0) / (t1 - t0)) * (Math.log(s1) - Math.log(s0)));
-  }
-  return CLOCK[CLOCK.length - 1][1];
-}
-function clockText(s: number): string {
-  if (s < 10) return `${s.toFixed(2)} s`;
-  if (s < 90) return `${s.toFixed(0)} s`;
-  if (s < 5400) return `${(s / 60).toFixed(0)} min`;
-  if (s < DAY) return `${(s / 3600).toFixed(0)} h`;
-  return `${(s / DAY).toFixed(1)} days`;
-}
+const two = (n: number) => String(Math.floor(n)).padStart(2, "0");
+/** "47:59:42" — hours can go past 24, that is the point */
+const countdown = (s: number) => `${Math.floor(s / 3600)}:${two((s % 3600) / 60)}:${two(s % 60)}`;
 
 /** One row of pixels as SVG rects, merging runs of the same colour. */
 function PixelRow({ row, y, palette }: { row: string; y: number; palette: Record<string, string> }) {
@@ -134,22 +120,66 @@ function PixelRow({ row, y, palette }: { row: string; y: number; palette: Record
 
 export function SolanaRace() {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const clockRef = useRef<HTMLSpanElement>(null);
+  const countRef = useRef<HTMLSpanElement>(null);
+  const elapsedRef = useRef<HTMLSpanElement>(null);
+  const plusRef = useRef<HTMLSpanElement>(null);
   const racers = useRef<(SVGGElement | null)[]>([]);
   const stepA = useRef<(SVGGElement | null)[]>([]);
   const stepB = useRef<(SVGGElement | null)[]>([]);
-  const trail = useRef<SVGGElement>(null);
+  const etas = useRef<(HTMLSpanElement | null)[]>([]);
   const unitsRef = useRef(260);
   const [units, setUnits] = useState(260);
-  const [started, setStarted] = useState(false);
-  const [run, setRun] = useState(0);
-  const [done, setDone] = useState<boolean[]>(() => LANES.map(() => false));
-  const [lapse, setLapse] = useState(false);
 
-  // the track is drawn in whole "pixels": pick a pixel size for this width, then count how many fit
   useEffect(() => {
     const wrap = wrapRef.current;
     if (!wrap) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let raf = 0;
+    let visible = false;
+    let last = performance.now();
+    /** seconds the race has actually been on screen */
+    let t = 0;
+    let laps = -1;
+
+    const draw = () => {
+      LANES.forEach((lane, i) => {
+        const p = (t / lane.lap) % 1;
+        const x = 4 + Math.round(p * (unitsRef.current - SPRITE_W - 13));
+        racers.current[i]?.setAttribute("transform", `translate(${x} ${20 - lane.sprite.rows.length - 1})`);
+        const stride = Math.floor(t * lane.fps) % 2 === 1;
+        stepA.current[i]?.setAttribute("display", stride ? "none" : "inline");
+        stepB.current[i]?.setAttribute("display", stride ? "inline" : "none");
+        const eta = etas.current[i];
+        if (eta) eta.textContent = countdown(Math.max(0, lane.lap - t));
+      });
+      const done = Math.floor(t / LANES[0].lap);
+      if (done !== laps) {
+        laps = done;
+        if (countRef.current) countRef.current.textContent = `${done}×`;
+        // restart the little "+1" pop on every lap
+        const plus = plusRef.current;
+        if (plus && done > 0) {
+          plus.classList.remove("sol-plus");
+          void plus.offsetWidth;
+          plus.classList.add("sol-plus");
+        }
+      }
+      if (elapsedRef.current) elapsedRef.current.textContent = `${two(t / 60)}:${two(t % 60)}`;
+    };
+    const frame = (now: number) => {
+      raf = 0;
+      t += Math.min(0.1, (now - last) / 1000);
+      last = now;
+      draw();
+      if (visible && !document.hidden) raf = requestAnimationFrame(frame);
+    };
+    const kick = () => {
+      if (raf || reduced) return;
+      last = performance.now();
+      raf = requestAnimationFrame(frame);
+    };
+
+    // the track is drawn in whole "pixels": pick a pixel size for this width, then count how many fit
     const ro = new ResizeObserver(([entry]) => {
       const width = entry.contentRect.width;
       const next = Math.max(120, Math.floor(width / (width >= 900 ? 4 : width >= 560 ? 3 : 2)));
@@ -159,85 +189,55 @@ export function SolanaRace() {
     ro.observe(wrap);
     const io = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting) return;
-        setStarted(true);
-        io.disconnect();
+        visible = entry.isIntersecting;
+        if (visible) kick();
       },
-      { threshold: 0.45 },
+      { threshold: 0.2 },
     );
     io.observe(wrap);
+    document.addEventListener("visibilitychange", kick);
     return () => {
+      cancelAnimationFrame(raf);
       ro.disconnect();
       io.disconnect();
+      document.removeEventListener("visibilitychange", kick);
     };
   }, []);
 
-  useEffect(() => {
-    if (!started) return;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const crossed = LANES.map(() => false);
-    let lapsed = false;
-    let raf = 0;
-    const t0 = performance.now();
-
-    const frame = (now: number) => {
-      const t = reduced ? END : (now - t0) / 1000;
-      LANES.forEach((lane, i) => {
-        const linear = Math.min(1, t / lane.finish);
-        // Solana sprints; the others crawl off the line and only "speed up" because the clock does
-        const p = i === 0 ? Math.pow(linear, 0.8) : Math.pow(linear, 1.6);
-        const x = 4 + Math.round(p * (unitsRef.current - SPRITE_W - 13));
-        racers.current[i]?.setAttribute("transform", `translate(${x} ${20 - lane.sprite.rows.length - 1})`);
-        const stride = p < 1 && Math.floor(t * lane.fps) % 2 === 1;
-        stepA.current[i]?.setAttribute("display", stride ? "none" : "inline");
-        stepB.current[i]?.setAttribute("display", stride ? "inline" : "none");
-        if (p >= 1 && !crossed[i]) {
-          crossed[i] = true;
-          setDone((prev) => prev.map((v, k) => v || k === i));
-        }
-      });
-      trail.current?.setAttribute("display", t > 0.05 && t < 1 ? "inline" : "none");
-      if (clockRef.current) clockRef.current.textContent = clockText(simulated(Math.min(t, 8.2)));
-      if (t > 1.15 && !lapsed) {
-        lapsed = true;
-        setLapse(true);
-      }
-      if (t < END) raf = requestAnimationFrame(frame);
-    };
-    raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
-  }, [started, run]);
-
-  const again = () => {
-    setDone(LANES.map(() => false));
-    setLapse(false);
-    setStarted(true);
-    setRun((n) => n + 1);
-  };
-  const finished = done.every(Boolean);
-
   return (
     <div ref={wrapRef} className="border-2 border-cream/25 bg-[#120e0b] p-3 md:p-6">
-      <div className="flex flex-wrap items-end justify-between gap-2 font-mono font-bold uppercase">
-        <p className="text-[11px] tracking-[0.16em] text-cream/55 md:text-xs">Settlement race · who gets the money to the seller first</p>
-        <p className="flex items-center gap-3 text-lime">
-          <span className={cn("text-[10px] tracking-[0.14em] text-cream/60 transition-opacity md:text-xs", lapse && !finished ? "animate-pulse opacity-100" : "opacity-0")}>⏩ time-lapse</span>
-          <span className="tnum text-xl md:text-3xl">
-            T+ <span ref={clockRef}>0.00 s</span>
-          </span>
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <div>
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-cream/55 md:text-xs">Payments settled since you got here</p>
+          <p className="mt-1 flex items-baseline gap-3 font-mono font-bold">
+            <span ref={countRef} className="home-sol tnum text-6xl leading-none md:text-8xl">0×</span>
+            <span ref={plusRef} aria-hidden className="text-xl text-lime opacity-0 md:text-2xl">+1</span>
+          </p>
+        </div>
+        <p className="font-mono text-[11px] font-bold uppercase leading-relaxed tracking-[0.12em] text-cream/55 md:text-right md:text-xs">
+          Real time, no tricks <span className="text-cream/30">·</span> on this page for <span ref={elapsedRef} className="tnum text-cream">00:00</span>
+          <br />
+          Card, bank and wire so far: <span className="text-cream">0</span>
         </p>
       </div>
 
-      <ol className="mt-4 space-y-3 md:mt-6 md:space-y-4">
+      <ol className="mt-5 space-y-3 md:mt-7 md:space-y-4">
         {LANES.map((lane, i) => (
           <li key={lane.name}>
             <div className="flex items-baseline justify-between gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.08em] md:text-sm">
               <p>
                 <span className={i === 0 ? "home-sol" : "text-cream"}>{lane.name}</span> <span className="text-cream/40">{lane.note}</span>
               </p>
-              <p className={cn("text-right transition-opacity duration-300", done[i] ? "opacity-100" : "opacity-0", i === 0 ? "text-lime" : "text-cream/75")}>
-                {lane.result} <span className="text-cream/45">· {lane.fee}</span>
-                {i === 0 && !finished ? <span className="ml-2 animate-pulse normal-case text-cream/50">zZz</span> : null}
+              <p className={cn("text-right", i === 0 ? "text-lime" : "text-cream/75")}>
+                {i === 0 ? (
+                  "a lap a second"
+                ) : (
+                  <>
+                    <span className="hidden text-cream/45 sm:inline">first lap in </span>
+                    <span ref={(el) => { etas.current[i] = el; }} className="tnum">{countdown(lane.lap)}</span>
+                  </>
+                )}{" "}
+                <span className="text-cream/45">· {lane.fee}</span>
               </p>
             </div>
             <svg viewBox={`0 0 ${units} 22`} shapeRendering="crispEdges" aria-hidden className="mt-1 block w-full bg-[#1d1712]">
@@ -248,9 +248,9 @@ export function SolanaRace() {
               {Array.from({ length: 9 }).flatMap((_, r) => [0, 1].map((c) => <rect key={`${r}-${c}`} x={units - 8 + c * 2} y={2 + r * 2} width={2} height={2} fill={(r + c) % 2 ? "#fffdf7" : "#6b6257"} />))}
               <g ref={(el) => { racers.current[i] = el; }} transform={`translate(4 ${20 - lane.sprite.rows.length - 1})`}>
                 {i === 0 ? (
-                  <g ref={trail} display="none">
+                  <g>
                     <rect x={-7} y={1} width={5} height={1} fill="#14f195" />
-                    <rect x={-10} y={4} width={8} height={1} fill="#569bca" />
+                    <rect x={-11} y={4} width={9} height={1} fill="#569bca" />
                     <rect x={-6} y={7} width={4} height={1} fill="#9945ff" />
                   </g>
                 ) : null}
@@ -268,13 +268,9 @@ export function SolanaRace() {
           </li>
         ))}
       </ol>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 md:mt-6">
-        <p className="max-w-xl text-xs leading-relaxed text-cream/50">Solana runs in real time. Then the clock speeds up, or you would be here until next week.</p>
-        <button type="button" onClick={again} className="home-btn home-btn-lime !min-h-10 !px-4 text-sm">
-          ▶ Race again
-        </button>
-      </div>
+      <p className="mt-4 max-w-2xl text-xs leading-relaxed text-cream/50 md:mt-6">
+        One lap is one payment reaching the seller. The others are moving too, at their real speed: about one pixel every few minutes.
+      </p>
     </div>
   );
 }

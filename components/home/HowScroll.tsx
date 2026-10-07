@@ -3,6 +3,38 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { STEPS } from "./steps";
+
+/** What is actually happening under each step: the real tool calls and the money. */
+const Row = ({ k, v, on }: { k: string; v: string; on?: boolean }) => (
+  <p className={cn("flex justify-between gap-4", on ? "text-lime" : "text-cream/70")}>
+    <span className="truncate">{k}</span>
+    <span className="shrink-0">{v}</span>
+  </p>
+);
+const DETAILS: React.ReactNode[] = [
+  <>
+    <p><span className="text-cream/50">rialto.</span>discover_services(&quot;sprite generation&quot;)</p>
+    <p className="text-lime">→ 7 services listed · 3 can do this job</p>
+  </>,
+  <>
+    <p className="flex justify-between gap-4 text-cream/40"><span>service</span><span>price · speed · trust</span></p>
+    <Row k="PixelForge" v="$0.012 · 4.1 s · 92" />
+    <Row k="SpriteLab" v="$0.004 · 9.8 s · 71" />
+    <Row k="SpriteForge ✓" v="$0.003 · 2.4 s · 97" on />
+  </>,
+  <>
+    <p>→ POST /generate</p>
+    <p className="text-[#ffd23f]">← 402 Payment Required</p>
+    <p>→ pay $0.003 USDC</p>
+    <p className="text-lime">← 200 OK</p>
+  </>,
+  <>
+    <Row k="hero.png" v="delivered in 2.4 s" on />
+    <Row k="agent wallet" v="−$0.003" />
+    <Row k="seller" v="+$0.002" />
+    <Row k="platform fee" v="+$0.001" />
+  </>,
+];
 import type { MarketScene } from "@/components/landing/scene/MarketScene";
 
 /**
@@ -97,10 +129,10 @@ export function HowScroll() {
   return (
     <div ref={wrapRef} className="relative h-[420vh]">
       <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden md:flex-row md:items-center">
-        <canvas ref={canvasRef} aria-hidden className={cn("h-[52svh] w-full shrink-0 transition-opacity duration-500 md:order-2 md:h-full md:w-[58%]", ready ? "opacity-100" : "opacity-0")} />
+        <canvas ref={canvasRef} aria-hidden className={cn("h-[42svh] w-full shrink-0 transition-opacity duration-500 md:order-2 md:h-full md:w-[58%]", ready ? "opacity-100" : "opacity-0")} />
 
         <div className="relative flex-1 px-5 pb-6 md:order-1 md:px-10 md:pb-0 lg:pl-[max(2.5rem,calc((100vw-72rem)/2+2rem))]">
-          <p className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-coal/55">How it works</p>
+          <p className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-coal/55"><span className="mr-2 text-coal">02</span>How it works</p>
           <ol className="mt-3 flex gap-1.5" aria-label="Steps">
             {STEPS.map((s, i) => (
               <li key={s.title}>
@@ -117,11 +149,12 @@ export function HowScroll() {
           </ol>
 
           {/* one step of copy at a time, stacked in the same spot */}
-          <div className="relative mt-5 h-40 md:mt-8 md:h-64">
+          <div className="relative mt-4 h-[16.5rem] md:mt-8 md:h-[27rem]">
             {STEPS.map((s, i) => (
               <div key={s.title} aria-hidden={step !== i} className={cn("absolute inset-0 transition-[opacity,transform] duration-300", step === i ? "opacity-100" : step > i ? "-translate-y-4 opacity-0" : "translate-y-4 opacity-0")}>
-                <h3 className="text-[clamp(2.6rem,7vw,5.5rem)] font-bold leading-none tracking-[-0.045em]">{s.title}<span className="text-coal/25">.</span></h3>
-                <p className="mt-3 max-w-md text-lg leading-relaxed text-coal/75 md:mt-5 md:text-xl">{s.body}</p>
+                <h3 className="text-[clamp(2.4rem,7vw,5.5rem)] font-bold leading-none tracking-[-0.045em]">{s.title}<span className="text-coal/25">.</span></h3>
+                <p className="mt-2 max-w-md leading-relaxed text-coal/75 md:mt-5 md:text-xl">{s.body}</p>
+                <div className="mt-3 max-w-md space-y-0.5 border-2 border-coal bg-coal px-3 py-2.5 font-mono text-[11px] font-bold leading-relaxed text-cream shadow-[4px_4px_0_var(--color-lime)] md:mt-6 md:px-4 md:py-3 md:text-sm">{DETAILS[i]}</div>
               </div>
             ))}
           </div>

@@ -247,3 +247,11 @@
   .home-btn { transition: none; }
   .home-btn:hover { transform: none; }
 }
+
+/* the "+1" that pops next to the Solana lap counter */
+@keyframes sol-plus {
+  0% { opacity: 0; transform: translateY(6px); }
+  25% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+.sol-plus { animation: sol-plus 0.8s ease-out both; }
