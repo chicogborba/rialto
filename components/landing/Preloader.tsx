@@ -49,13 +49,13 @@ export function Preloader() {
       id="sy-preload"
       role="status"
       aria-label="Loading"
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-6 bg-ink transition-opacity duration-500"
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-6 bg-cream transition-opacity duration-500"
       style={{ opacity: phase === "leaving" ? 0 : 1, pointerEvents: phase === "leaving" ? "none" : "auto" }}
     >
       <Buddy mood="happy" className="w-28 md:w-36" />
-      <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-muted">Opening the market…</p>
-      <div className="h-3 w-56 border-2 border-line-hi md:w-72">
-        <div className="h-full origin-left bg-signal transition-transform duration-300" style={{ transform: `scaleX(${Math.max(0.06, done / TASKS)})` }} />
+      <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-coal/60">Opening the market…</p>
+      <div className="h-3 w-56 border-2 border-coal md:w-72">
+        <div className="h-full origin-left bg-coal transition-transform duration-300" style={{ transform: `scaleX(${Math.max(0.06, done / TASKS)})` }} />
       </div>
       <noscript>
         <style>{"#sy-preload{display:none}"}</style>

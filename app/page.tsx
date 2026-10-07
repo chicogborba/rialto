@@ -1,37 +1,21 @@
-import { BigStatement } from "@/components/landing/BigStatement";
-import { Compare } from "@/components/landing/Compare";
-import { CursorTrail } from "@/components/landing/CursorTrail";
-import { DeferredSections } from "@/components/landing/Deferred";
-import { FinalCta } from "@/components/landing/FinalCta";
-import { ImageCompare } from "@/components/landing/ImageCompare";
-import { LandingHeader } from "@/components/landing/LandingHeader";
+import { Closing, Header, Hero, HowItWorks, Pitch, Proof, Sides } from "@/components/home/Home";
 import { Preloader } from "@/components/landing/Preloader";
-import { Pitch } from "@/components/landing/Pitch";
-import { Solana } from "@/components/landing/Solana";
-import { Story } from "@/components/landing/Story";
-import { TwoWays } from "@/components/landing/TwoWays";
 import { StaticBanner } from "@/components/landing/StaticBanner";
-import { Why } from "@/components/landing/Why";
 
 export default function LandingPage() {
   return (
-    <div className="relative">
+    <div className="home min-h-screen bg-cream text-coal">
       <Preloader />
       <StaticBanner />
-      <CursorTrail />
-      <LandingHeader />
+      <Header />
       <main>
-        <Story />
+        <Hero />
         <Pitch />
-        <TwoWays />
-        <Why />
-        <Solana />
-        <Compare />
-        <ImageCompare />
-        <BigStatement />
-        <DeferredSections />
+        <HowItWorks />
+        <Proof />
+        <Sides />
       </main>
-      <FinalCta />
+      <Closing />
     </div>
   );
 }

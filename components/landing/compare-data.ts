@@ -24,8 +24,8 @@ export const SOLO = {
 /** Right: Meshy-7 output from the 3D Arena benchmark, simplified for the web (see public/models/CREDITS.md). */
 export const HIRED = {
   model: "Meshy-7",
-  triangles: 58_326, // (measured) after simplification
-  vertices: 45_072, // (measured)
+  triangles: 26_244, // (measured) after simplification
+  vertices: 22_629, // (measured)
   originalTriangles: 1_944_440, // (measured) as generated
   textured: true,
   credits: 30, // 20 mesh + 10 texture, per Meshy API pricing docs

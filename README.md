@@ -36,7 +36,7 @@ Then open:
 
 | URL | What |
 |---|---|
-| `/` | Landing page with the 3D story |
+| `/` | Landing page (pitch video, how it works, the two ways in) |
 | `/connect` | **Buyer flow**: get a key, copy the install command, see your wallet |
 | `/publish` | **Seller flow**: publish an API, test it, watch earnings, withdraw |
 | `/app` | Visual agent console (runs the decision engine with a live graph) |
@@ -123,7 +123,7 @@ The ~800-cube "market" in the landing animation is illustrative; the demo regist
 
 ```
 app/                 Next.js App Router
-  page.tsx             landing (3D story)
+  page.tsx             landing page
   connect/ publish/    the two onboarding flows
   app/                 visual console + marketplace, providers, transactions, reputation, settings
   api/                 REST + SSE: runs, wallet, agents, sellers, gw (gateway), mcp (hosted MCP), …
