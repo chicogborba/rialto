@@ -248,13 +248,23 @@
   .home-btn:hover { transform: none; }
 }
 
-/* the "+1" that pops next to the Solana lap counter */
-@keyframes sol-plus {
-  0% { opacity: 0; transform: translateY(6px); }
-  25% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-10px); }
+/* ---- the Solana race: one lap a second, everything else keeps time with it */
+@keyframes sol-lap { from { left: -16%; } to { left: 100%; } }
+@keyframes sol-tick { 0% { opacity: 1; transform: scaleY(1.5); } 35%, 100% { opacity: 0.4; transform: scaleY(1); } }
+@keyframes sol-bump { 0% { transform: scale(1.16); } 30%, 100% { transform: scale(1); } }
+@keyframes sol-step { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
+.sol-runner { position: absolute; top: 50%; translate: 0 -50%; animation: sol-lap 1s linear infinite; }
+.sol-finish { animation: sol-tick 1s linear infinite; }
+.sol-count { display: inline-block; transform-origin: right center; animation: sol-bump 1s ease-out infinite; }
+.sol-leg-a { animation: sol-step 0.16s steps(2, jump-none) infinite; }
+.sol-leg-b { animation: sol-step 0.16s steps(2, jump-none) infinite 0.08s; }
+.sol-slow .sol-leg-a, .sol-slow .sol-leg-b { animation-duration: 1.1s; }
+.sol-slow .sol-leg-b { animation-delay: 0.55s; }
+[data-paused="true"] .sol-anim { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .sol-anim { animation: none !important; }
+  .sol-runner { left: 0; }
 }
-.sol-plus { animation: sol-plus 0.8s ease-out both; }
 
 /* the "scroll" cue under the hero buttons */
 @keyframes home-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }

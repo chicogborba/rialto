@@ -109,12 +109,6 @@ export function Story() {
   return (
     <div ref={wrapRef} className="relative h-[580vh]">
       <div className="sticky top-0 flex h-[100svh] flex-col justify-center overflow-hidden">
-        {/* which part of the story this is */}
-        <p className="absolute inset-x-0 top-5 z-10 text-center md:top-7">
-          <span key={BEATS[beat].chapter} className={cn("inline-block border-2 border-coal px-3 py-1 font-mono text-xs font-bold uppercase tracking-[0.16em]", BEATS[beat].bad ? "bg-[#ff4d4d] text-white" : "bg-coal text-cream")}>
-            {BEATS[beat].chapter}
-          </span>
-        </p>
         {/* phones: a shorter stage so the scene stays big, caption right under it */}
         <div className="relative h-[56svh] shrink-0 md:h-auto md:min-h-0 md:flex-1 md:shrink">
           <canvas ref={canvasRef} aria-hidden className={cn("absolute inset-0 size-full transition-opacity duration-500", ready ? "opacity-100" : "opacity-0")} />
