@@ -28,7 +28,9 @@
   },
   "scripts": {
     "dev": "remotion studio",
-    "render": "remotion render RialtoPitch out/rialto-pitch.mp4",
+    "render": "remotion render RialtoPitch out/raw.mp4 && npm run master",
+    "master": "ffmpeg -nostdin -y -loglevel error -i out/raw.mp4 -c:v copy -af loudnorm=I=-15:TP=-1.5:LRA=11 -c:a aac -b:a 192k -movflags +faststart out/rialto-pitch.mp4",
+    "voiceover": "node --env-file=.env scripts/voiceover.mjs",
     "lint": "eslint src && tsc",
     "upgrade": "remotion upgrade"
   }

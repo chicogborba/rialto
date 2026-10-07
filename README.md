@@ -15,7 +15,7 @@ The agent decides *what* to buy, from *whom*, for *how much*; the platform runs 
 
 🔗 **Landing page preview:** https://chicogborba.github.io/rialto/ (static export; the full platform runs locally)
 
-🎬 **64-second pitch video:** on the landing page (`#pitch`); source in [`video/`](video/README.md) (Remotion + Three.js)
+🎬 **Pitch video (66 s, narrated):** on the landing page (`#pitch`); source in [`video/`](video/README.md) (Remotion + Three.js)
 
 ---
 

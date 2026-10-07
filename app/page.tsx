@@ -1,4 +1,4 @@
-import { Closing, Header, Hero, HowItWorks, Pitch, Proof, Sides } from "@/components/home/Home";
+import { Closing, Header, Hero, HowItWorks, Pitch, Proof, Sides, Solana } from "@/components/home/Home";
 import { Preloader } from "@/components/landing/Preloader";
 import { StaticBanner } from "@/components/landing/StaticBanner";
 
@@ -13,6 +13,7 @@ export default function LandingPage() {
         <Pitch />
         <HowItWorks />
         <Proof />
+        <Solana />
         <Sides />
       </main>
       <Closing />

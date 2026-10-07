@@ -16,3 +16,8 @@
 ## ../img/robot-opus.svg
 
 - Hand-written SVG by Claude Opus 5.5 in one pass, attempting the same subject. The "solo" side of the image comparison.
+
+## Pitch video (public/video, video/)
+
+- Music: "Getting it Done" by Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/).
+- Narration: generated with ElevenLabs (free plan: attribution required, not licensed for commercial use).

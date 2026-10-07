@@ -2,25 +2,30 @@ import type React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { arc, bounce, eInOut, mix3, prog, rnd } from "../lib/anim";
 import { C, mono } from "../theme";
+import { DURATIONS, wordAt } from "../timeline";
 import { Critter } from "../three/Critter";
 import { Box, Cloud, Tree } from "../three/Props";
 import { Stage } from "../three/Stage";
-import { Caption, Chip, Pop, hard } from "../ui/Ui";
+import { Chip, Narration, Pop, Sfx, hard } from "../ui/Ui";
 
-const COLLAPSE = 118;
+/** the tower falls just before the narrator says "scratch" */
+const COLLAPSE = 110;
 const CUBES = [C.cyan, C.gold, C.red, C.lime, C.purple, "#ffffff"];
 
 /** Scene 1 — the agent tries to build the thing by hand, and it falls apart. */
 export const S1Hook: React.FC = () => {
   const f = useCurrentFrame();
+  const slow = wordAt("hook", "1c", 0);
+  const pricey = wordAt("hook", "1c", 2);
   const placed = CUBES.filter((_, i) => f >= 12 + i * 16).length;
   const fallen = f >= COLLAPSE;
   const shake = fallen ? Math.sin(f * 2.4) * 0.12 * (1 - prog(f, COLLAPSE, COLLAPSE + 18)) : 0;
-  const cam = mix3([0, 3.4, 11.5], [0.9, 2.8, 9], eInOut(prog(f, 0, 210)));
+  const cam = mix3([0, 3.4, 11.5], [0.9, 2.8, 9], eInOut(prog(f, 0, DURATIONS.hook)));
   const wobble = Math.sin(f * 0.3) * 0.012 * Math.pow(placed, 1.4);
   const reaching = CUBES.reduce((m, _, i) => Math.max(m, arc(f, 6 + i * 16, 14)), 0);
-  const tokens = Math.round(prog(f, 0, 200) * 412_000).toLocaleString("en-US");
-  const minutes = Math.floor(prog(f, 0, 200) * 23);
+  const tokens = Math.round(prog(f, 0, DURATIONS.hook - 10) * 412_000).toLocaleString("en-US");
+  const minutes = Math.floor(prog(f, 0, DURATIONS.hook - 10) * 23);
+  const row = (on: boolean, at: number): React.CSSProperties => ({ padding: "2px 14px", background: on ? C.red : "transparent", color: on ? "#fff" : C.ink, scale: 1 + arc(f, at, 10, 0.12) });
 
   return (
     <AbsoluteFill>
@@ -49,8 +54,7 @@ export const S1Hook: React.FC = () => {
             const restY = 0.4 + i * 0.74;
             const drop = bounce(prog(f, start, start + 12));
             const t = Math.max(0, (f - COLLAPSE) / 30);
-            const land = Math.sqrt((2 * restY) / 9.8) + 0.05;
-            const tt = Math.min(t, land);
+            const tt = Math.min(t, Math.sqrt((2 * restY) / 9.8) + 0.05);
             const dir = rnd(i, 1) - 0.35;
             return (
               <Box
@@ -65,20 +69,17 @@ export const S1Hook: React.FC = () => {
         </group>
       </Stage>
 
-      <Pop at={4} style={{ left: 96, top: 96, transformOrigin: "left top" }}>
-        <Chip>task ▸ “make a robot hero for my game” 🎮</Chip>
+      <Pop at={4} style={{ left: 96, top: 92, transformOrigin: "left top" }}>
+        <Chip>task ▸ “make a robot hero for my game”</Chip>
       </Pop>
-      <Pop at={14} style={{ right: 96, top: 96, transformOrigin: "right top" }}>
-        <div style={{ fontFamily: mono, fontWeight: 800, fontSize: 38, background: "#fffdf7", border: `5px solid ${C.ink}`, boxShadow: hard(8), padding: "14px 24px", color: C.ink, textAlign: "right", minWidth: 380 }}>
-          <div>🔥 {tokens} tokens</div>
-          <div>⏱ {String(minutes).padStart(2, "0")} min</div>
+      <Pop at={14} style={{ right: 96, top: 92, transformOrigin: "right top" }}>
+        <div style={{ fontFamily: mono, fontWeight: 800, fontSize: 34, background: "#fffdf7", border: `4px solid ${C.ink}`, boxShadow: hard(8), padding: "12px 10px", textAlign: "right", minWidth: 330 }}>
+          <div style={row(f >= pricey, pricey)}>{tokens} tokens</div>
+          <div style={row(f >= slow, slow)}>{String(minutes).padStart(2, "0")} min</div>
         </div>
       </Pop>
-      <Pop at={COLLAPSE + 6} rotate={-7} style={{ right: 330, top: 330 }}>
-        <Chip bg={C.red} fg="#fff" size={54}>💥 from scratch</Chip>
-      </Pop>
-      <Caption from={8} to={104}>Your agent is *smart.</Caption>
-      <Caption from={112} to={206} accent={C.red}>But it builds everything *from *scratch. 😮‍💨</Caption>
+      <Sfx at={COLLAPSE} name="whip" volume={0.3} />
+      <Narration scene="hook" mark={["smart", "scratch", "slow", "expensive"]} />
     </AbsoluteFill>
   );
 };

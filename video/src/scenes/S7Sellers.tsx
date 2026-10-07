@@ -1,67 +1,75 @@
 import type React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { arc, eInOut, lerp, prog } from "../lib/anim";
+import { arc, eInOut, lerp, mix3, pop, prog, type V3 } from "../lib/anim";
 import { C, mono } from "../theme";
 import { Critter } from "../three/Critter";
-import { Box, Cloud, Coin, Stall, Tree } from "../three/Props";
+import { Box, Cloud, Coin, Parcel, Stall, Tree } from "../three/Props";
 import { Stage } from "../three/Stage";
-import { Caption, Chip, Pop, hard } from "../ui/Ui";
+import { Narration, Pop, Sfx, hard } from "../ui/Ui";
 
-const BUYERS = [C.orange, C.cyan, "#ff8fb3", C.gold, C.orange, C.mint];
-const arrive = (i: number) => 30 + i * 24;
+const BUYERS = [C.orange, C.cyan, "#ff8fb3", C.gold, C.mint, C.orange, C.cyan, "#ff8fb3"];
+/** buyer k reaches the counter and pays at this frame */
+const served = (k: number) => 34 + k * 26;
+const FRONT: V3 = [0.5, 0, 1.3];
+const STEP: V3 = [-1.55, 0, 0.22];
+const EXIT: V3 = [6.8, 0, 5.4];
+const STALL: V3 = [2.7, 0, -0.6];
+const JAR: V3 = [2.65, 1.5, -0.5];
 
 /** Scene 7 — the other side of the market: publish an API, get paid per call. */
 export const S7Sellers: React.FC = () => {
   const f = useCurrentFrame();
-  const calls = BUYERS.filter((_, i) => f >= arrive(i) + 12).length;
-  const lastHit = BUYERS.reduce((m, _, i) => m + arc(f, arrive(i) + 12, 8, 1), 0);
+  const calls = BUYERS.filter((_, i) => f >= served(i) + 11).length;
+  const sale = BUYERS.reduce((m, _, i) => m + arc(f, served(i) + 11, 8, 1), 0);
 
   return (
     <AbsoluteFill>
-      <Stage cam={[0.9, 3.7, 10.8]} target={[1.5, 1.5, 0]}>
+      <Stage cam={[0.9, 3.7, 11 - f * 0.004]} target={[1.2, 1.4, 0]}>
         <Cloud position={[-10, 9, -18]} scale={1.8} />
         <Cloud position={[10, 10, -20]} scale={2} />
         <Tree position={[-6.5, 0, -5]} scale={1.3} />
         <Tree position={[8.8, 0, -4]} scale={1.2} color="#6dbb86" />
-        <Stall position={[2.4, 0, -0.6]} color={C.purple} label="YOUR API 🛠️" />
-        <Box size={[0.6, 0.7 + lastHit * 0.08, 0.6]} position={[2.4, 1.42, -0.2]} color={C.cyan} opacity={0.55} shadow={false} />
-        {Array.from({ length: calls }).map((_, i) => (
-          <Box key={i} size={[0.44, 0.07, 0.44]} position={[2.4, 1.12 + i * 0.08, -0.2]} color={C.gold} shadow={false} />
-        ))}
-        <Critter position={[5.4, 0, 0.4]} yaw={-0.55} scale={0.9} color={C.purple} eyes="happy" armR={1} hop={lastHit * 0.35} seed={3} />
+        <group position={STALL} rotation={[0, -0.45, 0]}>
+          <Stall color={C.purple} label="YOUR API 🛠️" />
+          <Box size={[0.6, 0.7 + sale * 0.08, 0.6]} position={[0, 1.42, 0.1]} color={C.cyan} opacity={0.5} shadow={false} />
+          {Array.from({ length: calls }).map((_, i) => (
+            <Box key={i} size={[0.44, 0.07, 0.44]} position={[0, 1.12 + i * 0.08, 0.1]} color={C.gold} shadow={false} />
+          ))}
+        </group>
+        <Critter position={[5.5, 0, -0.1]} yaw={-0.6} scale={0.9} color={C.purple} eyes="happy" armR={1} hop={sale * 0.3} seed={3} />
+
+        {/* the queue: the front agent pays and leaves with its result, everyone else steps up */}
         {BUYERS.map((color, i) => {
-          const a = arrive(i);
-          if (f < a - 34 || f > a + 46) return null;
-          const inP = eInOut(prog(f, a - 34, a));
-          const outP = eInOut(prog(f, a + 14, a + 46));
-          const coin = prog(f, a + 2, a + 12);
+          const at = served(i);
+          if (f > at + 50) return null;
+          // the next in line only steps up once the one in front has walked clear
+          const stepping = BUYERS.slice(0, i).reduce((m, _, k) => m + eInOut(prog(f, served(k) + 14, served(k) + 26)), 0);
+          const slot = i - stepping;
+          const away = prog(f, at + 12, at + 50);
+          const leaving = 1 - (1 - away) * (1 - away);
+          const here: V3 = leaving > 0 ? mix3(FRONT, EXIT, leaving) : [FRONT[0] + STEP[0] * slot, 0, FRONT[2] + STEP[2] * slot];
+          if (here[0] < -8) return null;
+          const walking = (slot % 1 > 0.02 && slot % 1 < 0.98) || (leaving > 0 && leaving < 1) ? 1 : 0;
+          const coin = prog(f, at + 2, at + 12);
           return (
             <group key={i}>
-              <Critter
-                position={[lerp(lerp(-12, 0.3, inP), 10, outP), 0, lerp(1.8, 5.5, outP)]}
-                yaw={lerp(1.57, 1.1, prog(f, a - 6, a)) + outP * 0.3}
-                scale={0.62}
-                color={color}
-                walk={f < a || f > a + 14 ? 1 : 0}
-                eyes={f > a + 10 ? "happy" : "open"}
-                armR={arc(f, a, 12, 1)}
-                seed={i}
-              />
-              {f >= a + 2 && f < a + 13 ? <Coin position={[lerp(0.9, 2.4, coin), 1.2 + Math.sin(coin * Math.PI) * 1.6, lerp(1.6, -0.2, coin)]} spin={f * 0.6} rotation={[0, f * 0.5, 0]} /> : null}
+              <Critter position={here} yaw={1.05} scale={0.62} color={color} walk={walking} eyes={f > at + 8 ? "happy" : "open"} armR={arc(f, at, 12, 1)} seed={i}>
+                {f >= at + 10 ? <Parcel position={[0, 1.02, 0]} scale={Math.max(0.001, pop(f, at + 10, 8)) * 0.8} /> : null}
+              </Critter>
+              {f >= at + 2 && f < at + 12 ? <Coin position={[lerp(here[0] + 0.5, JAR[0], coin), 1.1 + (JAR[1] - 1.1) * coin + Math.sin(coin * Math.PI) * 1.4, lerp(here[2], JAR[2], coin)]} spin={f * 0.6} rotation={[0, f * 0.5, 0]} /> : null}
             </group>
           );
         })}
       </Stage>
-      <Pop at={6} style={{ left: 96, top: 96, transformOrigin: "left top" }}>
-        <Chip size={32}>you set the price · Rialto adds a small fee</Chip>
-      </Pop>
-      <Pop at={36} style={{ right: 96, top: 96, transformOrigin: "right top" }}>
-        <div style={{ fontFamily: mono, fontWeight: 800, fontSize: 46, color: C.ink, background: C.lime, border: `6px solid ${C.ink}`, boxShadow: hard(10), padding: "16px 28px", scale: 1 + lastHit * 0.06 }}>
-          📞 {calls} calls → 💰 ${(calls * 0.002).toFixed(3)}
+      <Pop at={served(0) + 8} style={{ right: 96, top: 92, transformOrigin: "right top" }}>
+        <div style={{ fontFamily: mono, fontWeight: 800, fontSize: 40, color: C.ink, background: C.lime, border: `4px solid ${C.ink}`, boxShadow: hard(8), padding: "12px 24px", scale: 1 + sale * 0.06 }}>
+          {calls} {calls === 1 ? "call" : "calls"} → ${(calls * 0.002).toFixed(3)}
         </div>
       </Pop>
-      <Caption from={8} to={86} accent={C.purple}>Got an API? *Publish it. 🛠️</Caption>
-      <Caption from={96} to={176}>Get *paid on *every *call. 💰</Caption>
+      {BUYERS.slice(0, 6).map((_, i) => (
+        <Sfx key={i} at={served(i) + 11} name="ding" volume={0.12} />
+      ))}
+      <Narration scene="sellers" accent={C.gold} mark={["api", "publish", "paid", "every", "call"]} />
     </AbsoluteFill>
   );
 };

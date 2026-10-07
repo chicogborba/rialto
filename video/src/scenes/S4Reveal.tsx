@@ -1,11 +1,12 @@
 import type React from "react";
 import { AbsoluteFill, interpolateColors, useCurrentFrame } from "remotion";
-import { arc, bounce, eInOut, eOut, lerp, mix3, prog, rnd } from "../lib/anim";
+import { arc, bounce, eInOut, eOut, lerp, mix3, pop, prog, rnd } from "../lib/anim";
 import { C, display } from "../theme";
 import { Critter } from "../three/Critter";
-import { Box, Label } from "../three/Props";
+import { CUES, DURATIONS, wordAt } from "../timeline";
+import { Box, Coin, Label } from "../three/Props";
 import { Stage } from "../three/Stage";
-import { Caption, Chip, Pop } from "../ui/Ui";
+import { Narration, Pop, Sfx } from "../ui/Ui";
 
 const PALETTE = [C.cyan, C.gold, C.lime, C.purple, C.orange, C.mint, "#ffffff", C.red];
 const COUNT = 80;
@@ -13,12 +14,13 @@ const COUNT = 80;
 /** Scene 4 — the reveal: a giant phone book lands and a whole market pours out of it. */
 export const S4Reveal: React.FC = () => {
   const f = useCurrentFrame();
+  const wallet = wordAt("reveal", "4b", 6); // "Wallet"
   const bg = interpolateColors(f, [14, 26], [C.ink, C.paper]);
   const ground = interpolateColors(f, [14, 26], ["#241c17", C.sand]);
   const drop = bounce(prog(f, 4, 34));
   const shake = Math.sin(f * 2.7) * 0.2 * (f > 14 ? 1 - prog(f, 15, 32) : 0);
   const open = eOut(prog(f, 50, 70));
-  const cam = mix3([0, 3.4, 14], [0, 3.8, 12.2], eInOut(prog(f, 0, 180)));
+  const cam = mix3([0, 3.4, 14], [0, 3.8, 12.2], eInOut(prog(f, 0, DURATIONS.reveal)));
   const cx = lerp(11, 4.2, eOut(prog(f, 62, 104)));
 
   return (
@@ -51,17 +53,18 @@ export const S4Reveal: React.FC = () => {
           );
         })}
         {f > 60 ? (
-          <Critter position={[cx, 0, 1.4]} yaw={-0.6} hop={f < 104 ? Math.abs(Math.sin(f * 0.32)) * 0.7 : arc(f, 120, 14, 0.9) + arc(f, 150, 14, 0.7)} eyes={f < 108 ? "wide" : "happy"} look={[-0.8, 0.5]} armL={f > 108 ? 1 : 0} armR={f > 108 ? 1 : 0} />
+          <Critter position={[cx, 0, 1.4]} yaw={-0.6} hop={f < 104 ? Math.abs(Math.sin(f * 0.32)) * 0.7 : arc(f, wallet - 6, 14, 0.9) + arc(f, wallet + 26, 14, 0.6)} eyes={f < 108 ? "wide" : "happy"} look={[-0.8, 0.5]} armL={f > 108 ? 1 : 0} armR={f > 108 ? 1 : 0} />
         ) : null}
+        {/* "wallet included": he flips a coin */}
+        {f >= wallet ? <Coin position={[cx + 1.3, 2.3 + Math.abs(Math.sin((f - wallet) * 0.16)) * 1.5, 1.4]} spin={f * 0.5} rotation={[0, f * 0.3, 0]} scale={Math.max(0.001, pop(f, wallet, 8)) * 1.7} /> : null}
       </Stage>
 
-      <Pop at={20} style={{ left: 0, right: 0, top: 50, display: "flex", justifyContent: "center" }}>
+      <Pop at={CUES.reveal["4a"] + 8} style={{ left: 0, right: 0, top: 50, display: "flex", justifyContent: "center" }}>
         <div style={{ fontFamily: display, fontWeight: 700, fontSize: 200, letterSpacing: -10, lineHeight: 1, color: C.ink, background: C.lime, border: `8px solid ${C.ink}`, padding: "0 44px 10px", boxShadow: `16px 16px 0 ${C.ink}` }}>RIALTO</div>
       </Pop>
-      <Pop at={46} rotate={-3} style={{ left: 0, right: 0, top: 292, display: "flex", justifyContent: "center" }}>
-        <Chip size={44}>the phone book for AI agents 📖</Chip>
-      </Pop>
-      <Caption from={86} to={176}>Every API, one call away. *Wallet *included. 💸</Caption>
+      <Sfx at={50} name="page-turn" volume={0.3} />
+      <Sfx at={wallet} name="ding" volume={0.18} />
+      <Narration scene="reveal" mark={["rialto", "phone", "book", "wallet", "included"]} />
     </AbsoluteFill>
   );
 };

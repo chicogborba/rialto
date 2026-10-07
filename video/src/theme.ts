@@ -19,4 +19,4 @@ export const C = {
   wood: "#b98a5a",
 } as const;
 
-export const FPS = 30;
+export { FPS } from "./timeline";

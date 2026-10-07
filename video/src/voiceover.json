@@ -1,0 +1,681 @@
+{
+  "1a": {
+    "text": "Your AI agent is smart.",
+    "seconds": 1.765,
+    "words": [
+      {
+        "word": "Your",
+        "start": 0,
+        "end": 0.244
+      },
+      {
+        "word": "AI",
+        "start": 0.313,
+        "end": 0.569
+      },
+      {
+        "word": "agent",
+        "start": 0.639,
+        "end": 0.906
+      },
+      {
+        "word": "is",
+        "start": 0.952,
+        "end": 1.033
+      },
+      {
+        "word": "smart.",
+        "start": 1.091,
+        "end": 1.765
+      }
+    ]
+  },
+  "1b": {
+    "text": "But it builds everything from scratch.",
+    "seconds": 2.601,
+    "words": [
+      {
+        "word": "But",
+        "start": 0,
+        "end": 0.186
+      },
+      {
+        "word": "it",
+        "start": 0.221,
+        "end": 0.29
+      },
+      {
+        "word": "builds",
+        "start": 0.337,
+        "end": 0.627
+      },
+      {
+        "word": "everything",
+        "start": 0.697,
+        "end": 1.103
+      },
+      {
+        "word": "from",
+        "start": 1.173,
+        "end": 1.312
+      },
+      {
+        "word": "scratch.",
+        "start": 1.393,
+        "end": 2.601
+      }
+    ]
+  },
+  "1c": {
+    "text": "Slow. And expensive.",
+    "seconds": 2.276,
+    "words": [
+      {
+        "word": "Slow.",
+        "start": 0,
+        "end": 0.627
+      },
+      {
+        "word": "And",
+        "start": 0.801,
+        "end": 1.033
+      },
+      {
+        "word": "expensive.",
+        "start": 1.103,
+        "end": 2.276
+      }
+    ]
+  },
+  "2a": {
+    "text": "Companies solved this ages ago.",
+    "seconds": 1.904,
+    "words": [
+      {
+        "word": "Companies",
+        "start": 0,
+        "end": 0.441
+      },
+      {
+        "word": "solved",
+        "start": 0.476,
+        "end": 0.755
+      },
+      {
+        "word": "this",
+        "start": 0.778,
+        "end": 0.94
+      },
+      {
+        "word": "ages",
+        "start": 1.022,
+        "end": 1.347
+      },
+      {
+        "word": "ago.",
+        "start": 1.382,
+        "end": 1.904
+      }
+    ]
+  },
+  "2b": {
+    "text": "Don't build it. Hire the specialist.",
+    "seconds": 2.508,
+    "words": [
+      {
+        "word": "Don't",
+        "start": 0,
+        "end": 0.279
+      },
+      {
+        "word": "build",
+        "start": 0.313,
+        "end": 0.511
+      },
+      {
+        "word": "it.",
+        "start": 0.569,
+        "end": 0.778
+      },
+      {
+        "word": "Hire",
+        "start": 1.057,
+        "end": 1.358
+      },
+      {
+        "word": "the",
+        "start": 1.393,
+        "end": 1.463
+      },
+      {
+        "word": "specialist.",
+        "start": 1.498,
+        "end": 2.508
+      }
+    ]
+  },
+  "3a": {
+    "text": "But your agent can't hire.",
+    "seconds": 2.136,
+    "words": [
+      {
+        "word": "But",
+        "start": 0,
+        "end": 0.197
+      },
+      {
+        "word": "your",
+        "start": 0.244,
+        "end": 0.372
+      },
+      {
+        "word": "agent",
+        "start": 0.43,
+        "end": 0.708
+      },
+      {
+        "word": "can't",
+        "start": 0.743,
+        "end": 0.975
+      },
+      {
+        "word": "hire.",
+        "start": 1.022,
+        "end": 2.136
+      }
+    ]
+  },
+  "3b": {
+    "text": "Every API wants a sign-up, a credit card, another key.",
+    "seconds": 3.204,
+    "words": [
+      {
+        "word": "Every",
+        "start": 0,
+        "end": 0.267
+      },
+      {
+        "word": "API",
+        "start": 0.337,
+        "end": 0.755
+      },
+      {
+        "word": "wants",
+        "start": 0.824,
+        "end": 1.022
+      },
+      {
+        "word": "a",
+        "start": 1.057,
+        "end": 1.091
+      },
+      {
+        "word": "sign-up,",
+        "start": 1.138,
+        "end": 1.579
+      },
+      {
+        "word": "a",
+        "start": 1.602,
+        "end": 1.649
+      },
+      {
+        "word": "credit",
+        "start": 1.707,
+        "end": 1.962
+      },
+      {
+        "word": "card,",
+        "start": 1.985,
+        "end": 2.299
+      },
+      {
+        "word": "another",
+        "start": 2.334,
+        "end": 2.624
+      },
+      {
+        "word": "key.",
+        "start": 2.682,
+        "end": 3.204
+      }
+    ]
+  },
+  "3c": {
+    "text": "So it comes back to bug you.",
+    "seconds": 1.858,
+    "words": [
+      {
+        "word": "So",
+        "start": 0,
+        "end": 0.163
+      },
+      {
+        "word": "it",
+        "start": 0.232,
+        "end": 0.302
+      },
+      {
+        "word": "comes",
+        "start": 0.348,
+        "end": 0.557
+      },
+      {
+        "word": "back",
+        "start": 0.615,
+        "end": 0.813
+      },
+      {
+        "word": "to",
+        "start": 0.859,
+        "end": 0.917
+      },
+      {
+        "word": "bug",
+        "start": 0.998,
+        "end": 1.207
+      },
+      {
+        "word": "you.",
+        "start": 1.265,
+        "end": 1.858
+      }
+    ]
+  },
+  "4a": {
+    "text": "Meet Rialto.",
+    "seconds": 1.393,
+    "words": [
+      {
+        "word": "Meet",
+        "start": 0,
+        "end": 0.255
+      },
+      {
+        "word": "Rialto.",
+        "start": 0.29,
+        "end": 1.393
+      }
+    ]
+  },
+  "4b": {
+    "text": "The phone book for AI agents. Wallet included.",
+    "seconds": 3.947,
+    "words": [
+      {
+        "word": "The",
+        "start": 0,
+        "end": 0.128
+      },
+      {
+        "word": "phone",
+        "start": 0.174,
+        "end": 0.406
+      },
+      {
+        "word": "book",
+        "start": 0.43,
+        "end": 0.58
+      },
+      {
+        "word": "for",
+        "start": 0.615,
+        "end": 0.708
+      },
+      {
+        "word": "AI",
+        "start": 0.778,
+        "end": 1.057
+      },
+      {
+        "word": "agents.",
+        "start": 1.126,
+        "end": 1.66
+      },
+      {
+        "word": "Wallet",
+        "start": 2.264,
+        "end": 2.601
+      },
+      {
+        "word": "included.",
+        "start": 2.635,
+        "end": 3.947
+      }
+    ]
+  },
+  "5a": {
+    "text": "Your agent finds the right service,",
+    "seconds": 2.322,
+    "words": [
+      {
+        "word": "Your",
+        "start": 0,
+        "end": 0.232
+      },
+      {
+        "word": "agent",
+        "start": 0.29,
+        "end": 0.58
+      },
+      {
+        "word": "finds",
+        "start": 0.627,
+        "end": 0.894
+      },
+      {
+        "word": "the",
+        "start": 0.929,
+        "end": 0.998
+      },
+      {
+        "word": "right",
+        "start": 1.057,
+        "end": 1.254
+      },
+      {
+        "word": "service,",
+        "start": 1.312,
+        "end": 2.322
+      }
+    ]
+  },
+  "5b": {
+    "text": "compares price, speed and reputation,",
+    "seconds": 2.461,
+    "words": [
+      {
+        "word": "compares",
+        "start": 0,
+        "end": 0.406
+      },
+      {
+        "word": "price,",
+        "start": 0.476,
+        "end": 0.871
+      },
+      {
+        "word": "speed",
+        "start": 0.929,
+        "end": 1.231
+      },
+      {
+        "word": "and",
+        "start": 1.3,
+        "end": 1.451
+      },
+      {
+        "word": "reputation,",
+        "start": 1.509,
+        "end": 2.461
+      }
+    ]
+  },
+  "5c": {
+    "text": "and pays per call, right inside the request.",
+    "seconds": 2.926,
+    "words": [
+      {
+        "word": "and",
+        "start": 0,
+        "end": 0.174
+      },
+      {
+        "word": "pays",
+        "start": 0.244,
+        "end": 0.499
+      },
+      {
+        "word": "per",
+        "start": 0.569,
+        "end": 0.697
+      },
+      {
+        "word": "call,",
+        "start": 0.766,
+        "end": 1.161
+      },
+      {
+        "word": "right",
+        "start": 1.312,
+        "end": 1.521
+      },
+      {
+        "word": "inside",
+        "start": 1.556,
+        "end": 1.892
+      },
+      {
+        "word": "the",
+        "start": 1.916,
+        "end": 1.985
+      },
+      {
+        "word": "request.",
+        "start": 2.02,
+        "end": 2.926
+      }
+    ]
+  },
+  "5d": {
+    "text": "No sign-up. No card. Just the result.",
+    "seconds": 3.019,
+    "words": [
+      {
+        "word": "No",
+        "start": 0,
+        "end": 0.163
+      },
+      {
+        "word": "sign-up.",
+        "start": 0.232,
+        "end": 0.743
+      },
+      {
+        "word": "No",
+        "start": 0.894,
+        "end": 1.057
+      },
+      {
+        "word": "card.",
+        "start": 1.126,
+        "end": 1.556
+      },
+      {
+        "word": "Just",
+        "start": 1.834,
+        "end": 2.055
+      },
+      {
+        "word": "the",
+        "start": 2.09,
+        "end": 2.159
+      },
+      {
+        "word": "result.",
+        "start": 2.206,
+        "end": 3.019
+      }
+    ]
+  },
+  "6a": {
+    "text": "A cheaper, faster agent, that does better work.",
+    "seconds": 3.111,
+    "words": [
+      {
+        "word": "A",
+        "start": 0,
+        "end": 0.128
+      },
+      {
+        "word": "cheaper,",
+        "start": 0.197,
+        "end": 0.58
+      },
+      {
+        "word": "faster",
+        "start": 0.627,
+        "end": 1.022
+      },
+      {
+        "word": "agent,",
+        "start": 1.091,
+        "end": 1.463
+      },
+      {
+        "word": "that",
+        "start": 1.591,
+        "end": 1.823
+      },
+      {
+        "word": "does",
+        "start": 1.881,
+        "end": 2.055
+      },
+      {
+        "word": "better",
+        "start": 2.101,
+        "end": 2.31
+      },
+      {
+        "word": "work.",
+        "start": 2.357,
+        "end": 3.111
+      }
+    ]
+  },
+  "6b": {
+    "text": "One key. One wallet. Your spending limit.",
+    "seconds": 4.505,
+    "words": [
+      {
+        "word": "One",
+        "start": 0,
+        "end": 0.267
+      },
+      {
+        "word": "key.",
+        "start": 0.313,
+        "end": 0.697
+      },
+      {
+        "word": "One",
+        "start": 1.138,
+        "end": 1.37
+      },
+      {
+        "word": "wallet.",
+        "start": 1.416,
+        "end": 1.869
+      },
+      {
+        "word": "Your",
+        "start": 2.566,
+        "end": 2.752
+      },
+      {
+        "word": "spending",
+        "start": 2.786,
+        "end": 3.123
+      },
+      {
+        "word": "limit.",
+        "start": 3.181,
+        "end": 4.505
+      }
+    ]
+  },
+  "7a": {
+    "text": "Got an API? Publish it.",
+    "seconds": 1.95,
+    "words": [
+      {
+        "word": "Got",
+        "start": 0,
+        "end": 0.221
+      },
+      {
+        "word": "an",
+        "start": 0.255,
+        "end": 0.302
+      },
+      {
+        "word": "API?",
+        "start": 0.36,
+        "end": 0.894
+      },
+      {
+        "word": "Publish",
+        "start": 0.952,
+        "end": 1.324
+      },
+      {
+        "word": "it.",
+        "start": 1.382,
+        "end": 1.95
+      }
+    ]
+  },
+  "7b": {
+    "text": "And get paid on every call.",
+    "seconds": 1.625,
+    "words": [
+      {
+        "word": "And",
+        "start": 0,
+        "end": 0.151
+      },
+      {
+        "word": "get",
+        "start": 0.209,
+        "end": 0.325
+      },
+      {
+        "word": "paid",
+        "start": 0.372,
+        "end": 0.557
+      },
+      {
+        "word": "on",
+        "start": 0.592,
+        "end": 0.662
+      },
+      {
+        "word": "every",
+        "start": 0.743,
+        "end": 0.987
+      },
+      {
+        "word": "call.",
+        "start": 1.045,
+        "end": 1.625
+      }
+    ]
+  },
+  "8a": {
+    "text": "Rialto. Agents that hire.",
+    "seconds": 2.415,
+    "words": [
+      {
+        "word": "Rialto.",
+        "start": 0,
+        "end": 0.778
+      },
+      {
+        "word": "Agents",
+        "start": 1.103,
+        "end": 1.498
+      },
+      {
+        "word": "that",
+        "start": 1.533,
+        "end": 1.66
+      },
+      {
+        "word": "hire.",
+        "start": 1.718,
+        "end": 2.415
+      }
+    ]
+  }
+}

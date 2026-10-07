@@ -24,7 +24,7 @@ export function PitchVideo() {
           className="group absolute inset-0 flex items-end justify-center pb-[6%]"
         >
           <span className="home-btn home-btn-lime text-base md:text-xl">
-            <span aria-hidden>▶</span> Watch the 64-second pitch
+            <span aria-hidden>▶</span> Watch the pitch · 66 s
           </span>
         </button>
       )}

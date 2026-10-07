@@ -5,7 +5,7 @@ import { C, display, mono } from "../theme";
 import { Critter, FACE_Z } from "../three/Critter";
 import { Clipboard, Cloud, Coin, Confetti, Magnifier, Parcel, Stall } from "../three/Props";
 import { Stage } from "../three/Stage";
-import { Caption, Chip, Pop, hard } from "../ui/Ui";
+import { Chip, Narration, Pop, Sfx, hard } from "../ui/Ui";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const STALLS = ["🌦 WEATHER", "🔎 SEARCH", "🎨 PIXELFORGE", "📈 STOCKS", "🖼 SPRITELAB", "🗺 MAPS", "🎮 SPRITEFORGE", "🎙 VOICE", "🧊 MESH"];
@@ -52,8 +52,8 @@ export const S5How: React.FC = () => {
     [366, [0.9, 1.7, 0.5]],
   ]);
   const coin = prog(f, 246, 276);
-  const parcel = prog(f, 346, 378);
-  const party = prog(f, 384, 400);
+  const parcel = prog(f, 356, 388);
+  const party = prog(f, 396, 412);
   const yaw = step === 0 ? Math.sin(f * 0.09) * 0.9 : step === 1 ? -0.3 + arc(f, 150, 20, 0.5) : step === 2 ? lerp(-0.3, 0.75, prog(f, 228, 242)) : lerp(0.75, 0.25, prog(f, 338, 352));
 
   return (
@@ -77,19 +77,19 @@ export const S5How: React.FC = () => {
         <Critter
           position={[0, 0, 0.6]}
           yaw={yaw}
-          eyes={step === 3 && f > 378 ? "happy" : f > 204 && f < 228 ? "happy" : step === 0 && f % 50 < 6 ? "wide" : "open"}
+          eyes={step === 3 && f > 392 ? "happy" : f > 204 && f < 228 ? "happy" : step === 0 && f % 50 < 6 ? "wide" : "open"}
           look={step === 1 ? [-0.4, -0.6] : [0, 0.2]}
-          hop={arc(f, 204, 14, 0.9) + (step === 3 && f > 384 ? Math.abs(Math.sin(f * 0.22)) * 0.6 : 0)}
-          armL={step === 3 && f > 378 ? 1 : 0}
-          armR={step === 0 ? 0.5 : step === 2 ? arc(f, 238, 18, 1) : step === 3 && f > 378 ? 1 : 0}
+          hop={arc(f, 204, 14, 0.9) + (step === 3 && f > 396 ? Math.abs(Math.sin(f * 0.22)) * 0.6 : 0)}
+          armL={step === 3 && f > 392 ? 1 : 0}
+          armR={step === 0 ? 0.5 : step === 2 ? arc(f, 238, 18, 1) : step === 3 && f > 392 ? 1 : 0}
         >
           {step === 0 ? <Magnifier position={[0.52 + Math.sin(f * 0.09) * 0.05, 0.17, FACE_Z + 0.3]} scale={pop(f, 4, 10)} /> : null}
           {step === 1 ? <Clipboard checked={prog(f, 128, 198) * 5} position={[-0.5, -0.2 - (1 - pop(f, 114, 10)) * 1.2, FACE_Z + 0.4]} rotation={[-0.45, 0.35, 0.08]} scale={0.9} /> : null}
         </Critter>
 
         {f >= 246 && f < 278 ? <Coin position={[lerp(1.2, w.x, coin), lerp(1.8, 1.5, coin) + Math.sin(coin * Math.PI) * 3.2, lerp(0.6, w.z, coin)]} spin={f * 0.5} scale={1.5} rotation={[0, f * 0.4, 0]} /> : null}
-        {f >= 346 && f < 386 ? (
-          <Parcel position={[lerp(w.x, 1.9, parcel), lerp(1.5, 0.5, parcel) + Math.sin(parcel * Math.PI) * 3.6, lerp(w.z, 1.2, parcel)]} rotation={[parcel * 4, parcel * 6, 0]} scale={1.2 * (1 - prog(f, 380, 386))} />
+        {f >= 356 && f < 396 ? (
+          <Parcel position={[lerp(w.x, 1.9, parcel), lerp(1.5, 0.5, parcel) + Math.sin(parcel * Math.PI) * 3.6, lerp(w.z, 1.2, parcel)]} rotation={[parcel * 4, parcel * 6, 0]} scale={1.2 * (1 - prog(f, 390, 396))} />
         ) : null}
         <Confetti t={f / fps} amount={party} position={[0, 0, 1]} />
       </Stage>
@@ -104,7 +104,7 @@ export const S5How: React.FC = () => {
 
       {/* 01 — the search */}
       <Pop at={10} out={100} style={{ left: 0, right: 0, top: 210, display: "flex", justifyContent: "center" }}>
-        <div style={{ fontFamily: mono, fontWeight: 800, fontSize: 52, background: "#fffdf7", border: `6px solid ${C.ink}`, boxShadow: hard(10), padding: "18px 36px", color: C.ink }}>🔎 “game-ready robot hero”</div>
+        <div style={{ fontFamily: mono, fontWeight: 800, fontSize: 52, background: "#fffdf7", border: `4px solid ${C.ink}`, boxShadow: hard(8), padding: "16px 32px", color: C.ink }}>🔎 “game-ready robot hero”</div>
       </Pop>
 
       {/* 02 — the three finalists */}
@@ -176,24 +176,20 @@ export const S5How: React.FC = () => {
           ))}
         </div>
       ) : null}
-      <Pop at={236} out={336} style={{ right: 96, top: 200, transformOrigin: "right top" }}>
-        <Chip size={46} bg={f >= 276 ? C.lime : "#fffdf7"} fg={C.ink} style={{ boxShadow: hard(8) }}>
-          👛 ${f >= 276 ? "0.997" : "1.000"}
-        </Chip>
-      </Pop>
 
       {/* 04 — the result */}
-      <Pop at={384} rotate={3} style={{ right: 150, top: 190, transformOrigin: "center" }}>
+      <Pop at={396} rotate={3} style={{ right: 150, top: 190, transformOrigin: "center" }}>
         <div style={{ background: "#fffdf7", border: `6px solid ${C.ink}`, boxShadow: hard(14), padding: 16 }}>
           <Img src={staticFile("result.jpg")} style={{ width: 400, height: 400, objectFit: "cover", display: "block", border: `4px solid ${C.ink}` }} />
           <div style={{ fontFamily: mono, fontWeight: 800, fontSize: 30, color: C.ink, marginTop: 12 }}>hero.png ✅ $0.003 · 2.4s</div>
         </div>
       </Pop>
 
-      <Caption from={16} to={104}>It *finds the right service…</Caption>
-      <Caption from={120} to={224} accent={C.cyan}>…*compares price, speed and reputation…</Caption>
-      <Caption from={238} to={334} accent={C.gold}>…and *pays *per *call, inside the request.</Caption>
-      <Caption from={390} to={446}>No sign-up. No card. *Just *the *result. ✨</Caption>
+      <Sfx at={204} name="ding" volume={0.16} />
+      <Sfx at={246} name="whip" volume={0.2} />
+      <Sfx at={276} name="ding" volume={0.2} />
+      <Sfx at={396} name="ding" volume={0.24} />
+      <Narration scene="how" mark={["finds", "compares", "pays", "per", "call", "result"]} />
     </AbsoluteFill>
   );
 };

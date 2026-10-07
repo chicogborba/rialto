@@ -8,6 +8,7 @@ import { HeroCritter } from "./HeroCritter";
 import { HowScroll } from "./HowScroll";
 import { STEPS } from "./steps";
 import { PitchVideo } from "./PitchVideo";
+import { SolanaRace } from "./SolanaRace";
 
 const WRAP = "mx-auto w-full max-w-6xl px-5 md:px-8";
 const KICKER = "font-mono text-xs font-bold uppercase tracking-[0.18em] text-coal/55";
@@ -44,6 +45,7 @@ export function Header() {
       </Link>
       <nav aria-label="Primary" className="flex items-center gap-6 text-sm font-medium">
         <a href="#how" className="hidden text-coal/70 hover:text-coal md:block">How it works</a>
+        <a href="#solana" className="hidden text-coal/70 hover:text-coal md:block">Why Solana</a>
         <a href="#start" className="hidden text-coal/70 hover:text-coal md:block">Get started</a>
         <a href={REPO_URL} className="hidden text-coal/70 hover:text-coal sm:block">GitHub</a>
         <Link href={flowHref("/connect")} className="home-btn home-btn-ink !min-h-10 !px-4 text-sm">Connect</Link>
@@ -138,6 +140,40 @@ export function Proof() {
       <p className="mt-5 max-w-3xl text-xs leading-relaxed text-coal/55">
         Real outputs, not routed through Rialto. Right: Meshy-7 from the 3D Arena benchmark, simplified for the web; {HIRED.credits} API credits ≈ {fmtUsd(HIRED.costUsd)}. Left: three.js code written by {SOLO.model} in one pass; cost is output tokens only.
       </p>
+    </section>
+  );
+}
+
+const SOLANA_FACTS = [
+  { value: "≈ 400 ms", label: "Solana block time. A payment confirms in about a second and is final in about thirteen." },
+  { value: "< 1¢", label: "Network fee per payment: typically a fraction of a cent, whatever the amount." },
+  { value: "100×", label: "A card's 30¢ minimum fee is a hundred times the price of a $0.003 API call." },
+] as const;
+
+export function Solana() {
+  return (
+    <section id="solana" aria-labelledby="solana-title" className="scroll-mt-6 bg-coal py-16 text-cream md:py-28">
+      <div className={WRAP}>
+        <p className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-cream/55">Why Solana</p>
+        <h2 id="solana-title" className={H2}>
+          Paid before the others <span className="home-sol">leave the start line.</span>
+        </h2>
+        <p className="mt-4 max-w-2xl text-lg leading-relaxed text-cream/75">An API call that costs a third of a cent only works on a payment rail that is faster and cheaper than the call itself.</p>
+        <div className="mt-10">
+          <SolanaRace />
+        </div>
+        <dl className="mt-10 grid gap-8 md:mt-14 md:grid-cols-3">
+          {SOLANA_FACTS.map((fact) => (
+            <div key={fact.value} className="border-l-2 border-cream/25 pl-5">
+              <dt className="tnum home-sol inline-block font-mono text-4xl font-bold md:text-5xl">{fact.value}</dt>
+              <dd className="mt-2 leading-relaxed text-cream/70">{fact.label}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-8 max-w-3xl text-xs leading-relaxed text-cream/45">
+          Typical published figures for when the seller actually has the money (card payouts, ACH, SWIFT); they vary by provider and country. Rialto is designed for x402 payments in USDC on Solana; in this build payments are simulated.
+        </p>
+      </div>
     </section>
   );
 }

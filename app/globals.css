@@ -219,6 +219,12 @@
 /* ---- landing page (light theme) */
 .home :focus-visible { outline-color: var(--color-coal); }
 .home ::selection { background: var(--color-lime); color: var(--color-coal); }
+.home-sol {
+  background: linear-gradient(90deg, #9945ff, #14f195);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 .home-mark { background: linear-gradient(transparent 58%, var(--color-lime) 58%); }
 .home-btn {
   display: inline-flex;

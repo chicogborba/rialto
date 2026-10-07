@@ -207,3 +207,51 @@ export const Confetti: React.FC<G & { t: number; amount: number; count?: number 
     </group>
   );
 };
+
+/** Street clock on a pole. `minutes` drives both hands, so time can visibly fly. */
+export const StreetClock: React.FC<G & { minutes: number }> = ({ minutes, ...g }) => {
+  const minute = -(minutes / 60) * Math.PI * 2;
+  const dark = "#3a332c";
+  return (
+    <group {...g}>
+      <Box size={[0.62, 0.18, 0.62]} position={[0, 0.09, 0]} color={dark} />
+      <Box size={[0.18, 3.3, 0.18]} position={[0, 1.8, 0]} color={dark} />
+      <group position={[0, 4.25, 0]}>
+        <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
+          <cylinderGeometry args={[1, 1, 0.36, 28]} />
+          <meshStandardMaterial color={dark} flatShading />
+        </mesh>
+        <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.02]}>
+          <cylinderGeometry args={[0.84, 0.84, 0.36, 28]} />
+          <meshBasicMaterial color="#fffdf7" />
+        </mesh>
+        {Array.from({ length: 12 }).map((_, i) => {
+          const a = (i / 12) * Math.PI * 2;
+          const major = i % 3 === 0;
+          return (
+            <mesh key={i} position={[Math.sin(a) * 0.7, Math.cos(a) * 0.7, 0.205]} rotation={[0, 0, -a]}>
+              <boxGeometry args={[major ? 0.07 : 0.04, major ? 0.18 : 0.1, 0.01]} />
+              <meshBasicMaterial color={C.ink} />
+            </mesh>
+          );
+        })}
+        <group rotation={[0, 0, minute / 12]} position={[0, 0, 0.215]}>
+          <mesh position={[0, 0.2, 0]}>
+            <boxGeometry args={[0.1, 0.44, 0.01]} />
+            <meshBasicMaterial color={C.ink} />
+          </mesh>
+        </group>
+        <group rotation={[0, 0, minute]} position={[0, 0, 0.225]}>
+          <mesh position={[0, 0.3, 0]}>
+            <boxGeometry args={[0.06, 0.64, 0.01]} />
+            <meshBasicMaterial color={C.red} />
+          </mesh>
+        </group>
+        <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.23]}>
+          <cylinderGeometry args={[0.08, 0.08, 0.03, 12]} />
+          <meshBasicMaterial color={C.ink} />
+        </mesh>
+      </group>
+    </group>
+  );
+};

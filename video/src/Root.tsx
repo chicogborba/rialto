@@ -8,14 +8,14 @@ import { S5How } from "./scenes/S5How";
 import { S6Result } from "./scenes/S6Result";
 import { S7Sellers } from "./scenes/S7Sellers";
 import { S8Cta } from "./scenes/S8Cta";
-import { FPS } from "./theme";
-import { DURATIONS, RialtoPitch, TOTAL } from "./Video";
+import { DURATIONS, FPS, TOTAL } from "./timeline";
+import { RialtoPitch } from "./Video";
 
 const size = { width: 1920, height: 1080, fps: FPS };
 
 export const RemotionRoot: React.FC = () => (
   <>
-    <Composition id="RialtoPitch" component={RialtoPitch} durationInFrames={TOTAL} {...size} />
+    <Composition id="RialtoPitch" component={RialtoPitch} durationInFrames={TOTAL} defaultProps={{ narration: true, music: true, sfx: true }} {...size} />
     <Folder name="Scenes">
       <Composition id="S1-Hook" component={S1Hook} durationInFrames={DURATIONS.hook} {...size} />
       <Composition id="S2-BuildOrHire" component={S2BuildOrHire} durationInFrames={DURATIONS.buildOrHire} {...size} />
