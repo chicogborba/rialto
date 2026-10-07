@@ -20,6 +20,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Separate Remotion project with its own lint setup.
+    "video/**",
+    ".agents/**",
+    ".claude/**",
   ]),
 ]);
 

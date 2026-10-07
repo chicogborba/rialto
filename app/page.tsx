@@ -6,6 +6,7 @@ import { FinalCta } from "@/components/landing/FinalCta";
 import { ImageCompare } from "@/components/landing/ImageCompare";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LiveDemo } from "@/components/landing/LiveDemo";
+import { Pitch } from "@/components/landing/Pitch";
 import { Solana } from "@/components/landing/Solana";
 import { Story } from "@/components/landing/Story";
 import { TwoWays } from "@/components/landing/TwoWays";
@@ -20,6 +21,7 @@ export default function LandingPage() {
       <LandingHeader />
       <main>
         <Story />
+        <Pitch />
         <TwoWays />
         <Why />
         <Solana />

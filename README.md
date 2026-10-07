@@ -15,6 +15,8 @@ The agent decides *what* to buy, from *whom*, for *how much*; the platform runs 
 
 🔗 **Landing page preview:** https://chicogborba.github.io/rialto/ (static export; the full platform runs locally)
 
+🎬 **64-second pitch video:** on the landing page (`#pitch`); source in [`video/`](video/README.md) (Remotion + Three.js)
+
 ---
 
 ## Quickstart
@@ -139,6 +141,7 @@ prisma/              schema + seed data (single source of truth for demo provide
 mcp/                 stdio MCP server
 scripts/             e2e, recorders, Pages build
 tests/               vitest (engine, billing, security, templates)
+video/               pitch video source (separate Remotion project)
 docs/                architecture + deployment + original plan
 ```
 

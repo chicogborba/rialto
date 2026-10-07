@@ -46,3 +46,7 @@ prisma/*.db-journal
 
 .pages-stash/
 out/
+
+# third-party agent skills (reinstall: npx skills add remotion-dev/skills)
+.agents/
+.claude/skills
