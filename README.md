@@ -36,7 +36,7 @@ Then open:
 
 | URL | What |
 |---|---|
-| `/` | Landing page (pitch video, how it works, the two ways in) |
+| `/` | Landing page: the pitch as a 3D scroll story, the video, the Solana race |
 | `/connect` | **Buyer flow**: get a key, copy the install command, see your wallet |
 | `/publish` | **Seller flow**: publish an API, test it, watch earnings, withdraw |
 | `/app` | Visual agent console (runs the decision engine with a live graph) |

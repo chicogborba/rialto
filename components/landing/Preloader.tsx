@@ -3,27 +3,22 @@
 import { useEffect, useState } from "react";
 import { heroReady } from "@/lib/client/boot";
 import { Buddy } from "./Buddy";
-import { HIRED } from "./compare-data";
 
 /** Longest we keep the page covered: a slow connection should still get in. */
 const MAX_WAIT_MS = 8000;
-const TASKS = 4;
+const TASKS = 3;
 
 /**
- * Covers the page until the 3D is actually ready: hero scene on screen, fonts in, and the comparison
- * model and its code already downloaded, so nothing pops in while you scroll.
+ * Covers the page until the 3D is actually ready: hero scene on screen, fonts in, and the story
+ * scene's code already downloaded, so nothing pops in while you scroll.
  */
 export function Preloader() {
   const [done, setDone] = useState(0);
   const [phase, setPhase] = useState<"loading" | "leaving" | "gone">("loading");
 
   useEffect(() => {
-    const tasks: Promise<unknown>[] = [
-      heroReady,
-      document.fonts.ready,
-      fetch(HIRED.url).then((r) => r.arrayBuffer()),
-      import("./scene/DuoScene"),
-    ].map((task) => task.catch(() => undefined));
+    // the story scene's code is warmed here too, so it is ready by the time you scroll to it
+    const tasks: Promise<unknown>[] = [heroReady, document.fonts.ready, import("./scene/MarketScene")].map((task) => task.catch(() => undefined));
     let finished = false;
     const finish = () => {
       if (finished) return;

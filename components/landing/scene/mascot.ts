@@ -26,6 +26,8 @@ export interface MascotState {
   pay: number;
   /** 0..1 celebrating the delivery */
   party: number;
+  /** 0..1 let down: worried brows, slumped (optional) */
+  sad?: number;
 }
 
 const ORANGE = 0xee7a35;
@@ -59,6 +61,8 @@ function shadedBox(w: number, h: number, d: number, hex: number): THREE.Mesh {
 
 interface Eye {
   open: THREE.Mesh;
+  /** slanted brow shown when he is sad */
+  brow: THREE.Mesh;
   /** the > or < chevron shown when he is happy */
   squint: THREE.Group;
   side: number;
@@ -92,6 +96,7 @@ export class Mascot {
   private think = 0;
   private pay = 0;
   private party = 0;
+  private sad = 0;
   private yaw = 0;
   private yawVel = 0;
   private lean = 0;
@@ -114,8 +119,11 @@ export class Mascot {
       }
       squint.position.set(side * 0.47, 0.13, FACE);
       squint.visible = false;
-      this.eyes.push({ open, squint, side });
-      this.body.add(open, squint);
+      const brow = box(0.36, 0.07, 0.06, INK);
+      brow.rotation.z = -side * 0.42;
+      brow.visible = false;
+      this.eyes.push({ open, brow, squint, side });
+      this.body.add(open, brow, squint);
 
       // stub arm, hinged where it meets the body
       const pivot = new THREE.Group();
@@ -204,8 +212,9 @@ export class Mascot {
     this.think = ease(this.think, s.think, 7, dt);
     this.pay = ease(this.pay, s.pay, 8, dt);
     this.party = ease(this.party, s.party, 6, dt);
-    const { scout, think, pay, party } = this;
-    const busy = Math.max(scout, think, pay, party, s.hop > 0 && s.hop < 1 ? 1 : 0);
+    this.sad = ease(this.sad, s.sad ?? 0, 7, dt);
+    const { scout, think, pay, party, sad } = this;
+    const busy = Math.max(scout, think, pay, party, sad, s.hop > 0 && s.hop < 1 ? 1 : 0);
     const idle = 1 - busy;
 
     // ---- hops: one big one on the decision, a string of small ones at the party
@@ -266,28 +275,30 @@ export class Mascot {
     // ---- body
     const breathe = sin(t * 2.1) * 0.018;
     const sway = sin(t * 1.1) * 0.05 * idle; // weight shifting foot to foot
-    this.body.position.set(sway, sin(t * 2.1) * 0.035 + hop - landing * 0.5, 0);
+    this.body.position.set(sway, sin(t * 2.1) * 0.035 + hop - landing * 0.5 - sad * 0.05, 0);
     this.body.scale.set(
       1 - breathe + landing * 0.7 - hop * 0.04 + pokeSquash * 0.25,
-      1 + breathe - landing + hop * 0.08 - pokeSquash * 0.35,
+      1 + breathe - landing + hop * 0.08 - pokeSquash * 0.35 - sad * 0.1,
       1 - breathe + landing * 0.7 + pokeSquash * 0.25,
     );
     this.body.rotation.y = this.yaw + pokeSpin;
     this.body.rotation.z = pokeShake + this.lean + sway * 0.6 + sin(t * 1.3) * 0.07 * think + sin(t * 31) * 0.015 * pay;
-    this.body.rotation.x = -0.14 * scout + 0.16 * think * (1 - glance) - 0.2 * pay + sin(t * 2.1) * 0.02;
+    this.body.rotation.x = -0.14 * scout + 0.16 * think * (1 - glance) - 0.2 * pay + 0.13 * sad + sin(t * 2.1) * 0.02;
 
     // ---- eyes
     const blink = t % 3.4 < 0.13 || (t + 1.7) % 7.3 < 0.11;
     const happy = party > 0.4 || decision > 0.1 || pokeP >= 0;
     for (const eye of this.eyes) {
       const x = eye.side * 0.47 + s.mx * 0.06 * idle + sin(t * 1.9) * 0.06 * scout - 0.07 * think * (1 - glance);
-      const y = 0.13 + scout * 0.06 - think * 0.09 * (1 - glance) + glance * 0.05;
+      const y = 0.13 + scout * 0.06 - think * 0.09 * (1 - glance) + glance * 0.05 - sad * 0.05;
       eye.open.visible = !happy;
       eye.squint.visible = happy;
       eye.open.position.set(x, y, FACE);
       eye.squint.position.set(x, y, FACE);
+      eye.brow.visible = sad > 0.3 && !happy;
+      eye.brow.position.set(x, y + 0.29, FACE);
       // one eye narrows while he reads (a skeptical look); both narrow as he pays
-      eye.open.scale.y = blink ? 0.1 : 1 - (eye.side > 0 ? think * 0.4 * (1 - glance) : 0) - pay * 0.25;
+      eye.open.scale.y = blink ? 0.1 : 1 - (eye.side > 0 ? think * 0.4 * (1 - glance) : 0) - pay * 0.25 - sad * 0.28;
     }
 
     // ---- arms

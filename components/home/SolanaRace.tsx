@@ -94,10 +94,10 @@ const GLOBE: Sprite = {
 const DAY = 86_400;
 /** seconds for the money to reach the seller: one lap of the track */
 const LANES = [
-  { name: "Solana", note: "USDC", sprite: SOLANA, lap: 1, fee: "fee under 1¢", fps: 16 },
-  { name: "Card", note: "Visa, Mastercard", sprite: CARD, lap: 2 * DAY, fee: "2.9% + 30¢", fps: 3 },
-  { name: "Bank transfer", note: "ACH", sprite: BANK, lap: 3 * DAY, fee: "≈ 0.8%", fps: 2.5 },
-  { name: "International wire", note: "SWIFT", sprite: GLOBE, lap: 5 * DAY, fee: "$15–50", fps: 2 },
+  { name: "Solana", sprite: SOLANA, lap: 1, fps: 16 },
+  { name: "Card", sprite: CARD, lap: 2 * DAY, fps: 3 },
+  { name: "Bank transfer", sprite: BANK, lap: 3 * DAY, fps: 2.5 },
+  { name: "Wire", sprite: GLOBE, lap: 5 * DAY, fps: 2 },
 ] as const;
 const SPRITE_W = 20;
 
@@ -206,18 +206,15 @@ export function SolanaRace() {
 
   return (
     <div ref={wrapRef} className="border-2 border-cream/25 bg-[#120e0b] p-3 md:p-6">
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-        <div>
-          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-cream/55 md:text-xs">Payments settled since you got here</p>
-          <p className="mt-1 flex items-baseline gap-3 font-mono font-bold">
-            <span ref={countRef} className="home-sol tnum text-6xl leading-none md:text-8xl">0×</span>
-            <span ref={plusRef} aria-hidden className="text-xl text-lime opacity-0 md:text-2xl">+1</span>
-          </p>
-        </div>
-        <p className="font-mono text-[11px] font-bold uppercase leading-relaxed tracking-[0.12em] text-cream/55 md:text-right md:text-xs">
-          Real time, no tricks <span className="text-cream/30">·</span> on this page for <span ref={elapsedRef} className="tnum text-cream">00:00</span>
+      <div className="flex items-end justify-between gap-4 font-mono font-bold uppercase">
+        <p className="flex items-baseline gap-3">
+          <span ref={countRef} className="home-sol tnum text-6xl leading-none md:text-8xl">0×</span>
+          <span ref={plusRef} aria-hidden className="text-xl text-lime opacity-0 md:text-2xl">+1</span>
+        </p>
+        <p className="text-right text-[11px] leading-relaxed tracking-[0.12em] text-cream/55 md:text-xs">
+          real time · <span ref={elapsedRef} className="tnum text-cream">00:00</span>
           <br />
-          Card, bank and wire so far: <span className="text-cream">0</span>
+          the others: <span className="text-cream">0</span>
         </p>
       </div>
 
@@ -225,20 +222,8 @@ export function SolanaRace() {
         {LANES.map((lane, i) => (
           <li key={lane.name}>
             <div className="flex items-baseline justify-between gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.08em] md:text-sm">
-              <p>
-                <span className={i === 0 ? "home-sol" : "text-cream"}>{lane.name}</span> <span className="text-cream/40">{lane.note}</span>
-              </p>
-              <p className={cn("text-right", i === 0 ? "text-lime" : "text-cream/75")}>
-                {i === 0 ? (
-                  "a lap a second"
-                ) : (
-                  <>
-                    <span className="hidden text-cream/45 sm:inline">first lap in </span>
-                    <span ref={(el) => { etas.current[i] = el; }} className="tnum">{countdown(lane.lap)}</span>
-                  </>
-                )}{" "}
-                <span className="text-cream/45">· {lane.fee}</span>
-              </p>
+              <p className={i === 0 ? "home-sol" : "text-cream"}>{lane.name}</p>
+              <p className={cn("tnum", i === 0 ? "text-lime" : "text-cream/60")}>{i === 0 ? "1 s" : <span ref={(el) => { etas.current[i] = el; }}>{countdown(lane.lap)}</span>}</p>
             </div>
             <svg viewBox={`0 0 ${units} 22`} shapeRendering="crispEdges" aria-hidden className="mt-1 block w-full bg-[#1d1712]">
               {Array.from({ length: Math.floor(units / 4) }).map((_, k) => (
@@ -268,9 +253,7 @@ export function SolanaRace() {
           </li>
         ))}
       </ol>
-      <p className="mt-4 max-w-2xl text-xs leading-relaxed text-cream/50 md:mt-6">
-        One lap is one payment reaching the seller. The others are moving too, at their real speed: about one pixel every few minutes.
-      </p>
+      <p className="mt-4 font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-cream/45 md:mt-6 md:text-xs">One lap = one payment reaching the seller</p>
     </div>
   );
 }
