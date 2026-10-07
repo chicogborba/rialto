@@ -565,3 +565,19 @@
 @media (prefers-reduced-motion: reduce) {
   .sy-burst { animation: none; opacity: 0.9; transform: translate(-50%, -30px); }
 }
+
+/* ---- scroll-in entrances (CSS only; the JS just flips data-in once) */
+.sy-rise {
+  transform: translateY(36px) skewY(2deg);
+  transition: transform 0.7s cubic-bezier(0.2, 1.2, 0.3, 1);
+}
+.sy-rise[data-in="true"] { transform: none; }
+.sy-card-in {
+  transform: translateY(48px) rotate(var(--r, 0deg));
+  transition: transform 0.6s cubic-bezier(0.2, 1.4, 0.3, 1) calc(var(--i, 0) * 80ms);
+}
+.sy-card-in[data-in="true"] { transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .sy-rise, .sy-card-in { transform: none; transition: none; }
+}
+

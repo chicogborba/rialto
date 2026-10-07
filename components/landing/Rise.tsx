@@ -1,19 +1,14 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { useInViewOnce } from "@/hooks/useInViewOnce";
+import { cn } from "@/lib/utils";
 
 /** Slides its children up into place when they scroll into view. Transform only, so content is never hidden. */
 export function Rise({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const reduce = useReducedMotion();
+  const { ref, seen } = useInViewOnce<HTMLDivElement>();
   return (
-    <motion.div
-      className={className}
-      initial={reduce ? false : { y: 36, skewY: 2 }}
-      whileInView={{ y: 0, skewY: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ type: "spring", stiffness: 220, damping: 24, delay }}
-    >
+    <div ref={ref} className={cn("sy-rise", className)} data-in={seen} style={{ transitionDelay: `${delay}s` }}>
       {children}
-    </motion.div>
+    </div>
   );
 }

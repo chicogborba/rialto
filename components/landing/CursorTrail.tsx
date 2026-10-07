@@ -29,12 +29,13 @@ export function CursorTrail() {
       }
       const hit = e.target instanceof Element ? e.target.closest("a, button, input, canvas, [role=tab]") : null;
       target = hit ? 2.6 : 1;
+      if (!raf) raf = requestAnimationFrame(loop);
     };
     const loop = () => {
-      raf = requestAnimationFrame(loop);
-      if (document.hidden) return;
       const dx = tx - x;
       const dy = ty - y;
+      // settled on the pointer: stop until it moves again instead of ticking forever
+      raf = Math.abs(dx) + Math.abs(dy) < 0.3 && Math.abs(target - scale) < 0.01 ? 0 : requestAnimationFrame(loop);
       x += dx * 0.18;
       y += dy * 0.18;
       scale += (target - scale) * 0.2;
@@ -42,7 +43,6 @@ export function CursorTrail() {
       el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -50%) rotate(${angle.toFixed(1)}deg) scale(${scale.toFixed(2)})`;
     };
     window.addEventListener("pointermove", move, { passive: true });
-    raf = requestAnimationFrame(loop);
     return () => {
       window.removeEventListener("pointermove", move);
       cancelAnimationFrame(raf);

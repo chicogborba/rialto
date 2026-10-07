@@ -1,11 +1,11 @@
 import { BigStatement } from "@/components/landing/BigStatement";
 import { Compare } from "@/components/landing/Compare";
 import { CursorTrail } from "@/components/landing/CursorTrail";
-import { DecisionEngineSection } from "@/components/landing/DecisionEngineSection";
+import { DeferredSections } from "@/components/landing/Deferred";
 import { FinalCta } from "@/components/landing/FinalCta";
 import { ImageCompare } from "@/components/landing/ImageCompare";
 import { LandingHeader } from "@/components/landing/LandingHeader";
-import { LiveDemo } from "@/components/landing/LiveDemo";
+import { Preloader } from "@/components/landing/Preloader";
 import { Pitch } from "@/components/landing/Pitch";
 import { Solana } from "@/components/landing/Solana";
 import { Story } from "@/components/landing/Story";
@@ -16,6 +16,7 @@ import { Why } from "@/components/landing/Why";
 export default function LandingPage() {
   return (
     <div className="relative">
+      <Preloader />
       <StaticBanner />
       <CursorTrail />
       <LandingHeader />
@@ -28,8 +29,7 @@ export default function LandingPage() {
         <Compare />
         <ImageCompare />
         <BigStatement />
-        <LiveDemo />
-        <DecisionEngineSection />
+        <DeferredSections />
       </main>
       <FinalCta />
     </div>

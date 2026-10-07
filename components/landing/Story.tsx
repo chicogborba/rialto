@@ -11,6 +11,10 @@ import { SpriteStrip } from "./SpriteStrip";
 import { Slap } from "./Stickers";
 import type { YardScene } from "./scene/YardScene";
 import { flowHref } from "@/lib/site";
+import { markHeroReady } from "@/lib/client/boot";
+
+// Start downloading three.js as soon as this chunk runs, not after hydration.
+const sceneModule = typeof window === "undefined" ? null : import("./scene/YardScene");
 
 /** Scroll thresholds where each act begins (0 = hero). Must match YardScene's timeline. */
 const ACT_STARTS = [0, 0.1, 0.22, 0.34, 0.46, 0.6, 0.7, 0.85] as const;
@@ -153,14 +157,17 @@ export function Story() {
     raf = requestAnimationFrame(frame);
 
     // three.js is loaded lazily so it never blocks first paint; the copy works without it
-    import("./scene/YardScene")
+    (sceneModule ?? import("./scene/YardScene"))
       .then(({ YardScene }) => {
         if (disposed) return;
         scene = new YardScene(canvas, STORY_NODES, { mobile, reduced });
         resize();
+        // draw once now so shaders are compiled and the first visible frame is the real thing
+        scene.render(progress(), performance.now() / 1000, 0.016, 0, 0);
         setReady(true);
+        requestAnimationFrame(markHeroReady);
       })
-      .catch(() => undefined);
+      .catch(markHeroReady);
 
     return () => {
       disposed = true;

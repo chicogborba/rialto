@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { useInViewOnce } from "@/hooks/useInViewOnce";
 import { Buddy } from "./Buddy";
 import { Slap } from "./Stickers";
 
@@ -13,7 +13,7 @@ const REASONS = [
 
 /** The pitch, in four cards. */
 export function Why() {
-  const reduce = useReducedMotion();
+  const { ref, seen } = useInViewOnce<HTMLOListElement>("-80px");
   return (
     <section id="why" aria-labelledby="why-title" className="scroll-mt-4 border-t border-line">
       <div className="mx-auto max-w-[1440px] px-4 py-16 md:px-10 md:py-28">
@@ -25,16 +25,12 @@ export function Why() {
           <Buddy className="absolute bottom-1 right-2 w-24 md:right-[8%] md:w-48" />
         </div>
 
-        <ol className="mt-12 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <ol ref={ref} className="mt-12 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {REASONS.map((r, i) => (
-            <motion.li
-              key={r.n}
-              // transform-only entrance: if the observer never fires the card is still readable
-              initial={reduce ? false : { y: 48, rotate: i % 2 ? 4 : -4 }}
-              whileInView={{ y: 0, rotate: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ type: "spring", stiffness: 260, damping: 22, delay: i * 0.08 }}
-              className={`sy-pop relative flex min-h-64 flex-col justify-between border-2 border-ink p-5 shadow-[6px_6px_0_var(--color-line-hi)] ${r.tone}`}
+            // transform-only entrance: if the observer never fires the card is still readable
+            <li key={r.n} data-in={seen} style={{ "--i": i, "--r": `${i % 2 ? 4 : -4}deg` } as React.CSSProperties} className="sy-card-in">
+              <div
+              className={`sy-pop relative h-full flex min-h-64 flex-col justify-between border-2 border-ink p-5 shadow-[6px_6px_0_var(--color-line-hi)] ${r.tone}`}
             >
               <div className="flex items-start justify-between">
                 <span className="font-mono text-sm font-bold opacity-60">{r.n}</span>
@@ -44,7 +40,8 @@ export function Why() {
                 <h3 className="text-2xl font-bold uppercase leading-[0.95] tracking-tight md:text-3xl">{r.title}</h3>
                 <p className="mt-3 text-base font-medium opacity-80">{r.body}</p>
               </div>
-            </motion.li>
+              </div>
+            </li>
           ))}
         </ol>
 
