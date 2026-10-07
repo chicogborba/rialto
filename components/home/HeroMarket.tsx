@@ -9,7 +9,7 @@ import type { HeroScene } from "@/components/landing/scene/HeroScene";
 // Start downloading three.js as soon as this chunk runs, not after hydration.
 const sceneModule = typeof window === "undefined" ? null : import("@/components/landing/scene/HeroScene");
 
-/** The living market in the hero. Follows the pointer a little; stalls hop when pointed at; the critter can be poked. */
+/** The critter in the hero. Follows the pointer a little and can be poked. */
 export function HeroMarket({ className }: { className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
@@ -33,7 +33,6 @@ export function HeroMarket({ className }: { className?: string }) {
       last = now;
       mouse.x += (mouse.tx - mouse.x) * 0.06;
       mouse.y += (mouse.ty - mouse.y) * 0.06;
-      // under reduced motion the market is drawn once, mid-sale, and left still
       scene?.render(reduced ? 1.9 : now / 1000, dt, mouse.x, mouse.y);
       if (visible && !reduced && !document.hidden) raf = requestAnimationFrame(loop);
     };
@@ -107,7 +106,7 @@ export function HeroMarket({ className }: { className?: string }) {
     <canvas
       ref={ref}
       role="img"
-      aria-label="A small 3D market: little agents walk from stall to stall, pay a coin at each and leave with parcels, under a Rialto sign."
+      aria-label="Rialto's orange critter. Poke it."
       className={cn("block transition-opacity duration-500", ready ? "opacity-100" : "opacity-0", className)}
       style={{ touchAction: "pan-y" }}
     />
@@ -125,8 +124,8 @@ export function Needs() {
     return () => window.clearInterval(timer);
   }, []);
   return (
-    <span className="inline-block overflow-hidden align-bottom">
-      <span key={i} className="home-need inline-block bg-lime px-2">
+    <span className="inline-block overflow-hidden whitespace-nowrap pb-[0.12em] align-bottom">
+      <span key={i} className="home-need inline-block text-coal/55">
         {NEEDS[i]}
       </span>
     </span>

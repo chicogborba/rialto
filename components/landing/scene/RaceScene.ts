@@ -1,10 +1,11 @@
 import * as THREE from "three";
 import { checkerTexture, disposeScene, faceted, GROUND, MiniCritter, rnd, shadedBox, textTexture } from "./lowpoly";
+import { LAP } from "./race-timing";
 
 /**
  * The Solana race, in the same low-poly world as the rest of the page. Four lanes, in real time:
- * the Solana critter sprints a lap every second, while a card, a bank and a globe (the wire) march
- * on the spot at the start, because at days per lap they do not get anywhere while you watch.
+ * the Solana critter sprints a lap every 0.6 s, while a card, a bank and a globe (the wire) crawl
+ * down their lanes, because at days per lap they do not get anywhere while you watch.
  */
 
 const LANE = 2;
@@ -36,6 +37,8 @@ interface Walker {
   /** where the body rests, before the walking bob */
   rest: number;
   pace: number;
+  /** track units per second: a crawl next to Solana */
+  speed: number;
   spin?: THREE.Object3D;
 }
 
@@ -52,7 +55,7 @@ function buildCard(): Walker {
   eyes(body, -0.08, 0.09, 0.22);
   body.position.y = 0.42 + 0.475;
   group.add(body);
-  return { group, body, legs: legs(group, [-0.4, 0.4], 0x9bb8ff), rest: body.position.y, pace: 2.2 };
+  return { group, body, legs: legs(group, [-0.4, 0.4], 0x9bb8ff), rest: body.position.y, pace: 2.2, speed: 0.06 };
 }
 
 /** A bank with legs: steps, columns, roof. */
@@ -79,7 +82,7 @@ function buildBank(): Walker {
   eyes(body, 0.94, 0.52, 0.3);
   body.position.y = 0.42;
   group.add(body);
-  return { group, body, legs: legs(group, [-0.42, 0.42], 0x8b8171), rest: body.position.y, pace: 1.6 };
+  return { group, body, legs: legs(group, [-0.42, 0.42], 0x8b8171), rest: body.position.y, pace: 1.6, speed: 0.03 };
 }
 
 /** A globe with legs, for the international wire. */
@@ -90,7 +93,7 @@ function buildGlobe(): Walker {
   body.add(globe);
   body.position.y = 0.42 + 0.62;
   group.add(body);
-  return { group, body, legs: legs(group, [-0.26, 0.26], 0x9ec5ff), rest: body.position.y, pace: 1.9, spin: globe };
+  return { group, body, legs: legs(group, [-0.26, 0.26], 0x9ec5ff), rest: body.position.y, pace: 1.9, speed: 0.045, spin: globe };
 }
 
 export class RaceScene {
@@ -185,7 +188,7 @@ export class RaceScene {
     this.renderer.setSize(w, h, false);
   }
 
-  /** `t` is seconds of racing so far. One lap takes one second. */
+  /** `t` is seconds of racing so far. One lap takes `LAP` seconds. */
   render(t: number): void {
     const sin = Math.sin;
     const START = -this.half;
@@ -193,18 +196,18 @@ export class RaceScene {
     this.camera.position.set(-2.6, 0.6 * this.fit, this.fit);
     this.camera.lookAt(-0.95, -0.9, 0);
 
-    // Solana: across the track once a second, re-entering from the left
-    const lap = t % 1;
+    // Solana: across the track every LAP seconds, re-entering from the left
+    const lap = (t / LAP) % 1;
     const x = START - 2 + lap * (FINISH - START + 3.4);
     this.runner.group.position.set(x, GROUND * (1 - 0.62), laneZ(0));
-    this.runner.update(t, 1, 0, 2.2);
+    this.runner.update(t, 1, 0, 2.2 / LAP);
     this.streaks.forEach((streak, i) => {
       streak.position.x = x - 0.5;
       streak.position.z = laneZ(0) + (i - 1) * 0.05;
-      streak.scale.x = 1.6 + sin(t * 30 + i * 2) * 0.5 + i * 0.5;
+      streak.scale.x = 2.2 + sin(t * 30 + i * 2) * 0.5 + i * 0.6;
     });
     this.dust.forEach((puff, i) => {
-      const age = (t * 5 + i / this.dust.length) % 1;
+      const age = (t * 8 + i / this.dust.length) % 1;
       puff.position.set(x - 0.5 - age * 1.6 - i * 0.15, GROUND + 0.1 + age * 0.5, laneZ(0) + (rnd(i, 3) - 0.5) * 0.5);
       puff.scale.setScalar(0.4 + age);
       (puff.material as THREE.MeshBasicMaterial).opacity = 0.55 * (1 - age);
@@ -213,8 +216,10 @@ export class RaceScene {
     const through = Math.max(0, 1 - Math.abs(x - FINISH) / 1.4);
     this.banner.rotation.z = sin(t * 40) * 0.05 * through;
 
-    // the rest: marching on the spot
+    // the rest: crawling down their lanes, never close to the finish
+    const room = FINISH - START - 2.2;
     for (const walker of this.walkers) {
+      walker.group.position.x = START + Math.min(room, t * walker.speed);
       const beat = t * walker.pace;
       walker.legs.forEach((leg, i) => {
         leg.position.y = 0.21 + Math.max(0, sin(beat * Math.PI * 2 + i * Math.PI)) * 0.1;

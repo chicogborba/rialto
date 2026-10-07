@@ -29,25 +29,25 @@ export function Header() {
   );
 }
 
-/** The promise on the left; on the right, the market itself, at work. */
+/** The promise on the left, the critter on the right. Nothing else. */
 export function Hero() {
   return (
-    <section className="relative grid items-center overflow-hidden md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-      <div className="px-5 pb-2 pt-6 md:py-10 md:pl-8 md:pr-0 lg:pl-[max(2rem,calc((100vw-72rem)/2+2rem))]">
-        <h1 className="text-[clamp(3.2rem,8.4vw,7rem)] font-bold leading-[0.9] tracking-[-0.055em]">
-          Agents <span className="whitespace-nowrap">that hire</span>
+    <section className={`${WRAP} grid items-center gap-6 py-10 md:min-h-[min(78svh,720px)] md:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] md:py-0`}>
+      <div>
+        <h1 className="text-[clamp(2.4rem,6vw,4.5rem)] font-bold leading-[0.98] tracking-[-0.05em]">
+          Agents that hire
+          <br />
+          an API for
+          <br />
+          <Needs />
         </h1>
-        <p className="mt-3 text-[clamp(1.5rem,3.6vw,2.9rem)] font-bold leading-tight tracking-[-0.03em]">
-          an API for <Needs />
-        </p>
-        <p className="mt-6 max-w-md text-lg leading-snug text-coal/75 md:text-xl">They find it, compare it and pay per call. On their own.</p>
-        <div className="mt-7 flex flex-wrap gap-3">
+        <p className="mt-6 max-w-md text-lg leading-snug text-coal/70">They find it, compare it and pay per call. On their own.</p>
+        <div className="mt-8 flex flex-wrap gap-3">
           <Link href={flowHref("/connect")} className="home-btn home-btn-ink">Connect my agent</Link>
           <Link href={flowHref("/publish")} className="home-btn home-btn-line">Publish an API</Link>
         </div>
       </div>
-      <HeroMarket className="h-[50svh] min-h-[320px] w-full md:h-[min(78svh,700px)]" />
-      <p className="home-bob pointer-events-none absolute inset-x-0 bottom-3 hidden text-center font-mono text-xs font-bold uppercase tracking-[0.16em] text-coal/55 md:block">↓ Scroll to see how it works</p>
+      <HeroMarket className="h-[42svh] min-h-[300px] w-full md:h-[min(64svh,560px)]" />
     </section>
   );
 }

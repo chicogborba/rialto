@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { RaceScene } from "@/components/landing/scene/RaceScene";
+import { LAP } from "@/components/landing/scene/race-timing";
 
 const DAY = 86_400;
 const SLOW = [
@@ -22,6 +23,7 @@ const countdown = (s: number) => `${Math.floor(s / 3600)}:${two((s % 3600) / 60)
 export function SolanaRace() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [laps, setLaps] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -36,6 +38,7 @@ export function SolanaRace() {
     /** seconds the race has actually been running on screen */
     let t = 0;
     let counted = 0;
+    let ticked = 0;
 
     const loop = (now: number) => {
       raf = 0;
@@ -43,10 +46,15 @@ export function SolanaRace() {
       last = now;
       scene?.render(reduced ? 0.45 : t);
       // he crosses the line a little before the lap wraps around
-      const done = Math.floor(t + 0.2);
+      const done = Math.floor(t / LAP + 0.2);
       if (done !== counted) {
         counted = done;
         setLaps(done);
+      }
+      const secs = Math.floor(t);
+      if (secs !== ticked) {
+        ticked = secs;
+        setElapsed(secs);
       }
       if (visible && !reduced && !document.hidden) raf = requestAnimationFrame(loop);
     };
@@ -95,7 +103,7 @@ export function SolanaRace() {
         <canvas
           ref={canvasRef}
           role="img"
-          aria-label="A 3D race in real time: the Solana critter finishes a lap every second while a card, a bank and a globe march on the spot at the start."
+          aria-label="A 3D race in real time: the Solana critter finishes a lap every 0.6 seconds while a card, a bank and a globe crawl down their lanes."
           className={cn("block h-[40svh] min-h-[260px] w-full transition-opacity duration-500 md:h-[56svh]", ready ? "opacity-100" : "opacity-0")}
         />
         {/* the scoreboard, in the same box as the story's captions */}
@@ -113,7 +121,7 @@ export function SolanaRace() {
       <ul className="mx-auto mt-4 flex w-full max-w-6xl flex-wrap gap-2 px-5 md:px-8">
         {SLOW.map((rail) => (
           <li key={rail.name} className="border-2 border-coal bg-[#fffdf7] px-3 py-1.5 font-mono text-xs font-bold md:text-sm">
-            {rail.name} <span className="text-coal/50">first in</span> <span className="tnum">{countdown(Math.max(0, rail.seconds - laps))}</span>
+            {rail.name} <span className="text-coal/50">first in</span> <span className="tnum">{countdown(Math.max(0, rail.seconds - elapsed))}</span>
           </li>
         ))}
       </ul>
