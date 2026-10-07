@@ -5,7 +5,7 @@ import { LAP } from "./race-timing";
 /**
  * The Solana race, in the same low-poly world as the rest of the page. Four lanes, in real time:
  * the Solana critter sprints a lap every 0.6 s, while a card, a bank and a globe (the wire) crawl
- * down their lanes, because at days per lap they do not get anywhere while you watch.
+ * down their lanes and give up short of the line, because at days per lap they never finish.
  */
 
 const LANE = 2;
@@ -37,7 +37,7 @@ interface Walker {
   /** where the body rests, before the walking bob */
   rest: number;
   pace: number;
-  /** track units per second: a crawl next to Solana */
+  /** track units per second: a jog, hopeless next to Solana */
   speed: number;
   spin?: THREE.Object3D;
 }
@@ -55,7 +55,7 @@ function buildCard(): Walker {
   eyes(body, -0.08, 0.09, 0.22);
   body.position.y = 0.42 + 0.475;
   group.add(body);
-  return { group, body, legs: legs(group, [-0.4, 0.4], 0x9bb8ff), rest: body.position.y, pace: 2.2, speed: 0.06 };
+  return { group, body, legs: legs(group, [-0.4, 0.4], 0x9bb8ff), rest: body.position.y, pace: 2.2, speed: 0.55 };
 }
 
 /** A bank with legs: steps, columns, roof. */
@@ -82,7 +82,7 @@ function buildBank(): Walker {
   eyes(body, 0.94, 0.52, 0.3);
   body.position.y = 0.42;
   group.add(body);
-  return { group, body, legs: legs(group, [-0.42, 0.42], 0x8b8171), rest: body.position.y, pace: 1.6, speed: 0.03 };
+  return { group, body, legs: legs(group, [-0.42, 0.42], 0x8b8171), rest: body.position.y, pace: 1.6, speed: 0.28 };
 }
 
 /** A globe with legs, for the international wire. */
@@ -93,7 +93,7 @@ function buildGlobe(): Walker {
   body.add(globe);
   body.position.y = 0.42 + 0.62;
   group.add(body);
-  return { group, body, legs: legs(group, [-0.26, 0.26], 0x9ec5ff), rest: body.position.y, pace: 1.9, speed: 0.045, spin: globe };
+  return { group, body, legs: legs(group, [-0.26, 0.26], 0x9ec5ff), rest: body.position.y, pace: 1.9, speed: 0.4, spin: globe };
 }
 
 export class RaceScene {
@@ -216,10 +216,15 @@ export class RaceScene {
     const through = Math.max(0, 1 - Math.abs(x - FINISH) / 1.4);
     this.banner.rotation.z = sin(t * 40) * 0.05 * through;
 
-    // the rest: crawling down their lanes, never close to the finish
+    // the rest: jogging down their lanes. They give up short of the finish and start over
+    // (shrink out, pop back in at the start), so they never cross the line.
     const room = FINISH - START - 2.2;
     for (const walker of this.walkers) {
-      walker.group.position.x = START + Math.min(room, t * walker.speed);
+      const run = (t * walker.speed) % room;
+      walker.group.position.x = START + run;
+      const out = Math.min(1, (room - run) / 0.5);
+      const pop = Math.min(1, run / 0.4);
+      walker.group.scale.setScalar(0.74 * Math.max(0.0001, Math.min(out, pop)));
       const beat = t * walker.pace;
       walker.legs.forEach((leg, i) => {
         leg.position.y = 0.21 + Math.max(0, sin(beat * Math.PI * 2 + i * Math.PI)) * 0.1;

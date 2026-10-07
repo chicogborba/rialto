@@ -249,12 +249,23 @@
   .home-btn:hover { transform: none; }
 }
 
-/* the race counter gives a small bump on every lap, and the hero's rotating words slide up */
-@keyframes home-tick { 0% { transform: scale(1.18); } 100% { transform: scale(1); } }
-.home-tick { transform-origin: left center; animation: home-tick 0.3s ease-out; }
+/* the race counter slams in on every payment: the number drops in big and tilted, a ghost of it
+   blows outward, and a ring bursts from behind; every tenth payment the ring goes lime and wider */
+@keyframes home-slam {
+  0% { transform: scale(1.9) rotate(-8deg); filter: blur(2px); }
+  45% { transform: scale(0.9) rotate(2deg); filter: blur(0); }
+  70% { transform: scale(1.05) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+.home-slam { transform-origin: 70% 60%; animation: home-slam 0.38s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+@keyframes home-ghost { 0% { transform: scale(1); opacity: 0.55; } 100% { transform: scale(1.9); opacity: 0; } }
+.home-ghost { transform-origin: 70% 60%; animation: home-ghost 0.5s ease-out both; }
+@keyframes home-ring { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.9; } 100% { transform: translate(-50%, -50%) scale(1.25); opacity: 0; } }
+.home-ring { animation: home-ring 0.5s cubic-bezier(0.1, 0.7, 0.3, 1) both; }
+.home-ring-big { animation-duration: 0.8s; scale: 1.8; }
 @keyframes home-need { 0% { transform: translateY(105%); } 100% { transform: translateY(0); } }
 .home-need { animation: home-need 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.1); }
-@media (prefers-reduced-motion: reduce) { .home-tick, .home-need { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .home-slam, .home-need { animation: none; } .home-ghost, .home-ring { display: none; } }
 
 /* the "scroll" cue under the hero buttons */
 @keyframes home-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }

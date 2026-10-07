@@ -1,8 +1,23 @@
 import * as THREE from "three";
-import { disposeScene, GROUND } from "./lowpoly";
+import { clamp01, disposeScene, smooth } from "./lowpoly";
 import { Mascot } from "./mascot";
 
-/** The hero: just the critter on a soft shadow. It watches the pointer and can be poked. */
+/**
+ * One idle routine, on a loop, so the critter is never just standing there: looks around with the
+ * magnifier, reads the clipboard, hops, flips a coin, celebrates. Each act is [start, length] in
+ * seconds; between acts he just watches the pointer.
+ */
+const ROUTINE = { scout: [1.5, 3], think: [5.5, 3.2], hop: [9.2, 0.9], pay: [10.8, 2], party: [13.6, 2.2] } as const;
+const CYCLE = 17.5;
+
+/** 0 → 1 → 0 over the act, with soft edges */
+function act(local: number, [start, length]: readonly [number, number]): number {
+  const u = (local - start) / length;
+  if (u <= 0 || u >= 1) return 0;
+  return smooth(clamp01(u / 0.18)) * smooth(clamp01((1 - u) / 0.18));
+}
+
+/** The hero: just the critter. It watches the pointer, keeps busy and can be poked. */
 export class HeroScene {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly canvas: HTMLCanvasElement;
@@ -19,14 +34,7 @@ export class HeroScene {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, mobile ? 1.5 : 2));
     this.renderer.setClearColor(0x000000, 0);
 
-    const shadow = new THREE.Mesh(
-      new THREE.CircleGeometry(1.25, 48),
-      new THREE.MeshBasicMaterial({ color: 0x17120f, transparent: true, opacity: 0.1, depthWrite: false }),
-    );
-    shadow.rotation.x = -Math.PI / 2;
-    shadow.scale.set(1, 0.55, 1);
-    shadow.position.y = GROUND + 0.005;
-    this.scene.add(shadow, this.mascot.group);
+    this.scene.add(this.mascot.group);
   }
 
   resize(w: number, h: number): void {
@@ -40,7 +48,20 @@ export class HeroScene {
   render(time: number, dt: number, mx: number, my: number): void {
     this.camera.position.set(mx * 0.6, 0.5 - my * 0.25, 6.4 * this.fit);
     this.camera.lookAt(0, -0.2, 0);
-    this.mascot.update({ time, dt, mx, scout: 0, think: 0, hop: 0, pay: 0, party: 0 });
+    const local = time % CYCLE;
+    const [hopStart, hopLength] = ROUTINE.hop;
+    const think = act(local, ROUTINE.think);
+    this.mascot.update({
+      time,
+      dt,
+      mx,
+      scout: act(local, ROUTINE.scout),
+      // the checklist fills in while he reads, so this one is progress, not a level
+      think: think > 0 ? Math.min(think, clamp01((local - ROUTINE.think[0]) / (ROUTINE.think[1] * 0.8))) : 0,
+      hop: clamp01((local - hopStart) / hopLength),
+      pay: act(local, ROUTINE.pay),
+      party: act(local, ROUTINE.party),
+    });
     this.renderer.render(this.scene, this.camera);
   }
 

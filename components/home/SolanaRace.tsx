@@ -103,19 +103,18 @@ export function SolanaRace() {
         <canvas
           ref={canvasRef}
           role="img"
-          aria-label="A 3D race in real time: the Solana critter finishes a lap every 0.6 seconds while a card, a bank and a globe crawl down their lanes."
+          aria-label="A 3D race in real time: the Solana critter finishes a lap every 0.6 seconds while a card, a bank and a globe jog down their lanes and never finish."
           className={cn("block h-[40svh] min-h-[260px] w-full transition-opacity duration-500 md:h-[56svh]", ready ? "opacity-100" : "opacity-0")}
         />
-        {/* the scoreboard, in the same box as the story's captions */}
-        <p className="absolute left-4 top-0 flex items-center gap-3 border-[3px] border-coal bg-[#fffdf7] px-4 py-2 shadow-[5px_5px_0_var(--color-coal)] md:left-8 md:gap-5 md:border-4 md:px-6 md:py-3 md:shadow-[8px_8px_0_var(--color-coal)]">
-          <span key={laps} className="home-sol home-tick tnum inline-block font-mono text-5xl font-bold leading-none md:text-7xl">
-            {laps}
+        {/* the scoreboard: one number, top right, that lands with a slam on every payment */}
+        <p className="pointer-events-none absolute right-5 top-1 md:right-10 md:top-2">
+          <span className="sr-only">Payments settled on Solana: </span>
+          <span key={laps} aria-hidden className="relative inline-block">
+            <span className={cn("home-ring absolute left-1/2 top-1/2 size-[1.5em] rounded-full border-[0.06em] border-[#9945ff] text-7xl md:text-9xl", laps > 0 && laps % 10 === 0 && "home-ring-big border-lime")} />
+            <span className="home-sol home-ghost tnum absolute right-0 top-0 font-mono text-7xl font-bold leading-none md:text-9xl">{laps}</span>
+            <span className="home-sol home-slam tnum relative block font-mono text-7xl font-bold leading-none md:text-9xl">{laps}</span>
           </span>
-          <span className="text-sm font-bold leading-tight md:text-xl">
-            payments settled
-            <br />
-            <span className="text-coal/50">the others: 0</span>
-          </span>
+          <span className="sr-only">{laps}. Card, bank and wire: 0.</span>
         </p>
       </div>
       <ul className="mx-auto mt-4 flex w-full max-w-6xl flex-wrap gap-2 px-5 md:px-8">
