@@ -5,18 +5,14 @@ import { fmtK, fmtUsd, HIRED, SOLO } from "@/components/landing/compare-data";
 import { DuoCanvas } from "@/components/landing/DuoCanvas";
 import { asset, flowHref, REPO_URL } from "@/lib/site";
 import { HeroCritter } from "./HeroCritter";
+import { HowScroll } from "./HowScroll";
+import { STEPS } from "./steps";
 import { PitchVideo } from "./PitchVideo";
 
 const WRAP = "mx-auto w-full max-w-6xl px-5 md:px-8";
 const KICKER = "font-mono text-xs font-bold uppercase tracking-[0.18em] text-coal/55";
 const H2 = "mt-3 text-[clamp(2rem,5.2vw,3.75rem)] font-bold leading-[1.02] tracking-[-0.035em]";
 
-const STEPS = [
-  { img: "find", title: "Find", body: "Your agent searches one catalog of specialist APIs for the skill it needs." },
-  { img: "compare", title: "Compare", body: "It weighs price, speed, quality and reputation, inside the limits you set." },
-  { img: "pay", title: "Pay", body: "It pays per call, inside the request. No account, no card, no API key." },
-  { img: "done", title: "Done", body: "The result comes back. A failed call is never charged." },
-] as const;
 
 const SIDES = [
   {
@@ -88,11 +84,15 @@ export function Pitch() {
 
 export function HowItWorks() {
   return (
-    <section id="how" aria-labelledby="how-title" className="scroll-mt-6 border-t-2 border-coal/10 bg-sand/50 py-16 md:py-28">
-      <div className={WRAP}>
+    <section id="how" aria-labelledby="how-title" className="scroll-mt-6 border-y-2 border-coal/10 bg-sand/50">
+      <h2 id="how-title" className="sr-only">How it works: find, compare, pay, done</h2>
+      {/* the scroll-driven scene; people who prefer reduced motion get the plain cards instead */}
+      <div className="motion-reduce:hidden">
+        <HowScroll />
+      </div>
+      <div className={`${WRAP} hidden py-16 motion-reduce:block md:py-28`}>
         <p className={KICKER}>How it works</p>
-        <h2 id="how-title" className={H2}>One request. Four steps. No human in the loop.</h2>
-        <ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 md:mt-14">
+        <ol className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map((step, i) => (
             <li key={step.title} className="flex flex-col border-2 border-coal bg-cream">
               <Image src={asset(`/img/steps/${step.img}.jpg`)} alt="" width={960} height={540} unoptimized loading="lazy" className="aspect-video w-full border-b-2 border-coal object-cover" />
