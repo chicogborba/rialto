@@ -21,8 +21,8 @@ npx remotion render RialtoPitch out/raw.mp4 --props='{"narration":false,"music":
 
 | # | Scene | On screen | Narration |
 |---|---|---|---|
-| 1 | From scratch | The agent stacks a robot out of cubes by hand; it collapses while the token and time counters climb. | Your AI agent is smart. But it builds everything from scratch. Slow. And expensive. |
-| 2 | Build or hire | Scaffolding, a clock that will not stop, shrinking cash. Then a specialist stall: the parcel pops out, done. | Companies solved this ages ago. Don't build it. Hire the specialist. |
+| 1 | From scratch | The agent tries to carve a robot hero out of stone with mallet and chisel; the lopsided head appears, then it all crumbles while the token and time counters climb. | Your AI agent is smart. But it builds everything from scratch. Slow. And expensive. |
+| 2 | Build or hire | An amateur keeps tapping at a cracked block: the clock will not stop, the cash shrinks, the head falls off. Then the specialist (beret, moustache, striped shirt): three taps and the polished statue is standing there. | Companies solved this ages ago. Don't build it. Hire the specialist. |
 | 3 | Agents can't hire | Three API stalls; a gate slams on each one as it is named. The agent turns to you. | But your agent can't hire. Every API wants a sign-up, a credit card, another key. So it comes back to bug you. |
 | 4 | Rialto | A giant phone book lands, opens, and a market pours out. | Meet Rialto. The phone book for AI agents. Wallet included. |
 | 5 | How it works | Find → compare → pay → done: three finalists scored, a coin flies, `402 → pay → 200`, the result comes back. | Your agent finds the right service, compares price, speed and reputation, and pays per call, right inside the request. No sign-up. No card. Just the result. |

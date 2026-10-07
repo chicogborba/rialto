@@ -27,6 +27,16 @@ export interface CritterProps {
   scale?: number;
   color?: string;
   seed?: number;
+  /** keeps a raised arm still instead of waving it: for arms that hold a tool */
+  steady?: boolean;
+  /** the artist's kit */
+  beret?: boolean;
+  moustache?: boolean;
+  /** colour of a striped shirt */
+  stripes?: string;
+  /** something held in a hand; it swings with the arm (x points out along the arm) */
+  handL?: React.ReactNode;
+  handR?: React.ReactNode;
   /** props held in front of the body, in body space */
   children?: React.ReactNode;
 }
@@ -53,6 +63,12 @@ export const Critter: React.FC<CritterProps> = ({
   scale = 1,
   color = C.orange,
   seed = 0,
+  steady = false,
+  beret = false,
+  moustache = false,
+  stripes,
+  handL,
+  handR,
   children,
 }) => {
   const frame = useCurrentFrame();
@@ -79,7 +95,7 @@ export const Critter: React.FC<CritterProps> = ({
         </mesh>
         {[-1, 1].map((side) => {
           const raise = side < 0 ? armL : armR;
-          const wiggle = raise > 0.6 ? sin(t * 12 + side) * 0.18 : sin(t * 2.1) * 0.06;
+          const wiggle = steady ? 0 : raise > 0.6 ? sin(t * 12 + side) * 0.18 : sin(t * 2.1) * 0.06;
           return (
             <group key={side}>
               <group position={[side * 0.47 + ex, ey, FACE_Z]}>
@@ -108,10 +124,53 @@ export const Critter: React.FC<CritterProps> = ({
                   <boxGeometry args={[0.3, 0.4, 0.5]} />
                   <Mat color={color} />
                 </mesh>
+                <group position={[side * 0.3, 0, 0.12]} scale={[side, 1, 1]}>
+                  {side < 0 ? handL : handR}
+                </group>
               </group>
             </group>
           );
         })}
+        {stripes
+          ? [-0.34, -0.52].map((y) => (
+              <mesh key={y} position={[0, y, 0]}>
+                <boxGeometry args={[BODY.w + 0.02, 0.09, BODY.d + 0.02]} />
+                <Mat color={stripes} />
+              </mesh>
+            ))
+          : null}
+        {moustache ? (
+          <group position={[0, -0.15, FACE_Z]}>
+            {[-1, 1].map((side) => (
+              <group key={side} position={[side * 0.04, 0, 0]} rotation={[0, 0, -side * 0.24]}>
+                <mesh position={[side * 0.21, 0, 0]}>
+                  <boxGeometry args={[0.4, 0.13, 0.07]} />
+                  <meshBasicMaterial color="#3a2618" />
+                </mesh>
+                <mesh position={[side * 0.43, 0.07, 0]} rotation={[0, 0, side * 0.7]}>
+                  <boxGeometry args={[0.2, 0.09, 0.07]} />
+                  <meshBasicMaterial color="#3a2618" />
+                </mesh>
+              </group>
+            ))}
+          </group>
+        ) : null}
+        {beret ? (
+          <group position={[0.26, BODY.h / 2 + 0.1, 0]} rotation={[0.06, 0, -0.2]}>
+            <mesh position={[-0.1, -0.07, 0]} scale={[1, 1, 0.74]}>
+              <cylinderGeometry args={[0.5, 0.5, 0.1, 8]} />
+              <Mat color="#1d1b22" />
+            </mesh>
+            <mesh position={[0, 0.07, 0]} scale={[1, 1, 0.78]} castShadow>
+              <cylinderGeometry args={[0.52, 0.72, 0.2, 8]} />
+              <Mat color="#2b2a35" />
+            </mesh>
+            <mesh position={[0, 0.22, 0]}>
+              <boxGeometry args={[0.07, 0.12, 0.07]} />
+              <Mat color="#1d1b22" />
+            </mesh>
+          </group>
+        ) : null}
         {children}
       </group>
       <group rotation={[0, yaw, 0]}>

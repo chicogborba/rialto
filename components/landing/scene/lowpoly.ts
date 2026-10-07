@@ -27,7 +27,7 @@ export function shadedBox(w: number, h: number, d: number, hex: number, opacity 
 }
 
 /** Flat-shaded mesh for shapes that are not boxes: every triangle gets its shade from one fixed light. */
-export function faceted(geometry: THREE.BufferGeometry, colorOf: (face: number) => number): THREE.Mesh {
+export function faceted(geometry: THREE.BufferGeometry, colorOf: (face: number) => number, floor = 0.62): THREE.Mesh {
   const g = geometry.index ? geometry.toNonIndexed() : geometry;
   g.computeVertexNormals();
   const position = g.getAttribute("position");
@@ -38,7 +38,7 @@ export function faceted(geometry: THREE.BufferGeometry, colorOf: (face: number) 
   const c = new THREE.Color();
   for (let i = 0; i < position.count; i += 3) {
     n.fromBufferAttribute(normal, i);
-    c.setHex(colorOf(i / 3)).multiplyScalar(0.62 + 0.46 * Math.max(0, n.dot(light)));
+    c.setHex(colorOf(i / 3)).multiplyScalar(floor + (1.08 - floor) * Math.max(0, n.dot(light)));
     for (let v = 0; v < 3; v++) c.toArray(colors, (i + v) * 3);
   }
   g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
@@ -116,8 +116,66 @@ export function buildStall(color: number, label?: string): THREE.Group {
     const board = new THREE.Mesh(new THREE.PlaneGeometry(1.56, 0.46), new THREE.MeshBasicMaterial({ map: textTexture(label, "#17120f", "#fffdf7", 512, 152) }));
     board.position.set(0, 2.86, 0.18);
     group.add(board);
+    // lets a scene tint the name board, e.g. to point a stall out
+    group.userData.board = board;
   }
   return group;
+}
+
+/** A round patch of colour that fades out at the rim: ground with no edge to crop. */
+export function softDisc(radius: number, color: string, solid = 0.5): THREE.Mesh {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const fade = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    fade.addColorStop(0, color);
+    fade.addColorStop(solid, color);
+    fade.addColorStop(1, `${color}00`);
+    ctx.fillStyle = fade;
+    ctx.fillRect(0, 0, 256, 256);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(radius, 48), new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }));
+  disc.rotation.x = -Math.PI / 2;
+  return disc;
+}
+
+/** Soft dark blob under something that stands on the ground. */
+export function blobShadow(rx: number, rz: number, opacity = 0.16): THREE.Mesh {
+  const blob = softDisc(1, "#17120f", 0.35);
+  (blob.material as THREE.MeshBasicMaterial).opacity = opacity;
+  blob.scale.set(rx, rz, 1);
+  return blob;
+}
+
+/** Two stacked cones on a trunk. Stands on y = 0. */
+export function buildTree(hex = 0x7fc96b): THREE.Group {
+  const tree = new THREE.Group();
+  const trunk = shadedBox(0.26, 0.8, 0.26, 0x8d6540);
+  trunk.position.y = 0.4;
+  const low = faceted(new THREE.ConeGeometry(0.85, 1.5, 6), () => hex);
+  low.position.y = 1.45;
+  const top = faceted(new THREE.ConeGeometry(0.6, 1.1, 6), () => hex);
+  top.position.y = 2.2;
+  tree.add(trunk, low, top);
+  return tree;
+}
+
+export function buildCloud(): THREE.Group {
+  const cloud = new THREE.Group();
+  for (const [x, y, z, s] of [
+    [0, 0, 0, 1],
+    [1.1, -0.15, 0.1, 0.75],
+    [-1.0, -0.2, -0.1, 0.65],
+  ]) {
+    const puff = faceted(new THREE.IcosahedronGeometry(1, 0), () => 0xffffff, 0.88);
+    puff.position.set(x, y, z);
+    puff.scale.setScalar(s);
+    cloud.add(puff);
+  }
+  return cloud;
 }
 
 export function buildCoin(): THREE.Mesh {
@@ -205,14 +263,13 @@ export class MiniCritter {
 
 export function disposeScene(scene: THREE.Scene, renderer: THREE.WebGLRenderer): void {
   scene.traverse((o) => {
-    if (o instanceof THREE.Mesh) {
-      o.geometry.dispose();
-      const materials: THREE.Material[] = Array.isArray(o.material) ? o.material : [o.material];
-      materials.forEach((m) => {
-        if (m instanceof THREE.MeshBasicMaterial) m.map?.dispose();
-        m.dispose();
-      });
-    }
+    if (!(o instanceof THREE.Mesh || o instanceof THREE.Line || o instanceof THREE.Sprite)) return;
+    o.geometry.dispose();
+    const materials: THREE.Material[] = Array.isArray(o.material) ? o.material : [o.material];
+    materials.forEach((m) => {
+      if (m instanceof THREE.MeshBasicMaterial || m instanceof THREE.SpriteMaterial) m.map?.dispose();
+      m.dispose();
+    });
   });
   renderer.dispose();
 }

@@ -29,25 +29,33 @@ export function Header() {
   );
 }
 
-/** The promise on the left, the critter on the right. Nothing else. */
+/** The promise on the left. Behind it and to the right, the market at work: the agent buys whatever the headline names. */
 export function Hero() {
   return (
-    <section className={`${WRAP} grid items-center gap-6 py-10 md:min-h-[min(78svh,720px)] md:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] md:py-0`}>
-      <div>
-        <h1 className="text-[clamp(2.4rem,6vw,4.5rem)] font-bold leading-[0.98] tracking-[-0.05em]">
-          Agents that hire
-          <br />
-          an API for
-          <br />
-          <Needs />
+    <section className="relative isolate overflow-hidden lg:h-[min(88svh,800px)] lg:min-h-[620px]">
+      <div className={`${WRAP} pointer-events-none relative z-10 flex flex-col justify-center pb-2 pt-6 lg:h-full lg:pb-16 lg:pt-0`}>
+        <h1 className="text-[clamp(3.2rem,8.4vw,7rem)] font-bold leading-[0.9] tracking-[-0.055em]">
+          Agents <span className="block whitespace-nowrap">that hire</span>
         </h1>
-        <p className="mt-6 max-w-md text-lg leading-snug text-coal/70">They find it, compare it and pay per call. On their own.</p>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link href={flowHref("/connect")} className="home-btn home-btn-ink">Connect my agent</Link>
-          <Link href={flowHref("/publish")} className="home-btn home-btn-line">Publish an API</Link>
+        <p className="mt-3 text-[clamp(1.5rem,3.6vw,2.9rem)] font-bold leading-tight tracking-[-0.03em]">
+          an API for <Needs />
+        </p>
+        <p className="mt-4 max-w-sm text-lg leading-snug text-coal/75 md:mt-6 md:text-xl">They find it, compare it and pay per call. On their own.</p>
+        <div className="pointer-events-auto mt-5 flex flex-wrap gap-2 md:mt-7 md:gap-3">
+          <Link href={flowHref("/connect")} className="home-btn home-btn-ink max-sm:!px-4 max-sm:text-[15px]">Connect my agent</Link>
+          <Link href={flowHref("/publish")} className="home-btn home-btn-line bg-cream/70 max-sm:!px-4 max-sm:text-[15px]">Publish an API</Link>
         </div>
+        <ul className="mt-5 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-coal/65 md:mt-6 md:gap-x-5 md:text-xs md:tracking-[0.12em]">
+          {["No sign-up", "No card", "Pay per call"].map((perk) => (
+            <li key={perk} className="flex items-center gap-1.5">
+              <span aria-hidden className="grid size-4 place-items-center bg-lime text-[10px] leading-none text-coal">✓</span>
+              {perk}
+            </li>
+          ))}
+        </ul>
       </div>
-      <HeroMarket className="h-[42svh] min-h-[300px] w-full md:h-[min(64svh,560px)]" />
+      <HeroMarket className="h-[46svh] min-h-[320px] w-full md:h-[56svh] lg:absolute lg:inset-0 lg:h-full" />
+      <p className="home-bob pointer-events-none absolute inset-x-0 bottom-3 z-10 hidden text-center font-mono text-xs font-bold uppercase tracking-[0.16em] text-coal/55 lg:block">↓ Scroll to see how it works</p>
     </section>
   );
 }

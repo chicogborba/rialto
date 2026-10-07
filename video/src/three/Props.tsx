@@ -127,18 +127,6 @@ export const Parcel: React.FC<G> = (g) => (
   </group>
 );
 
-export const Building: React.FC<G & { w?: number; h: number; d?: number; color: string }> = ({ w = 2.2, h, d = 2.2, color, ...g }) => {
-  const floors = Math.max(1, Math.floor(h / 0.9));
-  return (
-    <group {...g}>
-      <Box size={[w, h, d]} position={[0, h / 2, 0]} color={color} />
-      {Array.from({ length: floors }).map((_, f) =>
-        [-1, 0, 1].map((k) => <Box key={`${f}-${k}`} size={[0.36, 0.42, 0.06]} position={[k * 0.62, 0.6 + f * 0.9, d / 2 + 0.01]} color="#fff7d6" shadow={false} />),
-      )}
-    </group>
-  );
-};
-
 export const Magnifier: React.FC<G> = (g) => (
   <group {...g}>
     <mesh>

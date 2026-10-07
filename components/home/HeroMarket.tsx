@@ -9,7 +9,14 @@ import type { HeroScene } from "@/components/landing/scene/HeroScene";
 // Start downloading three.js as soon as this chunk runs, not after hydration.
 const sceneModule = typeof window === "undefined" ? null : import("@/components/landing/scene/HeroScene");
 
-/** The critter in the hero. Follows the pointer a little and can be poked. */
+/** How long each headline need stays up: long enough for the agent to find the stall, pay it and get the parcel. */
+const ERRAND_SECONDS = 3.6;
+/** Which need the headline shows and when it changed, shared by the headline and the scene. */
+const errand = { need: 0, since: 0 };
+/** From 1024 px up the canvas fills the hero and the market moves right, out from under the headline. */
+const shiftFor = (width: number) => (width >= 1024 ? 0.235 : 0);
+
+/** The living market in the hero. Follows the pointer a little; stalls hop when pointed at; the critter can be poked. */
 export function HeroMarket({ className }: { className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
@@ -33,7 +40,9 @@ export function HeroMarket({ className }: { className?: string }) {
       last = now;
       mouse.x += (mouse.tx - mouse.x) * 0.06;
       mouse.y += (mouse.ty - mouse.y) * 0.06;
-      scene?.render(reduced ? 1.9 : now / 1000, dt, mouse.x, mouse.y);
+      // under reduced motion the market is drawn once, mid-sale, and left still
+      if (reduced) scene?.render(1.9, 10, 0, 0, 0, 2.3);
+      else scene?.render(now / 1000, dt, mouse.x, mouse.y, errand.need, (now - errand.since) / 1000);
       if (visible && !reduced && !document.hidden) raf = requestAnimationFrame(loop);
     };
     const kick = () => {
@@ -42,7 +51,7 @@ export function HeroMarket({ className }: { className?: string }) {
       raf = requestAnimationFrame(loop);
     };
     const resize = () => {
-      scene?.resize(canvas.clientWidth, canvas.clientHeight);
+      scene?.resize(canvas.clientWidth, canvas.clientHeight, shiftFor(window.innerWidth));
       kick();
     };
     const move = (e: PointerEvent) => {
@@ -81,7 +90,7 @@ export function HeroMarket({ className }: { className?: string }) {
       .then(({ HeroScene }) => {
         if (disposed) return;
         scene = new HeroScene(canvas, window.innerWidth < 768);
-        scene.resize(canvas.clientWidth, canvas.clientHeight);
+        scene.resize(canvas.clientWidth, canvas.clientHeight, shiftFor(window.innerWidth));
         scene.render(performance.now() / 1000, 0.016, 0, 0);
         setReady(true);
         kick();
@@ -106,7 +115,7 @@ export function HeroMarket({ className }: { className?: string }) {
     <canvas
       ref={ref}
       role="img"
-      aria-label="Rialto's orange critter. Poke it."
+      aria-label="A 3D market under a Rialto sign. The orange agent finds the stall the headline names, pays it a coin and gets a parcel back, while smaller agents walk from stall to stall doing the same."
       className={cn("block transition-opacity duration-500", ready ? "opacity-100" : "opacity-0", className)}
       style={{ touchAction: "pan-y" }}
     />
@@ -115,17 +124,22 @@ export function HeroMarket({ className }: { className?: string }) {
 
 const NEEDS = ["game sprites", "a voice-over", "a 3D model", "live market data", "a translation"];
 
-/** Finishes the headline: "…an API for [whatever it needs next]". */
+/** Finishes the headline: "…an API for [whatever it needs next]". The agent in the scene then goes and buys it. */
 export function Needs() {
   const [i, setI] = useState(0);
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const timer = window.setInterval(() => setI((n) => (n + 1) % NEEDS.length), 2200);
+    errand.since = performance.now();
+    const timer = window.setInterval(() => setI((n) => (n + 1) % NEEDS.length), ERRAND_SECONDS * 1000);
     return () => window.clearInterval(timer);
   }, []);
+  useEffect(() => {
+    errand.need = i;
+    errand.since = performance.now();
+  }, [i]);
   return (
-    <span className="inline-block overflow-hidden whitespace-nowrap pb-[0.12em] align-bottom">
-      <span key={i} className="home-need inline-block text-coal/55">
+    <span className="inline-block overflow-hidden whitespace-nowrap align-bottom">
+      <span key={i} className="home-need inline-block bg-lime px-2">
         {NEEDS[i]}
       </span>
     </span>
