@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/primitives";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
 
-export const metadata = { title: "Settings — SWITCHYARD" };
+export const metadata = { title: "Settings — RIALTO" };
 
 export default function SettingsPage() {
   return (

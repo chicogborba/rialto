@@ -1,6 +1,6 @@
-# SWITCHYARD
+# RIALTO
 
-> x402 lets agents pay. Switchyard decides who gets paid.
+> x402 lets agents pay. Rialto decides who gets paid.
 
 A hackathon-grade **autonomous service procurement layer for AI agents**. Give it a goal and a budget; it decomposes the goal into capabilities, discovers providers, scores them, builds a (possibly multi-service) plan, checks its spending policy, pays over an x402-shaped flow, executes, falls back on failure, and explains what it bought and why.
 
@@ -10,7 +10,7 @@ A hackathon-grade **autonomous service procurement layer for AI agents**. Give i
 - Every payment in this build is **SIMULATED**. The UI shows a `SIMULATED` badge on every payment and transaction. Simulated settlements carry `sim_…` references and never link to a block explorer.
 - The HTTP 402 handshake between agent and provider is a *real* HTTP exchange against local routes, but it uses `X-Sim-*` headers, **not** the real x402 headers. No blockchain is touched.
 - Live x402 on Solana devnet (plan Phase 8) is **not implemented**; `X402PaymentRail` is a typed stub that throws `live mode not configured`.
-- We did not invent x402 and we are not the first x402 marketplace. x402 is the payment rail; Switchyard is the decision layer on top.
+- We did not invent x402 and we are not the first x402 marketplace. x402 is the payment rail; Rialto is the decision layer on top.
 
 ## Quickstart
 
@@ -58,7 +58,7 @@ APIs were built for developers. An agent doesn't want an endpoint; it wants an o
 
 ## Why x402 alone is not enough
 
-x402 makes a service **payable**: 402 → requirements → signed authorization → verified retry. It says nothing about *which* service to call. Without a decision layer you hard-wire a vendor (and overpay everywhere) or pick the cheapest (and get bad results). Switchyard adds: capability decomposition, provider qualification, multi-factor ranking, budget and policy enforcement, composition, fallback and reputation feedback.
+x402 makes a service **payable**: 402 → requirements → signed authorization → verified retry. It says nothing about *which* service to call. Without a decision layer you hard-wire a vendor (and overpay everywhere) or pick the cheapest (and get bad results). Rialto adds: capability decomposition, provider qualification, multi-factor ranking, budget and policy enforcement, composition, fallback and reputation feedback.
 
 ## How the agent decision engine works
 
@@ -149,7 +149,7 @@ Config: see `mcp.example.json` (set `cwd` to this repo).
 
 - **Landing story (WebGL):** a scroll-driven three.js scene (`components/landing/scene/YardScene.ts`) shows the recorded vision run in 3D — five specialists scouted, two rejected by policy, one hired, paid over the 402 flow, result delivered. Node data comes from `lib/agent/recorded/vision.ts`; no network on first paint, three.js is lazy-loaded, no post-processing, DPR capped, loop paused off-screen, static under reduced motion.
 - **Built for Solana (landing):** a section on why the rail is Solana (≈400 ms slots, 5,000-lamport base fee, USDC settlement). The copy says "built for", not "powered by": this build targets Solana devnet and simulates settlement.
-- **Why / In-house vs hired (landing):** a four-card pitch, then same prompt ("a robot"), real outputs side by side in two sections (3D turntable, image wipe slider). 3D: three.js code written by Claude Opus 5.5 vs a Meshy-7 model; image: SVG written by Claude Opus 5.5 vs an SDXL-class render. Numbers live in `components/landing/compare-data.ts`; measured values are marked, token costs are estimates, sources and licences are in `public/models/CREDITS.md`. These outputs were **not** produced through Switchyard — the section illustrates why an agent would hire a specialist.
+- **Why / In-house vs hired (landing):** a four-card pitch, then same prompt ("a robot"), real outputs side by side in two sections (3D turntable, image wipe slider). 3D: three.js code written by Claude Opus 5.5 vs a Meshy-7 model; image: SVG written by Claude Opus 5.5 vs an SDXL-class render. Numbers live in `components/landing/compare-data.ts`; measured values are marked, token costs are estimates, sources and licences are in `public/models/CREDITS.md`. These outputs were **not** produced through Rialto — the section illustrates why an agent would hire a specialist.
 - The landing demo section runs a **real** `/api/runs` call with `ephemeral: true` (in-memory wallet, nothing persisted).
 - Seed data lives only in `prisma/seed-data.ts` (20 providers, 21 services). Seeding also generates 12 historical simulated runs over the previous 48h by running the real engine against a test clock.
 
@@ -172,10 +172,10 @@ LLM planner (propose DAG, keep scoring deterministic) · real x402 rail on Solan
 
 ## The platform: two sides
 
-**Sellers** publish an API; **buyers** connect their Claude Code / Codex and let their agent hire it. Switchyard sits in the middle (gateway, wallet, ledger) and takes a small commission.
+**Sellers** publish an API; **buyers** connect their Claude Code / Codex and let their agent hire it. Rialto sits in the middle (gateway, wallet, ledger) and takes a small commission.
 
 ```
-buyer's Claude ──MCP (Bearer sy_buyer_…)──▶ /api/mcp ──▶ agent: plan → pick → policy check
+buyer's Claude ──MCP (Bearer rl_buyer_…)──▶ /api/mcp ──▶ agent: plan → pick → policy check
                                                      └─▶ /api/gw/{api}/{capability}   (402 → verify → call seller → settle)
                                                                   └─▶ seller's real HTTPS API
 money: buyer wallet −(seller price + fee) · seller balance +(seller price) · platform +fee · append-only ledger
@@ -191,13 +191,13 @@ money: buyer wallet −(seller price + fee) · seller balance +(seller price) ·
 
 ```bash
 # Claude Code
-claude mcp add --transport http switchyard https://YOUR-HOST/api/mcp --header "Authorization: Bearer sy_buyer_…"
+claude mcp add --transport http rialto https://YOUR-HOST/api/mcp --header "Authorization: Bearer rl_buyer_…"
 ```
 ```toml
-# Codex: ~/.codex/config.toml  (and export SWITCHYARD_KEY=sy_buyer_…)
-[mcp_servers.switchyard]
+# Codex: ~/.codex/config.toml  (and export RIALTO_KEY=rl_buyer_…)
+[mcp_servers.rialto]
 url = "https://YOUR-HOST/api/mcp"
-bearer_token_env_var = "SWITCHYARD_KEY"
+bearer_token_env_var = "RIALTO_KEY"
 ```
 
 **Commission.** Buyer pays `sellerPrice + max(PLATFORM_MIN_FEE_MICRO, ceil(sellerPrice × PLATFORM_FEE_BPS / 10000))`; the seller always receives exactly their price. Defaults: 5%, floor $0.001. The publish page previews it live. All money is integer micro-USDC.

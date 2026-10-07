@@ -162,7 +162,7 @@ export async function executeService(args: { goal: string; budgetUsd?: number; p
     try {
       await fetch(`${base}/api/wallet`, { signal: AbortSignal.timeout(3000) });
     } catch {
-      throw new ToolError(`Switchyard web server not reachable at ${base}. Start it with \`npm run dev\` (providers are served by it), then retry.`);
+      throw new ToolError(`Rialto web server not reachable at ${base}. Start it with \`npm run dev\` (providers are served by it), then retry.`);
     }
   }
   const wallet = await getWallet(ctx.agentId);

@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/primitives";
 import { TransactionsTable } from "@/components/transactions/TransactionsTable";
 
-export const metadata = { title: "Transactions — SWITCHYARD" };
+export const metadata = { title: "Transactions — RIALTO" };
 
 export default function TransactionsPage() {
   return (

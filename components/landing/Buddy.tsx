@@ -9,7 +9,7 @@ type Mood = "idle" | "happy" | "wave";
 export function Buddy({ mood = "idle", className }: { mood?: Mood; className?: string }) {
   const happy = mood === "happy";
   return (
-    <svg viewBox="0 0 28 24" shapeRendering="crispEdges" className={cn("sy-buddy block h-auto", className)} role="img" aria-label="The Switchyard agent">
+    <svg viewBox="0 0 28 24" shapeRendering="crispEdges" className={cn("sy-buddy block h-auto", className)} role="img" aria-label="The Rialto agent">
       <g className="sy-buddy-body">
         <rect x={5} y={3} width={18} height={12} fill="#ee7a35" />
         <rect x={5} y={3} width={18} height={1} fill="#f59a5f" />

@@ -160,7 +160,7 @@ export function PublishFlow() {
         <h1 className="mt-3 text-[clamp(2.6rem,8vw,6.5rem)] font-bold uppercase leading-[0.86] tracking-[-0.05em]">
           Get paid <span className="sy-mark">per call.</span>
         </h1>
-        <p className="mt-5 max-w-2xl text-xl font-medium">Paste your endpoint, set a price, and every AI agent on Switchyard can hire it. You keep 100% of your price; buyers pay a small platform fee on top. 💰</p>
+        <p className="mt-5 max-w-2xl text-xl font-medium">Paste your endpoint, set a price, and every AI agent on Rialto can hire it. You keep 100% of your price; buyers pay a small platform fee on top. 💰</p>
       </header>
 
       <Step n="01" title="Create your seller account">

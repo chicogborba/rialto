@@ -23,10 +23,10 @@ const TABS: { id: Client; label: string }[] = [
 ];
 
 const PROMPTS = [
-  "Use switchyard to make a pixel-art sprite sheet for my game's hero.",
-  "Use switchyard to look up the Pokémon charizard.",
-  "Ask switchyard what services exist for image.sprites and compare them for accuracy.",
-  "Check my switchyard wallet.",
+  "Use rialto to make a pixel-art sprite sheet for my game's hero.",
+  "Use rialto to look up the Pokémon charizard.",
+  "Ask rialto what services exist for image.sprites and compare them for accuracy.",
+  "Check my rialto wallet.",
 ];
 
 export function ConnectFlow() {
@@ -83,10 +83,10 @@ export function ConnectFlow() {
 
   const shown = key ? (reveal ? key : `${key.slice(0, 13)}••••••••••••`) : "";
   const url = `${origin}/api/mcp`;
-  const claude = `claude mcp add --transport http switchyard ${url} --header "Authorization: Bearer ${key ?? "YOUR_KEY"}"`;
-  const claudeShown = `claude mcp add --transport http switchyard ${url} --header "Authorization: Bearer ${shown || "YOUR_KEY"}"`;
-  const codexCfg = (k: string) => `# ~/.codex/config.toml\n[mcp_servers.switchyard]\nurl = "${url}"\nbearer_token_env_var = "SWITCHYARD_KEY"\n\n# in your shell profile\nexport SWITCHYARD_KEY="${k}"`;
-  const json = (k: string) => `{\n  "mcpServers": {\n    "switchyard": {\n      "type": "http",\n      "url": "${url}",\n      "headers": { "Authorization": "Bearer ${k}" }\n    }\n  }\n}`;
+  const claude = `claude mcp add --transport http rialto ${url} --header "Authorization: Bearer ${key ?? "YOUR_KEY"}"`;
+  const claudeShown = `claude mcp add --transport http rialto ${url} --header "Authorization: Bearer ${shown || "YOUR_KEY"}"`;
+  const codexCfg = (k: string) => `# ~/.codex/config.toml\n[mcp_servers.rialto]\nurl = "${url}"\nbearer_token_env_var = "RIALTO_KEY"\n\n# in your shell profile\nexport RIALTO_KEY="${k}"`;
+  const json = (k: string) => `{\n  "mcpServers": {\n    "rialto": {\n      "type": "http",\n      "url": "${url}",\n      "headers": { "Authorization": "Bearer ${k}" }\n    }\n  }\n}`;
 
   return (
     <div>
@@ -95,7 +95,7 @@ export function ConnectFlow() {
         <h1 className="mt-3 text-[clamp(2.6rem,8vw,6.5rem)] font-bold uppercase leading-[0.86] tracking-[-0.05em]">
           Give your agent <span className="sy-mark">a marketplace.</span>
         </h1>
-        <p className="mt-5 max-w-2xl text-xl font-medium">One command. Your agent gets a wallet and can hire any API on Switchyard, paying per call. No account on each API, no key juggling. 🛒</p>
+        <p className="mt-5 max-w-2xl text-xl font-medium">One command. Your agent gets a wallet and can hire any API on Rialto, paying per call. No account on each API, no key juggling. 🛒</p>
       </header>
 
       <Step n="01" title="Get your key">
@@ -124,7 +124,7 @@ export function ConnectFlow() {
         {tab === "claude" && (
           <div className="space-y-2">
             <CopyBlock value={claude} display={claudeShown} />
-            <p className="font-mono text-[11px] text-muted">Run it once in your terminal. Then start <code>claude</code> and type <code>/mcp</code> to see switchyard connected.</p>
+            <p className="font-mono text-[11px] text-muted">Run it once in your terminal. Then start <code>claude</code> and type <code>/mcp</code> to see rialto connected.</p>
           </div>
         )}
         {tab === "codex" && (
@@ -140,7 +140,7 @@ export function ConnectFlow() {
           </div>
         )}
         {origin.includes("localhost") && (
-          <p className="border-l-4 border-pay pl-3 font-mono text-[11px] text-muted">You&apos;re on localhost, so this only works from this machine. A deployed Switchyard gives you a public URL.</p>
+          <p className="border-l-4 border-pay pl-3 font-mono text-[11px] text-muted">You&apos;re on localhost, so this only works from this machine. A deployed Rialto gives you a public URL.</p>
         )}
       </Step>
 

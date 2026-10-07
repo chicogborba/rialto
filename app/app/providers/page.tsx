@@ -2,7 +2,7 @@ import Link from "next/link";
 import { hardButtonClass, PageHeader } from "@/components/primitives";
 import { ProviderList } from "@/components/providers/ProviderList";
 
-export const metadata = { title: "Providers — SWITCHYARD" };
+export const metadata = { title: "Providers — RIALTO" };
 
 export default function ProvidersPage() {
   return (

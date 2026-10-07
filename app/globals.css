@@ -4,7 +4,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ---- SWITCHYARD design tokens (single source of truth) ---- */
+/* ---- RIALTO design tokens (single source of truth) ---- */
 @theme {
   --color-ink: #0b0c0a;
   --color-surface: #121310;

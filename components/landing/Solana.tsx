@@ -71,7 +71,7 @@ export function Solana() {
           A <span className="sy-mark">$0.012</span> API call can&apos;t ride card rails — the fee is bigger than the bill. On Solana it <span className="sy-sol-text">just clears</span>. ⚡
         </p>
         <p className="mt-6 max-w-3xl font-mono text-[10px] uppercase leading-relaxed tracking-[0.08em] text-muted">
-          Switchyard routes x402 payments in USDC on Solana. This demo build targets Solana devnet and simulates settlement (see the SIMULATED badge); the live rail is the next milestone.
+          Rialto routes x402 payments in USDC on Solana. This demo build targets Solana devnet and simulates settlement (see the SIMULATED badge); the live rail is the next milestone.
           Card comparison assumes typical processing of ~2.9% + $0.30 per charge.
         </p>
       </div>

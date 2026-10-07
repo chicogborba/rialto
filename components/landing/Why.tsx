@@ -8,7 +8,7 @@ const REASONS = [
   { emoji: "🧠", n: "01", title: "Your model is a generalist.", body: "Cracked at reasoning. Mid at meshes, pixels and live data.", tone: "bg-surface text-paper" },
   { emoji: "🛠️", n: "02", title: "Specialists already exist.", body: "Some API out there does that one job way better.", tone: "bg-paper text-ink" },
   { emoji: "💸", n: "03", title: "x402 made them payable.", body: "One HTTP 402, settled in USDC on Solana. No account, no API key dance.", tone: "bg-pay text-ink" },
-  { emoji: "🚦", n: "04", title: "Somebody has to pick.", body: "Switchyard scouts, vets, hires and pays. No human in the loop.", tone: "bg-signal text-ink" },
+  { emoji: "🚦", n: "04", title: "Somebody has to pick.", body: "Rialto scouts, vets, hires and pays. No human in the loop.", tone: "bg-signal text-ink" },
 ] as const;
 
 /** The pitch, in four cards. */

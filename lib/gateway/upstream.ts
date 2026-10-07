@@ -51,7 +51,7 @@ export async function callUpstream(cfg: UpstreamConfig, requestBody: unknown): P
   // placeholders may only fill the path/query, never the host
   if (url.host !== templateHost) throw new UpstreamError("unsafe_upstream: placeholder changed the host");
 
-  const headers: Record<string, string> = { accept: "application/json", "user-agent": "Switchyard-Gateway/1.0" };
+  const headers: Record<string, string> = { accept: "application/json", "user-agent": "Rialto-Gateway/1.0" };
   if (cfg.encryptedHeaders) Object.assign(headers, JSON.parse(decryptSecret(cfg.encryptedHeaders)) as Record<string, string>);
 
   let body: string | undefined;

@@ -8,7 +8,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-line bg-ink/95 px-4 py-3 backdrop-blur-none">
         <Link href="/" className="text-lg font-bold uppercase tracking-tight">
-          Switch<span className="text-signal">yard</span>
+          Rial<span className="text-signal">to</span>
         </Link>
         <div className="flex flex-wrap items-center gap-3">
           <WalletChip />

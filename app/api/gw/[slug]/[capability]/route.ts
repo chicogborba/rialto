@@ -18,11 +18,11 @@ const rail = getRail(realClock(0));
 
 /**
  * Gateway for seller-published APIs. Same order as x402: 402 → verify payment → run the seller's API →
- * settle only if it succeeded. Callable only by the Switchyard orchestrator (simulated rail).
+ * settle only if it succeeded. Callable only by the Rialto orchestrator (simulated rail).
  */
 export async function POST(req: Request, ctx: { params: Promise<{ slug: string; capability: string }> }): Promise<Response> {
   return handle(async () => {
-    if (!isInternal(req)) throw new HttpError(403, "forbidden", "Gateway calls go through the Switchyard agent (use the MCP tools or /api/runs).");
+    if (!isInternal(req)) throw new HttpError(403, "forbidden", "Gateway calls go through the Rialto agent (use the MCP tools or /api/runs).");
     const { slug, capability } = await ctx.params;
     const row = await getProviderBySlug(slug);
     const svcRow = row?.services.find((s) => s.capability === capability);

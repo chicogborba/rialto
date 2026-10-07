@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "switchyard": {
+    "rialto": {
       "command": "npm",
       "args": ["run", "--silent", "mcp"],
       "cwd": "<absolute path to this repo>"

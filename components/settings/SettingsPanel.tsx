@@ -11,7 +11,7 @@ import { HardButton, Label, ModeBadge, Panel, StatusDot } from "@/components/pri
 const inputCls = "mt-2 min-h-11 w-full border border-line-hi bg-ink px-3 font-mono text-sm text-paper focus-visible:border-signal";
 const MCP_SNIPPET = `{
   "mcpServers": {
-    "switchyard": {
+    "rialto": {
       "command": "npm",
       "args": ["run", "--silent", "mcp"],
       "cwd": "<absolute path to this repo>"

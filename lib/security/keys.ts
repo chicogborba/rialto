@@ -5,7 +5,7 @@ export type KeyKind = "buyer" | "seller";
 export interface NewKey {
   /** shown to the user exactly once */
   key: string;
-  /** safe to display, e.g. "sy_buyer_k3J9" */
+  /** safe to display, e.g. "rl_buyer_k3J9" */
   prefix: string;
   /** what we store */
   hash: string;
@@ -30,12 +30,12 @@ export function generateKey(kind: KeyKind): NewKey {
 }
 
 export function kindOfKey(key: string): KeyKind | null {
-  if (key.startsWith("sy_buyer_")) return "buyer";
-  if (key.startsWith("sy_seller_")) return "seller";
+  if (key.startsWith("rl_buyer_")) return "buyer";
+  if (key.startsWith("rl_seller_")) return "seller";
   return null;
 }
 
-/** "Bearer sy_buyer_…" → the raw key, or null. */
+/** "Bearer rl_buyer_…" → the raw key, or null. */
 export function bearerFrom(header: string | null | undefined): string | null {
   const m = header?.match(/^Bearer\s+(\S+)$/i);
   return m ? m[1] : null;

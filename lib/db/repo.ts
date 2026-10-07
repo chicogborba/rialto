@@ -196,7 +196,7 @@ export async function persistEvent(e: RunEvent): Promise<void> {
 
 /**
  * Records an attempt. For a settled purchase it also splits the money in the same DB transaction:
- * the seller is credited exactly their price, Switchyard keeps the difference, and the append-only
+ * the seller is credited exactly their price, Rialto keeps the difference, and the append-only
  * ledger gets one entry per party. Failed attempts move no money.
  */
 export async function recordTransaction(tx: TransactionRecord): Promise<void> {

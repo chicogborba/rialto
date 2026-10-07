@@ -16,7 +16,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SWITCHYARD — agents that hire. Built for Solana.",
+  title: "RIALTO — agents that hire. Built for Solana.",
   description:
     "An autonomous service procurement and routing layer for AI agents. Discover, evaluate, purchase and compose machine-readable services over x402.",
 };

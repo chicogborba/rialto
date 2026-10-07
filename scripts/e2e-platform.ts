@@ -28,7 +28,7 @@ async function api(path: string, init: RequestInit & { key?: string; json?: unkn
 async function main() {
   // ---- seller
   const seller = await api("/api/sellers", { json: { name: "Demo Seller", payoutAddress: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU" } });
-  check("seller signup returns a key once", seller.status === 201 && String(seller.body?.apiKey).startsWith("sy_seller_"));
+  check("seller signup returns a key once", seller.status === 201 && String(seller.body?.apiKey).startsWith("rl_seller_"));
   const sKey = String(seller.body?.apiKey);
 
   const quote = await api("/api/pricing/quote?priceUsd=0.002");

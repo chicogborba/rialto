@@ -60,7 +60,7 @@ export function ImageCompare() {
             />
           </div>
           <p className="mx-auto mt-5 max-w-[640px] font-mono text-[10px] uppercase leading-relaxed tracking-[0.08em] text-ink/60">
-            Real outputs, not routed through Switchyard. Right: DreamShaper XL (SDXL-class) from the iso3D dataset (MIT); price is hosted SDXL on a public API (0.9 credits ≈ $0.009).
+            Real outputs, not routed through Rialto. Right: DreamShaper XL (SDXL-class) from the iso3D dataset (MIT); price is hosted SDXL on a public API (0.9 credits ≈ $0.009).
             Left: SVG written by {IMAGE_SOLO.model} in one pass ({IMAGE_SOLO.outputTokens.toLocaleString("en-US")} output tokens, est. at $20/MTok, excl. thinking).
           </p>
         </div>

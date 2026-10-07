@@ -6,7 +6,7 @@ export function PageShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-4 md:px-10">
-        <Link href="/" className="text-xl font-bold uppercase tracking-tight">Switch<span className="text-signal">yard</span></Link>
+        <Link href="/" className="text-xl font-bold uppercase tracking-tight">Rial<span className="text-signal">to</span></Link>
         <nav aria-label="Primary" className="flex items-center gap-4 font-mono text-[11px] font-bold uppercase tracking-[0.12em]">
           <Link href="/connect" className="py-2 text-muted hover:text-paper">Connect</Link>
           <Link href="/publish" className="py-2 text-muted hover:text-paper">Publish</Link>

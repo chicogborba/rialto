@@ -13,7 +13,7 @@ function key(): Buffer {
     return buf;
   }
   if (process.env.NODE_ENV === "production") throw new Error("SECRETS_KEY is required in production");
-  return createHash("sha256").update("switchyard-dev-only-key").digest();
+  return createHash("sha256").update("rialto-dev-only-key").digest();
 }
 
 export function encryptSecret(plain: string): string {

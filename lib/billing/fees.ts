@@ -25,7 +25,7 @@ export function feeConfigFromEnv(env: Record<string, string | undefined> = proce
 export interface PriceSplit {
   /** what the seller receives */
   sellerMicro: MicroUsdc;
-  /** what Switchyard keeps */
+  /** what Rialto keeps */
   feeMicro: MicroUsdc;
   /** what the buyer pays */
   buyerMicro: MicroUsdc;

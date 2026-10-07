@@ -61,7 +61,7 @@ export function Compare() {
         </div>
 
         <p className="mt-8 max-w-5xl font-mono text-[10px] uppercase leading-relaxed tracking-[0.08em] text-muted">
-          Real outputs, not routed through Switchyard. Right: Meshy-7 from the 3D Arena benchmark (MIT), simplified {fmtK(HIRED.originalTriangles)} → {fmtK(HIRED.triangles)} triangles; {HIRED.credits} API credits ≈ {fmtUsd(HIRED.costUsd)}.
+          Real outputs, not routed through Rialto. Right: Meshy-7 from the 3D Arena benchmark (MIT), simplified {fmtK(HIRED.originalTriangles)} → {fmtK(HIRED.triangles)} triangles; {HIRED.credits} API credits ≈ {fmtUsd(HIRED.costUsd)}.
           Left: three.js code written by {SOLO.model} in one pass ({SOLO.outputTokens.toLocaleString("en-US")} output tokens).
           Token costs are estimates at $20/MTok output, excluding thinking; the cheap in-house number buys the left robot, not the right one. &ldquo;Spit that mesh out&rdquo; = geometry as OBJ-style text, no texture.
         </p>

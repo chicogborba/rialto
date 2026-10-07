@@ -36,14 +36,14 @@ describe("keys", () => {
     const a = generateKey("buyer");
     const b = generateKey("buyer");
     expect(a.key).not.toBe(b.key);
-    expect(a.key.startsWith("sy_buyer_")).toBe(true);
+    expect(a.key.startsWith("rl_buyer_")).toBe(true);
     expect(a.hash).toBe(hashKey(a.key));
     expect(a.hash).not.toContain(a.key);
     expect(kindOfKey(generateKey("seller").key)).toBe("seller");
     expect(kindOfKey("nope")).toBeNull();
   });
   it("parses bearer headers", () => {
-    expect(bearerFrom("Bearer sy_buyer_x")).toBe("sy_buyer_x");
+    expect(bearerFrom("Bearer rl_buyer_x")).toBe("rl_buyer_x");
     expect(bearerFrom("bearer abc")).toBe("abc");
     expect(bearerFrom("Basic abc")).toBeNull();
     expect(bearerFrom(null)).toBeNull();

@@ -12,15 +12,15 @@ async function respond(run: () => Promise<unknown>): Promise<ToolResult> {
     return { content: [{ type: "text", text: JSON.stringify(await run(), null, 2) }] };
   } catch (e) {
     const message = e instanceof ToolError ? e.message : e instanceof Error ? `Internal error: ${e.message}` : "Unknown error";
-    console.error("[switchyard-mcp]", message);
+    console.error("[rialto-mcp]", message);
     return { content: [{ type: "text", text: message }], isError: true };
   }
 }
 
 const goalInput = { goal: z.string().min(3), budgetUsd: z.number().min(0).optional(), preset: z.enum(["balanced", "accuracy", "cost", "speed"]).optional() };
 
-/** The seven Switchyard tools, bound to one caller. Used by both the stdio server and the hosted HTTP endpoint. */
-export function registerSwitchyardTools(server: McpServer, ctx: ToolCtx): void {
+/** The seven Rialto tools, bound to one caller. Used by both the stdio server and the hosted HTTP endpoint. */
+export function registerRialtoTools(server: McpServer, ctx: ToolCtx): void {
   server.registerTool("discover_services", {
     title: "Discover services",
     description: "List providers that offer a capability (e.g. image.sprites, data.lookup, vision.damage_detection) with price, quality, latency, reputation and x402 status. Includes APIs published by third-party sellers.",
@@ -47,7 +47,7 @@ export function registerSwitchyardTools(server: McpServer, ctx: ToolCtx): void {
 
   server.registerTool("execute_service", {
     title: "Execute goal",
-    description: "Plan AND execute a goal: picks the best provider, pays it from your Switchyard wallet, runs it, falls back on failure, and returns the result plus transactions. Payments are SIMULATED unless the platform reports mode=live.",
+    description: "Plan AND execute a goal: picks the best provider, pays it from your Rialto wallet, runs it, falls back on failure, and returns the result plus transactions. Payments are SIMULATED unless the platform reports mode=live.",
     inputSchema: goalInput,
   }, (args) => respond(() => executeService(args, ctx)));
 

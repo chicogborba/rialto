@@ -1,7 +1,7 @@
 import { MarketTable } from "@/components/marketplace/MarketTable";
 import { PageHeader } from "@/components/primitives";
 
-export const metadata = { title: "Exchange — SWITCHYARD" };
+export const metadata = { title: "Exchange — RIALTO" };
 
 export default function MarketplacePage() {
   return (

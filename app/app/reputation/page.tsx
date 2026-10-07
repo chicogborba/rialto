@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/primitives";
 import { ReputationBoard } from "@/components/reputation/ReputationBoard";
 
-export const metadata = { title: "Reputation — SWITCHYARD" };
+export const metadata = { title: "Reputation — RIALTO" };
 
 export default function ReputationPage() {
   return (
