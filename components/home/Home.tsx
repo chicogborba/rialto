@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Buddy } from "@/components/landing/Buddy";
 import { asset, flowHref, REPO_URL } from "@/lib/site";
-import { HeroCritter } from "./HeroCritter";
+import { HeroMarket, Needs } from "./HeroMarket";
 import { PitchVideo } from "./PitchVideo";
 import { SolanaRace } from "./SolanaRace";
 import { Caption, Story as StoryScroll } from "./Story";
@@ -29,23 +29,25 @@ export function Header() {
   );
 }
 
-/** The video's title card: the name, the line, and the critter on the stage the story plays on. */
+/** The promise on the left; on the right, the market itself, at work. */
 export function Hero() {
   return (
-    <section className="relative overflow-hidden">
-      <div className={`${WRAP} flex flex-col items-center pt-4 text-center md:pt-8`}>
-        <h1 className="flex flex-col items-center">
-          <span className="border-4 border-coal bg-lime px-6 pb-1 text-[clamp(4rem,14vw,9.5rem)] font-bold uppercase leading-[0.98] tracking-[-0.06em] shadow-[8px_8px_0_var(--color-coal)] md:border-[6px] md:px-10 md:shadow-[14px_14px_0_var(--color-coal)]">Rialto</span>
-          <span className="relative z-10 mt-3 -rotate-2 bg-coal px-5 pb-1.5 pt-1 text-[clamp(1.6rem,4.6vw,3.4rem)] font-bold tracking-[-0.03em] text-cream md:mt-5">Agents that hire.</span>
+    <section className="relative grid items-center overflow-hidden md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <div className="px-5 pb-2 pt-6 md:py-10 md:pl-8 md:pr-0 lg:pl-[max(2rem,calc((100vw-72rem)/2+2rem))]">
+        <h1 className="text-[clamp(3.2rem,8.4vw,7rem)] font-bold leading-[0.9] tracking-[-0.055em]">
+          Agents <span className="whitespace-nowrap">that hire</span>
         </h1>
-        <p className="mt-7 max-w-xl text-lg leading-snug text-coal/80 md:text-2xl">The marketplace where AI agents find, compare and pay for APIs. On their own.</p>
-        <div className="mt-7 flex flex-wrap justify-center gap-3">
+        <p className="mt-3 text-[clamp(1.5rem,3.6vw,2.9rem)] font-bold leading-tight tracking-[-0.03em]">
+          an API for <Needs />
+        </p>
+        <p className="mt-6 max-w-md text-lg leading-snug text-coal/75 md:text-xl">They find it, compare it and pay per call. On their own.</p>
+        <div className="mt-7 flex flex-wrap gap-3">
           <Link href={flowHref("/connect")} className="home-btn home-btn-ink">Connect my agent</Link>
-          <Link href={flowHref("/publish")} className="home-btn home-btn-line bg-cream">Publish an API</Link>
+          <Link href={flowHref("/publish")} className="home-btn home-btn-line">Publish an API</Link>
         </div>
       </div>
-      <HeroCritter className="block h-[30svh] min-h-[210px] w-full md:h-[34svh]" />
-      <p className="home-bob absolute inset-x-0 bottom-3 text-center font-mono text-xs font-bold uppercase tracking-[0.16em] text-coal/55">↓ Scroll to see it work</p>
+      <HeroMarket className="h-[50svh] min-h-[320px] w-full md:h-[min(78svh,700px)]" />
+      <p className="home-bob pointer-events-none absolute inset-x-0 bottom-3 hidden text-center font-mono text-xs font-bold uppercase tracking-[0.16em] text-coal/55 md:block">↓ Scroll to see how it works</p>
     </section>
   );
 }
@@ -116,9 +118,11 @@ export function Solana() {
           Why <span className="home-sol">Solana?</span>
         </h2>
         <p className="mt-3 max-w-3xl text-xl font-bold leading-snug text-coal/80 md:text-3xl">It is paid before the others leave the start line.</p>
-        <div className="mt-8 md:mt-10">
-          <SolanaRace />
-        </div>
+      </div>
+      <div className="mt-8 md:mt-10">
+        <SolanaRace />
+      </div>
+      <div className={WRAP}>
         <dl className="mt-10 grid grid-cols-3 gap-4 md:mt-12 md:gap-8">
           {SOLANA_FACTS.map((fact) => (
             <div key={fact.value}>
@@ -127,7 +131,7 @@ export function Solana() {
             </div>
           ))}
         </dl>
-        <p className="mt-8 text-xs text-coal/45">Typical settlement times; they vary by provider. Built for x402 on Solana. Payments are simulated in this build.</p>
+        <p className="mt-8 text-xs text-coal/45">Real time: a card payout takes about 2 days, a bank transfer 1 to 3, a wire up to 5. Built for x402 on Solana; payments are simulated in this build.</p>
       </div>
     </section>
   );

@@ -9,8 +9,8 @@ import type { HeroScene } from "@/components/landing/scene/HeroScene";
 // Start downloading three.js as soon as this chunk runs, not after hydration.
 const sceneModule = typeof window === "undefined" ? null : import("@/components/landing/scene/HeroScene");
 
-/** The 3D critter in the hero. Renders only while on screen; tap him and he reacts. */
-export function HeroCritter({ className }: { className?: string }) {
+/** The living market in the hero. Follows the pointer a little; stalls hop when pointed at; the critter can be poked. */
+export function HeroMarket({ className }: { className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
 
@@ -23,8 +23,7 @@ export function HeroCritter({ className }: { className?: string }) {
     let visible = true;
     let disposed = false;
     let last = performance.now();
-    let mx = 0;
-    let targetMx = 0;
+    const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
     let pokes = 0;
     const recent: number[] = [];
 
@@ -32,8 +31,10 @@ export function HeroCritter({ className }: { className?: string }) {
       raf = 0;
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      mx += (targetMx - mx) * 0.08;
-      scene?.render(now / 1000, dt, mx);
+      mouse.x += (mouse.tx - mouse.x) * 0.06;
+      mouse.y += (mouse.ty - mouse.y) * 0.06;
+      // under reduced motion the market is drawn once, mid-sale, and left still
+      scene?.render(reduced ? 1.9 : now / 1000, dt, mouse.x, mouse.y);
       if (visible && !reduced && !document.hidden) raf = requestAnimationFrame(loop);
     };
     const kick = () => {
@@ -46,7 +47,11 @@ export function HeroCritter({ className }: { className?: string }) {
       kick();
     };
     const move = (e: PointerEvent) => {
-      targetMx = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.tx = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.ty = (e.clientY / window.innerHeight) * 2 - 1;
+    };
+    const point = (e: PointerEvent) => {
+      canvas.style.cursor = scene?.hover(e.clientX, e.clientY) ? "pointer" : "";
     };
     const down = (e: PointerEvent) => {
       if (!scene?.pick(e.clientX, e.clientY)) return;
@@ -66,7 +71,10 @@ export function HeroCritter({ className }: { className?: string }) {
     io.observe(canvas);
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
-    if (!reduced) window.addEventListener("pointermove", move, { passive: true });
+    if (!reduced) {
+      window.addEventListener("pointermove", move, { passive: true });
+      canvas.addEventListener("pointermove", point, { passive: true });
+    }
     canvas.addEventListener("pointerdown", down);
     document.addEventListener("visibilitychange", kick);
 
@@ -75,7 +83,7 @@ export function HeroCritter({ className }: { className?: string }) {
         if (disposed) return;
         scene = new HeroScene(canvas, window.innerWidth < 768);
         scene.resize(canvas.clientWidth, canvas.clientHeight);
-        scene.render(performance.now() / 1000, 0.016, 0);
+        scene.render(performance.now() / 1000, 0.016, 0, 0);
         setReady(true);
         kick();
         requestAnimationFrame(markHeroReady);
@@ -88,11 +96,39 @@ export function HeroCritter({ className }: { className?: string }) {
       io.disconnect();
       ro.disconnect();
       window.removeEventListener("pointermove", move);
+      canvas.removeEventListener("pointermove", point);
       canvas.removeEventListener("pointerdown", down);
       document.removeEventListener("visibilitychange", kick);
       scene?.dispose();
     };
   }, []);
 
-  return <canvas ref={ref} role="img" aria-label="The Rialto agent: a small orange robot. Tap it." className={cn("transition-opacity duration-500", ready ? "opacity-100" : "opacity-0", className)} style={{ touchAction: "pan-y", cursor: "pointer" }} />;
+  return (
+    <canvas
+      ref={ref}
+      role="img"
+      aria-label="A small 3D market: little agents walk from stall to stall, pay a coin at each and leave with parcels, under a Rialto sign."
+      className={cn("block transition-opacity duration-500", ready ? "opacity-100" : "opacity-0", className)}
+      style={{ touchAction: "pan-y" }}
+    />
+  );
+}
+
+const NEEDS = ["game sprites", "a voice-over", "a 3D model", "live market data", "a translation"];
+
+/** Finishes the headline: "…an API for [whatever it needs next]". */
+export function Needs() {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = window.setInterval(() => setI((n) => (n + 1) % NEEDS.length), 2200);
+    return () => window.clearInterval(timer);
+  }, []);
+  return (
+    <span className="inline-block overflow-hidden align-bottom">
+      <span key={i} className="home-need inline-block bg-lime px-2">
+        {NEEDS[i]}
+      </span>
+    </span>
+  );
 }

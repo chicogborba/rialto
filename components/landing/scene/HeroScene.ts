@@ -1,71 +1,186 @@
 import * as THREE from "three";
+import { backOut, buildCoin, buildStall, clamp01, disposeScene, GROUND, MiniCritter, seg, shadedBox, smooth, textTexture } from "./lowpoly";
 import { Mascot } from "./mascot";
 
-const PALETTE = [0x5ce1e6, 0xffd23f, 0xc6ff3d, 0x9945ff, 0x14f195, 0xffffff, 0xff4d4d];
-const rnd = (i: number, n: number) => {
-  const x = Math.sin(i * 12.9898 + n * 78.233) * 43758.5453;
-  return x - Math.floor(x);
-};
+/**
+ * The hero: a small market at work. Stalls stand in an arc under the Rialto sign; little agents
+ * file past them, pay each one a coin and walk off with a stack of parcels, while the orange
+ * critter stands in the middle and watches you.
+ *
+ * Everything is a function of time: the queue moves one stall at a time (walk, then pause to buy),
+ * so the agents can never run into each other.
+ */
 
-/** The hero: the critter standing among blocks resting on the ground, like the video's title card. */
-const GROUND = -1.085; // the mascot's feet
+const LABELS = ["SPRITES", "VOICE", "3D", "SEARCH", "DATA", "VISION", "TRANSLATE"];
+const STALL_COLORS = [0x5ce1e6, 0xffd23f, 0x9945ff, 0x14f195, 0xff8fb3, 0xc6ff3d, 0x5ce1e6];
+const BUYER_COLORS = [0x5ce1e6, 0xff8fb3, 0xffd23f, 0x14f195, 0xb98cff, 0xfffaf0];
+/** seconds per move: walk to the next stall, then stand and buy */
+const PERIOD = 2.5;
+const WALK = 1.4;
+const BUYER_SCALE = 0.5;
+
 export class HeroScene {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly canvas: HTMLCanvasElement;
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.PerspectiveCamera(30, 1, 0.1, 60);
+  private readonly camera = new THREE.PerspectiveCamera(32, 1, 0.1, 90);
   private readonly mascot = new Mascot();
-  private readonly cubes: { mesh: THREE.Mesh; x: number; y: number; z: number; phase: number; hop: number }[] = [];
+  private readonly stalls: { group: THREE.Group; x: number; z: number }[] = [];
+  private readonly buyers: MiniCritter[] = [];
+  private readonly coins: THREE.Mesh[] = [];
   private readonly raycaster = new THREE.Raycaster();
   private readonly ndc = new THREE.Vector2();
+  private readonly count: number;
+  private readonly radius: number;
+  private readonly spread: number;
+  private hovered = -1;
+  private fit = 1;
 
   constructor(canvas: HTMLCanvasElement, mobile: boolean) {
     this.canvas = canvas;
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, mobile ? 1.5 : 2));
     this.renderer.setClearColor(0x000000, 0);
+    this.count = mobile ? 5 : 7;
+    this.radius = mobile ? 4.4 : 5.6;
+    this.spread = ((mobile ? 54 : 62) * Math.PI) / 180;
+
+    // the square the market stands on, and the pad under the critter
+    const plaza = new THREE.Mesh(new THREE.CircleGeometry(this.radius + 2.4, 64), new THREE.MeshBasicMaterial({ color: 0xe6d6b4 }));
+    plaza.rotation.x = -Math.PI / 2;
+    plaza.position.set(0, GROUND - 0.02, -0.6);
+    const pad = new THREE.Mesh(new THREE.RingGeometry(1.45, 1.6, 48), new THREE.MeshBasicMaterial({ color: 0xc6ff3d }));
+    pad.rotation.x = -Math.PI / 2;
+    pad.position.set(0, GROUND, 1);
+    this.scene.add(plaza, pad);
+
+    for (let i = 0; i < this.count; i++) {
+      const a = this.angle(i);
+      const group = buildStall(STALL_COLORS[i % STALL_COLORS.length], LABELS[i % LABELS.length]);
+      const x = Math.sin(a) * this.radius;
+      const z = -Math.cos(a) * this.radius + 0.6;
+      group.rotation.y = -a;
+      this.stalls.push({ group, x, z });
+      this.coins.push(buildCoin());
+      this.scene.add(group, this.coins[i]);
+    }
+
+    // the Rialto sign behind the market
+    const sign = new THREE.Group();
+    const board = shadedBox(4.4, 1.3, 0.16, 0xc6ff3d);
+    board.position.y = 3.95;
+    const name = new THREE.Mesh(new THREE.PlaneGeometry(4, 1.25), new THREE.MeshBasicMaterial({ map: textTexture("RIALTO", "#17120f", "#c6ff3d") }));
+    name.position.set(0, 3.95, 0.09);
+    sign.add(board, name);
+    for (const x of [-1.7, 1.7]) {
+      const post = shadedBox(0.14, 3.4, 0.14, 0x8d6540);
+      post.position.set(x, 1.7, -0.02);
+      sign.add(post);
+    }
+    sign.position.set(0, GROUND, -this.radius - 0.5);
+    this.scene.add(sign);
+
+    this.mascot.group.position.set(0, 0, 1);
     this.scene.add(this.mascot.group);
 
-    const count = mobile ? 12 : 24;
-    for (let i = 0; i < count; i++) {
-      const size = 0.28 + rnd(i, 1) * 0.42;
-      const hex = PALETTE[i % PALETTE.length];
-      // per-face shades fake the lighting, same trick as the mascot
-      const mats = [0.84, 0.72, 1.05, 0.5, 0.95, 0.62].map((k) => new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k) }));
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(size, size, size), mats);
-      const side = i % 2 ? 1 : -1;
-      mesh.rotation.y = rnd(i, 6) * 3;
-      const cube = { mesh, x: side * (1.9 + rnd(i, 2) * (mobile ? 2.2 : 5.4)), y: GROUND + size / 2, z: -0.2 - rnd(i, 4) * 3.2, phase: rnd(i, 5) * 6.28, hop: 0.1 + rnd(i, 3) * 0.2 };
-      this.cubes.push(cube);
-      this.scene.add(mesh);
+    // enough agents to fill the arc plus the ones walking in and out
+    for (let j = 0; j < this.count + 4; j++) {
+      const buyer = new MiniCritter([BUYER_COLORS[j % BUYER_COLORS.length]], 3);
+      this.buyers.push(buyer);
+      this.scene.add(buyer.group);
     }
-    this.camera.position.set(0, 0.35, 6.2);
-    this.camera.lookAt(0, -0.3, 0);
+  }
+
+  private angle(slot: number): number {
+    return -this.spread + (2 * this.spread * slot) / (this.count - 1);
   }
 
   resize(w: number, h: number): void {
     this.camera.aspect = Math.max(1, w) / Math.max(1, h);
-    // the stage is a wide strip on desktop; pull back on narrow screens
-    this.camera.position.z = 6.2 * Math.max(1, 2.2 / this.camera.aspect);
+    // pull back on narrow canvases so the whole arc stays in frame
+    this.fit = Math.max(1, 1.5 / this.camera.aspect);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
   }
 
-  render(time: number, dt: number, mx: number): void {
+  render(time: number, dt: number, mx: number, my: number): void {
+    const sin = Math.sin;
+    this.camera.position.set(mx * 0.9, 3.7 - my * 0.35, 12.4 * this.fit);
+    this.camera.lookAt(0, 0.55, -1.4);
     this.mascot.update({ time, dt, mx, scout: 0, think: 0, hop: 0, pay: 0, party: 0 });
-    for (const c of this.cubes) {
-      // they rest on the ground and give a little hop now and then
-      c.mesh.position.set(c.x, c.y + Math.max(0, Math.sin(time * 1.1 + c.phase)) * c.hop, c.z);
-    }
+
+    const n = this.buyers.length;
+    const period = Math.floor(time / PERIOD);
+    const local = time % PERIOD;
+    const step = smooth(Math.min(1, local / WALK));
+    const paused = local >= WALK;
+    const u = paused ? (local - WALK) / (PERIOD - WALK) : 0;
+    const lane = this.radius - 2.15;
+    /** when, during the pause, the coin for stall k lands */
+    const landing = (k: number) => 0.4 + k * 0.035;
+
+    for (const coin of this.coins) coin.visible = false;
+    this.buyers.forEach((buyer, j) => {
+      const from = ((j + period) % n) - 2; // the slot it leaves this period; it pauses at from + 1
+      const slot = from + step;
+      const at = from + 1;
+      const a = this.angle(slot);
+      const x = sin(a) * lane;
+      const z = -Math.cos(a) * lane + 0.6;
+      const shown = smooth(clamp01((slot + 1.7) / 0.8)) * smooth(clamp01((this.count + 0.7 - slot) / 0.8));
+      buyer.group.visible = shown > 0.01;
+      if (!buyer.group.visible) return;
+      const scale = BUYER_SCALE * shown;
+      buyer.group.scale.setScalar(scale);
+      buyer.group.position.set(x, GROUND * (1 - scale), z);
+      // walks along the arc, turns to the stall while it buys, then turns back
+      const turn = paused ? smooth(clamp01(u * 5)) * (1 - smooth(clamp01((u - 0.82) * 6))) : 0;
+      buyer.group.rotation.y = Math.PI / 2 - a + (Math.PI / 2) * turn;
+
+      const buying = paused && at >= 0 && at < this.count;
+      const paid = buying && u > landing(at);
+      const joy = paid ? sin(clamp01((u - landing(at)) / 0.3) * Math.PI) * 0.4 : 0;
+      buyer.update(time + j * 0.7, paused ? 0 : 1, joy);
+      // one parcel per stall it has bought from so far (the stack stops at three)
+      buyer.setParcels(Math.max(0, Math.min(3, at + (paid ? 1 : 0))), paid && at < 3 ? backOut(clamp01((u - landing(at)) / 0.2)) : 1);
+
+      if (buying) {
+        const coin = this.coins[at];
+        const c = seg(u, 0.1 + at * 0.035, landing(at));
+        const stall = this.stalls[at];
+        coin.visible = c > 0 && c < 1;
+        coin.position.set(x + (stall.x - x) * c, GROUND + 0.9 + (GROUND + 1.0 - (GROUND + 0.9)) * c + sin(c * Math.PI) * 1.5, z + (stall.z - z) * c);
+        coin.rotation.set(time * 9, time * 3, Math.PI / 2);
+      }
+    });
+
+    // stalls give a hop when their coin lands, and when you point at them
+    this.stalls.forEach((stall, k) => {
+      const sale = paused ? sin(seg(u, landing(k), landing(k) + 0.28) * Math.PI) * 0.22 : 0;
+      const pointed = this.hovered === k ? Math.abs(sin(time * 7)) * 0.2 : 0;
+      stall.group.position.set(stall.x, GROUND + sale + pointed, stall.z);
+    });
+
     this.renderer.render(this.scene, this.camera);
+  }
+
+  private aim(clientX: number, clientY: number): void {
+    const r = this.canvas.getBoundingClientRect();
+    this.ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    this.raycaster.setFromCamera(this.ndc, this.camera);
   }
 
   /** true when the screen point is over the critter */
   pick(clientX: number, clientY: number): boolean {
-    const r = this.canvas.getBoundingClientRect();
-    this.ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
-    this.raycaster.setFromCamera(this.ndc, this.camera);
+    this.aim(clientX, clientY);
     return this.raycaster.intersectObject(this.mascot.hitBox).length > 0;
+  }
+
+  /** remembers which stall is under the pointer; returns true when the pointer is over something */
+  hover(clientX: number, clientY: number): boolean {
+    this.aim(clientX, clientY);
+    this.hovered = this.stalls.findIndex((stall) => this.raycaster.intersectObject(stall.group, true).length > 0);
+    return this.hovered >= 0 || this.raycaster.intersectObject(this.mascot.hitBox).length > 0;
   }
 
   poke(variant: number): void {
@@ -73,13 +188,6 @@ export class HeroScene {
   }
 
   dispose(): void {
-    this.scene.traverse((o) => {
-      if (o instanceof THREE.Mesh) {
-        o.geometry.dispose();
-        const mats: THREE.Material[] = Array.isArray(o.material) ? o.material : [o.material];
-        mats.forEach((m) => m.dispose());
-      }
-    });
-    this.renderer.dispose();
+    disposeScene(this.scene, this.renderer);
   }
 }

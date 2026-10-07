@@ -1,0 +1,218 @@
+import * as THREE from "three";
+
+/**
+ * Building blocks for the page's low-poly world: shaded boxes, signs, stalls and the small
+ * critters. No lights anywhere: every face carries its own shade.
+ */
+
+/** where feet stand: the mascot's body is centred on y = 0 */
+export const GROUND = -1.085;
+const INK = 0x17120f;
+// face order: +x, -x, +y, -y, +z, -z
+const FACE_SHADES = [0.86, 0.72, 1.06, 0.55, 0.96, 0.64];
+
+export const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+export const seg = (p: number, a: number, b: number) => clamp01((p - a) / (b - a));
+export const smooth = (t: number) => t * t * (3 - 2 * t);
+export const backOut = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : 1 + 2.70158 * Math.pow(t - 1, 3) + 1.70158 * Math.pow(t - 1, 2));
+export const rnd = (i: number, n: number) => {
+  const x = Math.sin(i * 12.9898 + n * 78.233) * 43758.5453;
+  return x - Math.floor(x);
+};
+
+/** Box with per-face shades: fakes lighting without any lights in the scene. */
+export function shadedBox(w: number, h: number, d: number, hex: number, opacity = 1): THREE.Mesh {
+  const materials = FACE_SHADES.map((k) => new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k), transparent: opacity < 1, opacity, depthWrite: opacity >= 1 }));
+  return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), materials);
+}
+
+/** Flat-shaded mesh for shapes that are not boxes: every triangle gets its shade from one fixed light. */
+export function faceted(geometry: THREE.BufferGeometry, colorOf: (face: number) => number): THREE.Mesh {
+  const g = geometry.index ? geometry.toNonIndexed() : geometry;
+  g.computeVertexNormals();
+  const position = g.getAttribute("position");
+  const normal = g.getAttribute("normal");
+  const colors = new Float32Array(position.count * 3);
+  const light = new THREE.Vector3(0.35, 0.8, 0.5).normalize();
+  const n = new THREE.Vector3();
+  const c = new THREE.Color();
+  for (let i = 0; i < position.count; i += 3) {
+    n.fromBufferAttribute(normal, i);
+    c.setHex(colorOf(i / 3)).multiplyScalar(0.62 + 0.46 * Math.max(0, n.dot(light)));
+    for (let v = 0; v < 3; v++) c.toArray(colors, (i + v) * 3);
+  }
+  g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  return new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true }));
+}
+
+/** Bold text drawn once into a texture. Pass `bg: null` for text on a transparent background. */
+export function textTexture(text: string, fg: string, bg: string | null, width = 512, height = 160): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    if (bg) {
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, width, height);
+    }
+    ctx.fillStyle = fg;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const face = '"Arial Black", "Helvetica Neue", Arial, sans-serif';
+    let size = height * 0.66;
+    ctx.font = `900 ${size}px ${face}`;
+    const measured = ctx.measureText(text).width;
+    if (measured > width * 0.86) size *= (width * 0.86) / measured;
+    ctx.font = `900 ${size}px ${face}`;
+    ctx.fillText(text, width / 2, height * 0.54);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  return texture;
+}
+
+/** A chequered flag pattern, kept crisp. */
+export function checkerTexture(cols: number, rows: number): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = cols;
+  canvas.height = rows;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        ctx.fillStyle = (x + y) % 2 ? "#fffdf7" : "#17120f";
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  return texture;
+}
+
+/** Market stall: counter, posts, striped awning and an optional name board. Stands on y = 0, faces +z. */
+export function buildStall(color: number, label?: string): THREE.Group {
+  const group = new THREE.Group();
+  const add = (w: number, h: number, d: number, hex: number, x: number, y: number, z: number, parent: THREE.Object3D = group) => {
+    const mesh = shadedBox(w, h, d, hex);
+    mesh.position.set(x, y, z);
+    parent.add(mesh);
+  };
+  add(1.7, 0.74, 0.86, 0xb98a5a, 0, 0.37, 0);
+  add(1.84, 0.1, 1.0, 0x8d6540, 0, 0.79, 0);
+  add(0.1, 1.2, 0.1, 0x8d6540, -0.78, 1.4, -0.32);
+  add(0.1, 1.2, 0.1, 0x8d6540, 0.78, 1.4, -0.32);
+  const awning = new THREE.Group();
+  awning.position.set(0, 2.05, 0.05);
+  awning.rotation.x = 0.32;
+  for (let i = 0; i < 5; i++) add(0.38, 0.08, 1.2, i % 2 ? 0xfffaf0 : color, -0.76 + i * 0.38, 0, 0, awning);
+  group.add(awning);
+  if (label) {
+    add(1.66, 0.56, 0.06, INK, 0, 2.86, 0.14);
+    const board = new THREE.Mesh(new THREE.PlaneGeometry(1.56, 0.46), new THREE.MeshBasicMaterial({ map: textTexture(label, "#17120f", "#fffdf7", 512, 152) }));
+    board.position.set(0, 2.86, 0.18);
+    group.add(board);
+  }
+  return group;
+}
+
+export function buildCoin(): THREE.Mesh {
+  return new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.07, 14), [
+    new THREE.MeshBasicMaterial({ color: 0xd9a400 }),
+    new THREE.MeshBasicMaterial({ color: 0xffd23f }),
+    new THREE.MeshBasicMaterial({ color: 0xffd23f }),
+  ]);
+}
+
+export function buildParcel(): THREE.Group {
+  const parcel = new THREE.Group();
+  parcel.add(shadedBox(0.7, 0.52, 0.52, 0xd9a868), shadedBox(0.14, 0.54, 0.54, 0xc6ff3d));
+  return parcel;
+}
+
+const BODY = { w: 1.9, h: 1.25, d: 0.85 };
+const LEG = 0.46;
+
+/**
+ * A small critter with the mascot's proportions and a simple walk cycle. `bands` are its colours
+ * from top to bottom: one for a plain critter, three for the Solana stripes. The group's origin is
+ * the body centre, so at scale 1 the feet are on GROUND.
+ */
+export class MiniCritter {
+  readonly group = new THREE.Group();
+  private readonly body = new THREE.Group();
+  private readonly legs: THREE.Mesh[] = [];
+  private readonly parcels: THREE.Group[] = [];
+  private readonly legBase = -(BODY.h / 2 + LEG / 2) + 0.02;
+
+  constructor(bands: number[], parcels = 0) {
+    const bandHeight = BODY.h / bands.length;
+    bands.forEach((hex, i) => {
+      const band = shadedBox(BODY.w, bandHeight, BODY.d, hex);
+      band.position.y = BODY.h / 2 - bandHeight / 2 - i * bandHeight;
+      this.body.add(band);
+    });
+    const mid = bands[Math.floor(bands.length / 2)];
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.4, 0.06), new THREE.MeshBasicMaterial({ color: INK }));
+      eye.position.set(side * 0.47, 0.13, BODY.d / 2 + 0.03);
+      const arm = shadedBox(0.3, 0.4, 0.5, mid);
+      arm.position.set(side * (BODY.w / 2 + 0.15), 0.02, -0.08);
+      this.body.add(eye, arm);
+    }
+    for (const z of [0.3, -0.3]) {
+      for (const x of [-0.72, -0.44, 0.44, 0.72]) {
+        const leg = shadedBox(0.17, LEG, 0.17, bands[bands.length - 1]);
+        leg.position.set(x, this.legBase, z);
+        this.legs.push(leg);
+        this.group.add(leg);
+      }
+    }
+    for (let k = 0; k < parcels; k++) {
+      const parcel = buildParcel();
+      parcel.position.y = BODY.h / 2 + 0.3 + k * 0.54;
+      parcel.rotation.y = k * 0.5;
+      parcel.visible = false;
+      this.parcels.push(parcel);
+      this.body.add(parcel);
+    }
+    this.group.add(this.body);
+  }
+
+  /** `walk` 0..1 is how hard it is walking, `hop` lifts it, `pace` speeds the cycle up for running. */
+  update(time: number, walk: number, hop = 0, pace = 1): void {
+    const cycle = time * 9 * pace;
+    this.body.position.y = Math.abs(Math.sin(cycle)) * 0.09 * walk + hop;
+    this.body.rotation.z = Math.sin(cycle) * 0.05 * walk;
+    this.body.rotation.x = 0.1 * walk;
+    this.legs.forEach((leg, i) => {
+      leg.position.y = this.legBase + Math.max(0, Math.sin(cycle * 2 + (i % 2) * Math.PI + (i > 3 ? 1.2 : 0))) * 0.17 * walk + hop * 0.92;
+    });
+  }
+
+  /** shows the first `count` parcels on its head; `pop` (0..1) scales the newest one in */
+  setParcels(count: number, pop = 1): void {
+    this.parcels.forEach((parcel, k) => {
+      parcel.visible = k < count;
+      parcel.scale.setScalar(k === count - 1 ? Math.max(0.0001, pop) : 1);
+    });
+  }
+}
+
+export function disposeScene(scene: THREE.Scene, renderer: THREE.WebGLRenderer): void {
+  scene.traverse((o) => {
+    if (o instanceof THREE.Mesh) {
+      o.geometry.dispose();
+      const materials: THREE.Material[] = Array.isArray(o.material) ? o.material : [o.material];
+      materials.forEach((m) => {
+        if (m instanceof THREE.MeshBasicMaterial) m.map?.dispose();
+        m.dispose();
+      });
+    }
+  });
+  renderer.dispose();
+}
