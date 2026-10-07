@@ -25,7 +25,7 @@ export function hashKey(key: string): string {
 }
 
 export function generateKey(kind: KeyKind): NewKey {
-  const key = `sy_${kind}_${base62(32)}`;
+  const key = `rl_${kind}_${base62(32)}`;
   return { key, prefix: key.slice(0, 13), hash: hashKey(key) };
 }
 
