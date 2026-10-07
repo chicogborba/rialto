@@ -1,4 +1,4 @@
-import { Footer, Header, Hero, Pitch, Solana, Start, Story } from "@/components/home/Home";
+import { Footer, Header, Hero, Pitch, Solana, Start, Story, Wins } from "@/components/home/Home";
 import { Preloader } from "@/components/landing/Preloader";
 import { StaticBanner } from "@/components/landing/StaticBanner";
 
@@ -12,6 +12,7 @@ export default function LandingPage() {
       <main>
         <Hero />
         <Story />
+        <Wins />
         <Pitch />
         <Solana />
         <Start />

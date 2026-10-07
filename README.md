@@ -37,6 +37,7 @@ Then open:
 | URL | What |
 |---|---|
 | `/` | Landing page: the pitch as a 3D scroll story, the video, the Solana race |
+| `/catalog` | Public catalog of the APIs an agent can hire (demo data from the seed registry) |
 | `/connect` | **Buyer flow**: get a key, copy the install command, see your wallet |
 | `/publish` | **Seller flow**: publish an API, test it, watch earnings, withdraw |
 | `/app` | Visual agent console (runs the decision engine with a live graph) |

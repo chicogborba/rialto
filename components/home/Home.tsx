@@ -19,8 +19,9 @@ export function Header() {
         Rialto
       </Link>
       <nav aria-label="Primary" className="flex items-center gap-6 text-sm font-medium">
-        <a href="#video" className="hidden text-coal/70 hover:text-coal md:block">Video</a>
-        <a href="#solana" className="hidden text-coal/70 hover:text-coal md:block">Solana</a>
+        <Link href="/catalog" className="text-coal/70 hover:text-coal">Catalog</Link>
+        <Link href="/#video" className="hidden text-coal/70 hover:text-coal md:block">Video</Link>
+        <Link href="/#solana" className="hidden text-coal/70 hover:text-coal md:block">Why Solana</Link>
         <a href={REPO_URL} className="hidden text-coal/70 hover:text-coal sm:block">GitHub</a>
         <Link href={flowHref("/connect")} className="home-btn home-btn-ink !min-h-10 !px-4 text-sm">Connect</Link>
       </nav>
@@ -68,6 +69,28 @@ export function Story() {
   );
 }
 
+const WINS = [
+  { word: "Cheaper", bg: "bg-lime", tilt: "-rotate-2" },
+  { word: "Faster", bg: "bg-[#5ce1e6]", tilt: "rotate-1" },
+  { word: "Better", bg: "bg-[#ffd23f]", tilt: "-rotate-1" },
+] as const;
+
+/** What you end up with, in the video's three words. */
+export function Wins() {
+  return (
+    <section aria-label="What you get" className={`${WRAP} py-16 text-center md:py-24`}>
+      <ul className="flex flex-wrap items-center justify-center gap-4 md:gap-7">
+        {WINS.map((w) => (
+          <li key={w.word} className={`${w.bg} ${w.tilt} border-[3px] border-coal px-5 pb-1 text-[clamp(2.4rem,7.5vw,6rem)] font-bold leading-[1.1] tracking-[-0.05em] shadow-[6px_6px_0_var(--color-coal)] md:border-4 md:px-9 md:shadow-[10px_10px_0_var(--color-coal)]`}>
+            {w.word}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-9 text-xl font-bold text-coal/75 md:text-3xl">One key. One wallet. Your spending limit.</p>
+    </section>
+  );
+}
+
 export function Pitch() {
   return (
     <section id="video" aria-labelledby="video-title" className={`${WRAP} scroll-mt-6 py-16 md:py-24`}>
@@ -87,9 +110,10 @@ export function Solana() {
   return (
     <section id="solana" aria-labelledby="solana-title" className="scroll-mt-6 bg-coal py-16 text-cream md:py-24">
       <div className={WRAP}>
-        <h2 id="solana-title" className={H2}>
-          Paid before the others <span className="home-sol">leave the start line.</span>
+        <h2 id="solana-title" className="text-[clamp(2.8rem,8vw,6rem)] font-bold leading-[0.92] tracking-[-0.05em]">
+          Why <span className="home-sol">Solana?</span>
         </h2>
+        <p className="mt-3 max-w-3xl text-xl font-bold leading-snug text-cream/85 md:text-3xl">It is paid before the others leave the start line.</p>
         <div className="mt-8 md:mt-10">
           <SolanaRace />
         </div>
@@ -132,6 +156,12 @@ export function Start() {
           </div>
         ))}
       </div>
+      <p className="mt-8 text-lg">
+        Just looking?{" "}
+        <Link href="/catalog" className="font-bold underline decoration-lime decoration-4 underline-offset-4 hover:decoration-coal">
+          Browse the catalog →
+        </Link>
+      </p>
     </section>
   );
 }

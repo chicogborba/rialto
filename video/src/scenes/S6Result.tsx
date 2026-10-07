@@ -50,8 +50,9 @@ export const S6Result: React.FC = () => {
             padding: "0 36px 6px",
             whiteSpace: "nowrap",
             rotate: `${w.rotate}deg`,
-            opacity: f >= hits[i] ? 1 : 0,
-            scale: interpolate(f, [hits[i], hits[i] + 9], [2.2, 1], { ...clamp, easing: Easing.bezier(0.2, 0.9, 0.3, 1.2) }),
+            // a short, small pop: big slams overlapped the word above and read as a flicker
+            opacity: interpolate(f, [hits[i], hits[i] + 3], [0, 1], clamp),
+            scale: interpolate(f, [hits[i], hits[i] + 8], [1.3, 1], { ...clamp, easing: Easing.bezier(0.16, 1, 0.3, 1) }),
           }}
         >
           {w.text}
