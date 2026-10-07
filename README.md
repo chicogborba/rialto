@@ -1,214 +1,154 @@
-# RIALTO
+# Rialto
 
-> x402 lets agents pay. Rialto decides who gets paid.
+> **Agents that hire.** A marketplace where AI agents discover, compare, pay for and use APIs — and where anyone can publish an API and get paid per call.
 
-A hackathon-grade **autonomous service procurement layer for AI agents**. Give it a goal and a budget; it decomposes the goal into capabilities, discovers providers, scores them, builds a (possibly multi-service) plan, checks its spending policy, pays over an x402-shaped flow, executes, falls back on failure, and explains what it bought and why.
+Rialto has two sides:
 
-**Honesty first**
+| | You are… | You do |
+|---|---|---|
+| 🛠️ **Seller** | someone with an API | Publish it at `/publish`: paste the endpoint, set a price, get paid per successful call. |
+| 🤖 **Buyer** | someone using Claude Code / Codex | Connect at `/connect`: one command gives your agent a wallet and the whole marketplace. |
 
-- Every provider is **fictional** (labelled `DEMO PROVIDER`).
-- Every payment in this build is **SIMULATED**. The UI shows a `SIMULATED` badge on every payment and transaction. Simulated settlements carry `sim_…` references and never link to a block explorer.
-- The HTTP 402 handshake between agent and provider is a *real* HTTP exchange against local routes, but it uses `X-Sim-*` headers, **not** the real x402 headers. No blockchain is touched.
-- Live x402 on Solana devnet (plan Phase 8) is **not implemented**; `X402PaymentRail` is a typed stub that throws `live mode not configured`.
-- We did not invent x402 and we are not the first x402 marketplace. x402 is the payment rail; Rialto is the decision layer on top.
+The agent decides *what* to buy, from *whom*, for *how much*; the platform runs the 402 payment flow, calls the seller's API, splits the money (seller price + a small platform fee) and keeps an auditable ledger.
+
+**Status: hackathon build.** The decision engine, gateway, accounts, ledger, MCP server and UI are real and tested. **Payments are simulated** (no blockchain is touched; the UI says `SIMULATED` everywhere). Live x402 payments on Solana devnet are the next milestone — see [What is real and what is not](#what-is-real-and-what-is-not).
+
+🔗 **Landing page preview:** https://chicogborba.github.io/rialto/ (static export; the full platform runs locally)
+
+---
 
 ## Quickstart
 
+Requirements: **Node.js 20.9+** (22 recommended, see `.nvmrc`) and npm. No Docker, no external services.
+
 ```bash
+git clone https://github.com/chicogborba/rialto.git
+cd rialto
 npm install
-npm run setup      # prisma generate + create SQLite + seed
-npm run dev        # http://localhost:3000
+cp .env.example .env        # defaults work as-is
+npm run setup               # creates the local SQLite database and seeds the demo data
+npm run dev                 # http://localhost:3000
 ```
 
-| Path | What |
+Then open:
+
+| URL | What |
 |---|---|
-| `/` | Landing page with a live, runnable demo |
-| `/app` | Agent Console (dashboard + goal + execution graph + event stream) |
-| `/app/marketplace` | Supply side (providers the agent reads) |
-| `/app/providers` | Register a provider, toggle providers on/offline |
-| `/app/transactions` | Ledger; click a row for the 5-part trace |
-| `/app/reputation` | Per-capability leaderboards |
-| `/app/settings` | Wallet + spending policy |
+| `/` | Landing page with the 3D story |
+| `/connect` | **Buyer flow**: get a key, copy the install command, see your wallet |
+| `/publish` | **Seller flow**: publish an API, test it, watch earnings, withdraw |
+| `/app` | Visual agent console (runs the decision engine with a live graph) |
+| `/app/marketplace` · `/providers` · `/transactions` · `/reputation` · `/settings` | Exchange, supply, ledger, trust, wallet policy |
 
-Other scripts: `npm run check` (typecheck + lint + tests), `npm run build`, `npm run mcp` (stdio MCP server), `npm run record` (regenerate recorded landing replays), `npx tsx scripts/mcp-smoke.ts` (exercise all MCP tools; needs `npm run dev`).
+### Try the whole two-sided flow in 60 seconds
 
-### 30-second demo
+With `npm run dev` running, in another terminal:
 
-1. Open `/app` — top bar shows `SIMULATED`, wallet `$10.00`.
-2. Click **Run full demo**.
-3. The graph shows 5 services discovered; DeepInspect struck `> MAX/REQ`, OpticNode struck `OFFLINE`; 3 qualified.
-4. Score bars fill; the matrix ranks; priority reads `Quality > Trust > Price > Latency`.
-5. **VisionMax** wins (`+ 98.4% benchmark quality`, `+ 99.1 reputation`, `− $0.012/request`). Alternative: BalancedVision, $0.004.
-6. Payment tab: `402 PAYMENT REQUIRED · 0.012 USDC · solana-devnet` → policy checklist → signing → verified → executed → `SETTLED sim_…`.
-7. Result tab shows the damage report; wallet ticks to `$9.988`; dashboard and transactions update.
-
-For the failure path pick **Translate + summarize** with the *Cost* preset: LinguaFlash is chosen, passes verification, fails (`upstream_timeout`), is **not charged**, and the agent falls back to PolyglotPro. **Reset demo** (top bar) restores a clean start.
-
-## What it is
-
-An agent-facing exchange plus the agent that shops on it. Three layers:
-
-1. **Exchange** — providers publish services (capability, price, latency, quality benchmark, network, x402 flag). SQLite via Prisma.
-2. **Decision engine** — a deterministic planner: goal → capabilities → qualified providers → scores → plan → explanation.
-3. **Execution** — an orchestrator that streams every decision, payment and result as typed events. The UI is a pure function of that stream.
-
-## Why it exists
-
-APIs were built for developers. An agent doesn't want an endpoint; it wants an outcome. Picking an endpoint means answering questions no payment protocol answers: is this provider good enough, is it worth its price, should I buy a second opinion, what if it fails, am I within budget?
-
-## Why x402 alone is not enough
-
-x402 makes a service **payable**: 402 → requirements → signed authorization → verified retry. It says nothing about *which* service to call. Without a decision layer you hard-wire a vendor (and overpay everywhere) or pick the cheapest (and get bad results). Rialto adds: capability decomposition, provider qualification, multi-factor ranking, budget and policy enforcement, composition, fallback and reputation feedback.
-
-## How the agent decision engine works
-
-```
-GOAL → CAPABILITIES → DISCOVERY → QUALIFICATION → SCORING → PLAN → POLICY CHECK → PAY → EXECUTE → RESULT
+```bash
+npm run e2e
 ```
 
-- **Planner interface** — `AgentPlanner.plan(goal, constraints, available, history) → ExecutionPlan`. `DemoAgentPlanner` is rule-based and deterministic (keyword scenarios: vision, research, translate, generic). `LLMAgentPlanner` is an interface stub: an LLM would only propose the capability DAG; qualification and scoring stay deterministic so spending is auditable.
-- **Constraints** — run budget, priority weights, wallet spending policy. Precedence: explicit preset/weights > phrases in the goal (“accuracy matters”, “cheap”, “under $0.005”) > scenario default.
-- **One engine, one event stream** — `runAgent()` is an async generator yielding 21 event types (`goal.parsed`, `evaluation.scored`, `payment.required`, …). Landing replays, the console, and MCP all use it. `reduceRun` folds events into `RunState`; every visualization renders from `RunState` only.
-- **Money is integer micro-USDC** (`1 USDC = 1_000_000`), formatted only at the UI edge.
-- **Determinism** — engine code never calls `Date.now`/`Math.random`/`setTimeout` directly; a `Clock` is injected (`testClock` for tests and recordings, `realClock(speed)` at runtime).
+It publishes the public PokéAPI as a seller, uses it as a buyer through the hosted MCP endpoint, and checks the money to the micro-USDC, the SSRF protections, "failed calls are never charged", payouts and account isolation. Or do it by hand: open `/publish`, click **Fill with a free example (PokéAPI)**, publish, then open `/connect` and follow the steps.
 
-## How provider ranking works
+### Connect your Claude Code / Codex
 
-**Qualification** (first failing rule wins): offline → x402 required but missing → network not allowed → provider not allowed → price > max per request → price > remaining run budget → quality < policy minimum. If nothing qualifies the run fails with the reason for each rejected provider.
-
-**Scoring** is min-max normalised *within the qualified set* for the capability:
-
-```
-quality_n = (q − min) / (max − min)         price_n   = (max − p) / (max − min)
-latency_n = (max − l) / (max − min)         trust_n   = mean(norm(reputation), norm(success))
-base      = wq·quality_n + wp·price_n + wl·latency_n + wt·trust_n
-score     = base × capabilityMatch × (0.9 + 0.1 × recentSuccessRate)
-```
-
-| preset | quality | price | latency | trust |
-|---|---|---|---|---|
-| balanced | 0.30 | 0.25 | 0.15 | 0.30 |
-| accuracy | 0.50 | 0.10 | 0.05 | 0.35 |
-| cost | 0.10 | 0.65 | 0.05 | 0.20 |
-| speed | 0.10 | 0.20 | 0.60 | 0.10 |
-
-**Worked example** (vision, accuracy): VisionMax 0.85 · BalancedVision 0.60 · FastVision 0.15 → VisionMax. Same providers under *balanced* → BalancedVision; under *cost* → BalancedVision (not the cheapest: trust outweighs $0.002); under *speed* → FastVision; accuracy with a $0.005 budget → BalancedVision (VisionMax rejected `over_budget`). These are unit tests.
-
-**Explanations** list the dimensions where the pick scored ≥ 0.75 (pros) or ≤ 0.25 (cons), the weight priority order and the score gap to the runner-up.
-
-**Routing savings** are measured against a *single premium vendor* baseline (the most expensive qualified provider at every step), shown next to the cheapest-route cost and the quality delta. The cheapest route is never described as the “optimal” one.
-
-## How multi-service composition works
-
-Scenarios are DAGs. *Research* = `market.quotes ∥ news.search ∥ filings.sec ∥ web.search → llm.analysis`. Each node is its own qualification, scoring and purchase; dependents receive upstream outputs and cite them by step id.
-
-- **Budget reserve** — when planning step *i*, the agent reserves the cheapest qualified price of every later step, so an early expensive pick can't starve the rest.
-- **Second source** — for corroborable capabilities (news) the agent also buys the runner-up if quality ≥ price in the weights and the price is ≤ 10% of the remaining budget. The decision states why it did or didn't.
-- **Fallback** — on execution failure or a policy rejection the agent takes the next ranked alternative that still passes policy and budget (max 2 per step) and runs the full payment flow again.
-- **Failed calls are never settled** — order is verify → execute → settle.
-
-## How x402 fits
-
-`PaymentRail` is the seam: `requestPayment` (agent signs), `verifyPayment`, `settlePayment` (provider side).
-
-| | Status |
-|---|---|
-| `DemoPaymentRail` | Implemented. Simulated, no network, `sim_…` refs. |
-| Mock provider routes `/api/x/[provider]/[capability]` | Real HTTP 402, `X-Sim-Payment` / `X-Sim-Settlement` headers (deliberately not x402 header names). |
-| `X402PaymentRail` | **Stub.** Throws `live mode not configured`. |
-
-The flow mirrors x402's shape so the real SDK rail can replace the simulated one without changing the agent or UI. To add live mode: install `@x402/core`, `@x402/fetch`, `@x402/next`, `@x402/svm`, `@solana/kit`; read their type definitions (do not rely on memory); protect one provider route with the SDK's Next wrapper; implement `X402PaymentRail` using the SDK's payment-wrapped fetch and a devnet signer; map SDK results onto the same `RunEvent`s. Providers not served live must stay labelled `SIMULATED`.
-
-## How MCP fits
-
-`npm run mcp` starts a stdio MCP server over the same `lib/` code (stdout is the protocol channel, so nothing logs there).
-
-| Tool | Purpose |
-|---|---|
-| `discover_services` | Providers for a capability |
-| `compare_services` | Rank service ids by preset/weights, explain winner |
-| `get_provider_reputation` | Reputation, success, latency, last 10 outcomes |
-| `plan_execution` | Plan without spending |
-| `execute_service` | Plan + pay (simulated) + execute; needs `npm run dev` running |
-| `get_transactions` | Recent attempts |
-| `get_wallet_status` | Balance, session spend, policy, mode |
-
-Config: see `mcp.example.json` (set `cwd` to this repo).
-
-## Demo architecture
-
-```
- goal ─▶ DemoAgentPlanner ─▶ ExecutionPlan
-                                │
- POST /api/runs (SSE) ─▶ runAgent() ──events──▶ SSE ─▶ useAgentRun ─▶ reduceRun ─▶ RunState
-        │   ▲                                                                     │
-        │   └── PaymentRail ◀─▶ /api/x/* mock providers (HTTP 402)                ▼
-        ▼                                                  ExecutionGraph · PaymentFlow · DecisionMatrix · EventLog
- Prisma/SQLite: providers, services, agent wallet, runs, events, transactions
-```
-
-- **Landing story (WebGL):** a scroll-driven three.js scene (`components/landing/scene/YardScene.ts`) shows the recorded vision run in 3D — five specialists scouted, two rejected by policy, one hired, paid over the 402 flow, result delivered. Node data comes from `lib/agent/recorded/vision.ts`; no network on first paint, three.js is lazy-loaded, no post-processing, DPR capped, loop paused off-screen, static under reduced motion.
-- **Built for Solana (landing):** a section on why the rail is Solana (≈400 ms slots, 5,000-lamport base fee, USDC settlement). The copy says "built for", not "powered by": this build targets Solana devnet and simulates settlement.
-- **Why / In-house vs hired (landing):** a four-card pitch, then same prompt ("a robot"), real outputs side by side in two sections (3D turntable, image wipe slider). 3D: three.js code written by Claude Opus 5.5 vs a Meshy-7 model; image: SVG written by Claude Opus 5.5 vs an SDXL-class render. Numbers live in `components/landing/compare-data.ts`; measured values are marked, token costs are estimates, sources and licences are in `public/models/CREDITS.md`. These outputs were **not** produced through Rialto — the section illustrates why an agent would hire a specialist.
-- The landing demo section runs a **real** `/api/runs` call with `ephemeral: true` (in-memory wallet, nothing persisted).
-- Seed data lives only in `prisma/seed-data.ts` (20 providers, 21 services). Seeding also generates 12 historical simulated runs over the previous 48h by running the real engine against a test clock.
-
-Layout: `app/` routes · `components/{primitives,agent,visualizations,landing,marketplace,providers,transactions,reputation,settings,dashboard,shell}` · `lib/{agent,routing,wallet,x402,providers,reputation,db,mcp,client}` · `prisma/` · `mcp/` · `tests/`.
-
-Design tokens live in `app/globals.css` (near-black / off-white, one accent `signal`, `pay` reserved for payment states). Motion maps to run state; everything honours `prefers-reduced-motion`.
-
-## Limitations
-
-- Providers are fictional; payments are simulated; reputation and quality figures are self-reported seed data.
-- The planner is rule-based (4 scenarios). Goals outside them use a generic search → analysis plan with capped confidence.
-- A registered provider whose endpoint doesn't speak the simulated 402 protocol will fail and trigger fallback. Registered endpoints are fetched server-side — only register URLs you trust (this is a local demo; there is no SSRF hardening).
-- Single local agent wallet, no auth.
-- The `execute_service` MCP tool needs the web server for the provider routes.
-- Live x402 is not implemented.
-
-## Future extensions
-
-LLM planner (propose DAG, keep scoring deterministic) · real x402 rail on Solana devnet/mainnet · x402 service discovery ingestion · provider onboarding with benchmark verification · on-chain reputation attestations · result-quality verification and refunds · multi-network and multi-asset support · per-agent wallets with delegated keys.
-
-## The platform: two sides
-
-**Sellers** publish an API; **buyers** connect their Claude Code / Codex and let their agent hire it. Rialto sits in the middle (gateway, wallet, ledger) and takes a small commission.
-
-```
-buyer's Claude ──MCP (Bearer rl_buyer_…)──▶ /api/mcp ──▶ agent: plan → pick → policy check
-                                                     └─▶ /api/gw/{api}/{capability}   (402 → verify → call seller → settle)
-                                                                  └─▶ seller's real HTTPS API
-money: buyer wallet −(seller price + fee) · seller balance +(seller price) · platform +fee · append-only ledger
-```
-
-| Flow | Where | What happens |
-|---|---|---|
-| Publish | `/publish` | Create seller account (name + Solana payout address) → publish endpoint, price, optional secret header and result fields → test it → watch earnings → withdraw |
-| Connect | `/connect` | Create buyer key (starter test credit) → paste one command → ask your agent for things |
-| Console | `/app` | The visual console (uses the local demo agent unless you send a key) |
-
-**Install (verified against the Claude Code and Codex docs):**
+Create a key at `/connect` (it fills the commands in for you), or by hand:
 
 ```bash
 # Claude Code
-claude mcp add --transport http rialto https://YOUR-HOST/api/mcp --header "Authorization: Bearer rl_buyer_…"
+claude mcp add --transport http rialto http://localhost:3000/api/mcp \
+  --header "Authorization: Bearer rl_buyer_…"
 ```
+
 ```toml
-# Codex: ~/.codex/config.toml  (and export RIALTO_KEY=rl_buyer_…)
+# Codex: ~/.codex/config.toml   (and: export RIALTO_KEY=rl_buyer_…)
 [mcp_servers.rialto]
-url = "https://YOUR-HOST/api/mcp"
+url = "http://localhost:3000/api/mcp"
 bearer_token_env_var = "RIALTO_KEY"
 ```
 
-**Commission.** Buyer pays `sellerPrice + max(PLATFORM_MIN_FEE_MICRO, ceil(sellerPrice × PLATFORM_FEE_BPS / 10000))`; the seller always receives exactly their price. Defaults: 5%, floor $0.001. The publish page previews it live. All money is integer micro-USDC.
+Then ask your agent: *"Use rialto to make a pixel-art sprite sheet for my game's hero"* or *"Look up the Pokémon charizard with rialto."* Tools exposed: `discover_services`, `compare_services`, `get_provider_reputation`, `plan_execution`, `execute_service`, `get_transactions`, `get_wallet_status`.
 
-**Security model.** API keys are random, shown once, stored as sha256. Seller upstream secrets are encrypted at rest (AES-256-GCM, `SECRETS_KEY` required in production). Seller URLs are fetched by *our* servers, so they are https-only, resolved and rejected if non-public (SSRF guard, re-checked after placeholder substitution), no redirects, 8 s timeout, 1 MB upstream / 64 KB result caps. The gateway only accepts calls carrying an internal token, so a forged simulated payment can't hit a seller's API. Wallet debits are atomic (no overdraw). Per-key rate limits (in-memory: use Redis when running several instances).
+---
 
-**Verify everything end to end** (needs `npm run dev`): `npm run e2e` publishes the PokéAPI as a seller, uses it as a buyer through the hosted MCP endpoint and checks the money to the micro-USDC, SSRF rejection, failed-call-not-charged, payout, and isolation between accounts.
+## Commands
 
-### Not built yet (be honest in the pitch)
-- **Real money.** Everything is simulated: top-ups, settlement and payouts. The live Solana rail (x402 + USDC on devnet) is the next milestone; the architecture expects buyers to pay a platform treasury and sellers to be paid out from it.
-- **Auth is key-only** (no email/password/recovery). Lose the key, lose the account.
-- **The planner is rule-based** and derives the API input from the goal heuristically (`{query}`); a real LLM planner would build typed input from each service's schema.
-- **Integers:** balances are Prisma `Int` (SQLite), capping at about $2,147 per account.
-- Seller APIs are self-reported quality; reputation starts at 50 and is earned.
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server |
+| `npm run build` / `npm start` | Production build / serve |
+| `npm run setup` | Generate the Prisma client, create the SQLite DB and seed it |
+| `npm run db:reset` | Wipe and reseed the demo data (also the **Reset demo** button in the app) |
+| `npm run check` | Typecheck + lint + unit tests (what CI runs) |
+| `npm run e2e` | End-to-end check of the two-sided platform (needs `npm run dev`) |
+| `npm run mcp` | Local stdio MCP server (development; real users use `/api/mcp`) |
+| `npm run record` | Regenerate the recorded runs the landing page replays |
+| `npm run build:pages` | Static export of the landing page into `./out` (GitHub Pages) |
+
+## Configuration (`.env`)
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `DATABASE_URL` | `file:./dev.db` | SQLite file (relative to `prisma/`) |
+| `PAYMENT_MODE` | `simulated` | Only `simulated` is implemented |
+| `PLATFORM_FEE_BPS` | `500` | Platform commission in basis points (500 = 5%) |
+| `PLATFORM_MIN_FEE_MICRO` | `1000` | Commission floor per call, in micro-USDC ($0.001) |
+| `TEST_CREDIT_MICRO` | `1000000` | Starter credit for new buyers (simulated mode) |
+| `MIN_PAYOUT_MICRO` | `10000` | Minimum seller withdrawal ($0.01) |
+| `SECRETS_KEY` | – | **Required in production.** `openssl rand -base64 32`; encrypts sellers' upstream secrets |
+| `INTERNAL_TOKEN` | random | Set when running more than one instance |
+| `ALLOW_PRIVATE_UPSTREAMS` | `0` | `1` allows http/localhost upstreams (development only) |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Used by the stdio MCP server and scripts |
+
+## How the money works
+
+The buyer pays `sellerPrice + max(floor, ceil(sellerPrice × bps / 10000))`. The seller is credited **exactly** their price; the platform keeps the difference; every movement is an append-only ledger entry. Failed upstream calls are never settled. All amounts are integer micro-USDC (`1 USDC = 1_000_000`). Example: seller price $0.002 → buyer pays $0.003 (platform keeps $0.001).
+
+## What is real and what is not
+
+| Real, tested | Simulated / not built |
+|---|---|
+| Decision engine (qualify → score → plan → explain), multi-step plans, fallback | **Money**: top-ups, settlement and payouts are simulated (`sim_…` refs, no explorer links) |
+| Accounts, hashed API keys, per-buyer wallets and spending policy | **Solana / x402 live rail** (`X402PaymentRail` is a stub; see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)) |
+| Seller gateway: 402 → verify → call the seller's real API → settle, SSRF-guarded | Login is **key-only** (no email/password/recovery) |
+| Commission split + ledger, atomic debits, payouts | The planner is **rule-based**; it deduces the API input from the goal heuristically |
+| Hosted MCP endpoint, MCP stdio server | Balances are 32-bit ints in SQLite (~$2,147 max per account) |
+| Visual console, 3D landing | Rate limiting is in-memory (single instance) |
+
+The ~800-cube "market" in the landing animation is illustrative; the demo registry holds 25 providers. All seeded providers are fictional.
+
+## Project layout
+
+```
+app/                 Next.js App Router
+  page.tsx             landing (3D story)
+  connect/ publish/    the two onboarding flows
+  app/                 visual console + marketplace, providers, transactions, reputation, settings
+  api/                 REST + SSE: runs, wallet, agents, sellers, gw (gateway), mcp (hosted MCP), …
+components/          UI (landing/, agent/, visualizations/, connect/, publish/, …)
+lib/
+  agent/               planner, orchestrator (runAgent), reducer, scenarios, recorded runs
+  routing/             qualification, scoring, explanations, savings
+  billing/             commission math
+  gateway/             seller upstream caller + templates
+  security/            keys, secrets (AES-GCM), SSRF guard, rate limit
+  db/                  Prisma client, repo, accounts, seed
+  mcp/                 tool definitions + registration (shared by stdio and HTTP)
+  x402/                payment rail interface + simulated rail
+prisma/              schema + seed data (single source of truth for demo providers)
+mcp/                 stdio MCP server
+scripts/             e2e, recorders, Pages build
+tests/               vitest (engine, billing, security, templates)
+docs/                architecture + deployment + original plan
+```
+
+## Documentation
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — decision engine, ranking formula, composition, x402 fit, platform design, security model, limitations
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — GitHub Pages (landing) and running the full platform on a server
+- [docs/history/original-plan.md](docs/history/original-plan.md) — the original build plan (historical)
+- [public/models/CREDITS.md](public/models/CREDITS.md) — third-party assets and licences
+
+## Credits and licences
+
+The robot model and image in the comparison sections come from the [3D Arena](https://huggingface.co/datasets/3d-arena/3d-arena) and [iso3D](https://huggingface.co/datasets/dylanebert/iso3d) datasets (MIT); details in `public/models/CREDITS.md`. The orange critter is an original character inspired by the Claude Code mascot; that mascot is an Anthropic trademark, so replace the character before using this commercially. No project licence has been chosen yet.

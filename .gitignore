@@ -43,3 +43,6 @@ next-env.d.ts
 !.env.example
 prisma/dev.db*
 prisma/*.db-journal
+
+.pages-stash/
+out/

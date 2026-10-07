@@ -1,3 +1,4 @@
+import { asset } from "@/lib/site";
 /**
  * Single source for the SOLO vs HIRED comparison on the landing page.
  * Measured values are marked (measured); everything else is an estimate and labelled as such in the UI.
@@ -30,7 +31,7 @@ export const HIRED = {
   credits: 30, // 20 mesh + 10 texture, per Meshy API pricing docs
   /** 30 credits at the Pro-plan rate of $20 / 1,000 credits (reported) */
   costUsd: 0.6,
-  url: "/models/robot-meshy7.glb",
+  url: asset("/models/robot-meshy7.glb"),
 };
 
 /**
@@ -54,14 +55,14 @@ const SOLO_SVG_CHARS = 4336; // (measured) wc -c public/img/robot-opus.svg
 export const IMAGE_SOLO = {
   model: "Claude Opus 5.5",
   kind: "Hand-written SVG",
-  url: "/img/robot-opus.svg",
+  url: asset("/img/robot-opus.svg"),
   outputTokens: tokens(SOLO_SVG_CHARS),
   costUsd: usd(tokens(SOLO_SVG_CHARS)),
 };
 export const IMAGE_HIRED = {
   model: "SDXL-class image API",
   kind: "DreamShaper XL",
-  url: "/img/robot-sdxl.jpg",
+  url: asset("/img/robot-sdxl.jpg"),
   /** Stability AI lists SDXL 1.0 at 0.9 credits, $0.01 per credit */
   costUsd: 0.009,
 };

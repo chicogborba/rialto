@@ -10,12 +10,43 @@ import { EventLog } from "@/components/visualizations/EventLog";
 import { ExecutionGraph } from "@/components/visualizations/ExecutionGraph";
 import { PaymentFlow } from "@/components/visualizations/PaymentFlow";
 import { cn } from "@/lib/utils";
+import { RECORDED_SPRITES_RUN } from "@/lib/agent/recorded/sprites";
+import { useActive } from "@/hooks/useActive";
+import { useReplay } from "@/hooks/useReplay";
+import { STATIC_PREVIEW, REPO_URL } from "@/lib/site";
 import { Section } from "./Section";
 
 /** Real ephemeral runs (/api/runs): in-memory wallet, nothing persisted. Speeds keep each run short. */
 const SPEEDS = [0.55, 0.2, 0.45, 0.55, 0.5] as const;
 
+/** GitHub Pages has no backend: replay a recorded run instead of calling /api/runs. */
+function StaticDemo() {
+  const { ref, active } = useActive<HTMLDivElement>();
+  const state = useReplay(RECORDED_SPRITES_RUN, { active, speed: 0.5, holdMs: 3500 });
+  return (
+    <Section id="demo" index="RECORDED RUN · SIMULATED PAYMENTS" title={<>Watch it <span className="sy-mark">cook.</span> 👨‍🍳</>}>
+      <div ref={ref} className="space-y-5">
+        <p className="font-mono text-xs text-muted">
+          This is a recorded run of the real decision engine. The live version (pick any job, run it yourself) needs the backend:{" "}
+          <a className="text-signal underline" href={`${REPO_URL}#quickstart`}>run it locally in 2 minutes</a>.
+        </p>
+        <div className="grid gap-5 lg:grid-cols-12">
+          <div className="border border-line bg-surface p-2 lg:col-span-8"><ExecutionGraph state={state} /></div>
+          <div className="space-y-5 lg:col-span-4">
+            <PaymentFlow state={state} />
+            <EventLog state={state} variant="timeline" maxHeightClass="max-h-56" />
+          </div>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
 export function LiveDemo() {
+  return STATIC_PREVIEW ? <StaticDemo /> : <LiveRunDemo />;
+}
+
+function LiveRunDemo() {
   const { state, start } = useAgentRun();
   const [idx, setIdx] = useState(3); // start on the sprite job, same as the story above
   const running = state.status === "running";

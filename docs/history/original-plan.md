@@ -1,4 +1,6 @@
-# SWITCHYARD — Execution Plan
+> **Historical document.** This is the original execution plan written before the build (the project was then called "Switchyard" / "Agentic API Exchange"). The code has since diverged: see `README.md` and `docs/ARCHITECTURE.md` for what actually exists.
+
+# RIALTO — Execution Plan
 
 > Formerly "Agentic API Exchange". This file is the single source of truth for building the project.
 > You (the executing model) follow it top to bottom. Do not redesign. Do not skip acceptance checks.
@@ -20,10 +22,10 @@ The project folder is the directory containing this file (`~/Documents/switchyar
 
 ## 1. Product
 
-**Name:** SWITCHYARD
-**Why the name:** a switchyard is where rail traffic gets routed. x402 is the payment *rail*; Switchyard is where the agent decides which track the money takes.
+**Name:** RIALTO
+**Why the name:** a switchyard is where rail traffic gets routed. x402 is the payment *rail*; Rialto is where the agent decides which track the money takes.
 
-**One-liner:** x402 lets agents pay. Switchyard decides who gets paid.
+**One-liner:** x402 lets agents pay. Rialto decides who gets paid.
 **Secondary:** Don't give your agent an API. Give it a goal.
 
 **What it is:** an autonomous service procurement and routing layer for AI agents. The user gives a goal + budget + priorities. The agent decomposes the goal into capabilities, discovers providers, scores them, builds a (possibly multi-service) plan, checks its spending policy, pays over an x402-style flow, executes, falls back on failure, and reports what it bought and why.
@@ -32,7 +34,7 @@ The project folder is the directory containing this file (`~/Documents/switchyar
 
 **Honesty constraints (non-negotiable, also in copy):**
 - Never claim to have invented x402 or to be the first x402 marketplace.
-- Positioning sentence to use: "x402 provides the payment rail. Switchyard adds the layer that decides what to buy, from whom, and when."
+- Positioning sentence to use: "x402 provides the payment rail. Rialto adds the layer that decides what to buy, from whom, and when."
 - All seeded providers are fictional. Label them `DEMO PROVIDER` wherever they are listed.
 - Every payment, transaction and tx reference shown in the UI carries a `SIMULATED` or `LIVE` badge. A simulated payment never shows a Solana explorer link and never uses a string that looks like a real signature (prefix simulated refs with `sim_`).
 
@@ -749,10 +751,10 @@ Rules:
 
 ### 9.1 Landing (`/`) — 8 sections
 
-Header: wordmark `SWITCHYARD` (display, 700), nav (`Console`, `Exchange`, `Docs` → README anchor), `ModeBadge`, CTA `RUN THE AGENT`.
+Header: wordmark `RIALTO` (display, 700), nav (`Console`, `Exchange`, `Docs` → README anchor), `ModeBadge`, CTA `RUN THE AGENT`.
 
 1. **Hero** (`01 / GOAL`). Left 7 cols: headline `AGENTS DON'T NEED APIS.` / `THEY NEED CAPABILITIES.` (second line in `signal`). Sub: `An autonomous procurement layer for AI agents. Discover, evaluate, purchase and compose machine-readable services over x402.` CTAs `RUN THE AGENT` (→ scrolls to section 3) and `EXPLORE THE EXCHANGE` (→ `/app/marketplace`). Right 5 cols: `ExecutionGraph` auto-looping the vision scenario using a **pre-recorded event array** (generate once with `testClock` and commit as `lib/agent/recorded-vision-run.ts`; replay with timers client-side — no network on first paint). Below hero: `Ticker` with recent seeded transactions (`VisionMax · vision.damage_detection · $0.012 · SIMULATED`).
-2. **Thesis** (light section, `02 / WHY`). Big type: `APIS WERE BUILT FOR DEVELOPERS.` `AGENTS DON'T WANT ENDPOINTS.` `THEY WANT OUTCOMES.` Then a two-column statement: left `x402 SOLVES PAYMENT.` right `SWITCHYARD SOLVES PROCUREMENT.` with the honesty sentence from section 1 underneath, and a 7-step strip `GOAL → DISCOVERY → EVALUATION → DECISION → PAYMENT → EXECUTION → RESULT`.
+2. **Thesis** (light section, `02 / WHY`). Big type: `APIS WERE BUILT FOR DEVELOPERS.` `AGENTS DON'T WANT ENDPOINTS.` `THEY WANT OUTCOMES.` Then a two-column statement: left `x402 SOLVES PAYMENT.` right `RIALTO SOLVES PROCUREMENT.` with the honesty sentence from section 1 underneath, and a 7-step strip `GOAL → DISCOVERY → EVALUATION → DECISION → PAYMENT → EXECUTION → RESULT`.
 3. **Live demo** (`03 / RUN IT`) — `id="demo"`. Three goal chips + `RUN AGENT` button. Runs a real `/api/runs` call with `ephemeral: true`. Layout: `ExecutionGraph` (8 cols) + `PaymentFlow` (4 cols), `Timeline` below, then a `DecisionCard` (Goal / Priority / Candidates / Selected / Why + / − / Expected cost / Alternative) and the result payload when done. Title: `THE AGENT IS THE BUYER.`
 4. **Decision engine** (`04 / DECISION`). Copy: `PRICE IS A SIGNAL.` `QUALITY IS A SIGNAL.` `REPUTATION IS A SIGNAL.` `THE AGENT DECIDES.` Interactive `DecisionMatrix` over the 3 vision providers with 4 sliders + preset buttons + a `MAX PRICE` input. When idle for 4 s it auto-cycles presets (stop on any interaction; disabled under reduced motion).
 5. **Composition** (`05 / COMPOSE`). Title `ONE GOAL. FIVE PURCHASES.` Recorded replay of the research scenario in `ExecutionGraph` with a cost ledger on the side listing each step's provider and price, the second-source decision, and the total.

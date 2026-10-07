@@ -15,7 +15,8 @@
     "mcp": "tsx mcp/server.ts",
     "record": "tsx scripts/record-runs.ts",
     "postinstall": "prisma generate",
-    "e2e": "tsx scripts/e2e-platform.ts"
+    "e2e": "tsx scripts/e2e-platform.ts",
+    "build:pages": "node scripts/build-pages.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -48,5 +49,13 @@
     "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^4.1.11"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "description": "Rialto: a marketplace where AI agents hire and pay for APIs, and anyone can publish an API and get paid per call.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chicogborba/rialto.git"
   }
 }

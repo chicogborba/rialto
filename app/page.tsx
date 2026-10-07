@@ -9,11 +9,13 @@ import { LiveDemo } from "@/components/landing/LiveDemo";
 import { Solana } from "@/components/landing/Solana";
 import { Story } from "@/components/landing/Story";
 import { TwoWays } from "@/components/landing/TwoWays";
+import { StaticBanner } from "@/components/landing/StaticBanner";
 import { Why } from "@/components/landing/Why";
 
 export default function LandingPage() {
   return (
     <div className="relative">
+      <StaticBanner />
       <CursorTrail />
       <LandingHeader />
       <main>

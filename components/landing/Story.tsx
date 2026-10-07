@@ -10,6 +10,7 @@ import { Scramble } from "./Scramble";
 import { SpriteStrip } from "./SpriteStrip";
 import { Slap } from "./Stickers";
 import type { YardScene } from "./scene/YardScene";
+import { flowHref } from "@/lib/site";
 
 /** Scroll thresholds where each act begins (0 = hero). Must match YardScene's timeline. */
 const ACT_STARTS = [0, 0.1, 0.22, 0.34, 0.46, 0.6, 0.7, 0.85] as const;
@@ -273,8 +274,8 @@ export function Story() {
             <li><Slap still tone="paper" rotate={1}>🤖 no humans in the loop</Slap></li>
           </ul>
           <div className="mt-7 flex flex-wrap items-center gap-5">
-            <Link href="/connect" className={hardButtonClass("primary", "lg")}>Connect my Claude</Link>
-            <Link href="/publish" className={hardButtonClass("ghost", "lg")}>Publish my API</Link>
+            <Link href={flowHref("/connect")} className={hardButtonClass("primary", "lg")}>Connect my Claude</Link>
+            <Link href={flowHref("/publish")} className={hardButtonClass("ghost", "lg")}>Publish my API</Link>
             <span className="sy-bob font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Scroll ↓ <span className="hidden sm:inline">· or poke the critter</span></span>
           </div>
         </div>

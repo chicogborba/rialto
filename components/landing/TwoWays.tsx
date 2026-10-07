@@ -3,6 +3,7 @@ import { hardButtonClass } from "@/components/primitives";
 import { Buddy } from "./Buddy";
 import { Rise } from "./Rise";
 import { Slap } from "./Stickers";
+import { flowHref } from "@/lib/site";
 
 const SELL = [
   ["📋", "Paste your endpoint", "Any HTTPS API. We call it for you."],
@@ -52,8 +53,8 @@ export function TwoWays() {
         </Rise>
         <p className="mt-4 max-w-2xl text-lg font-medium text-paper/80">A marketplace needs two kinds of people. Which one are you? 👇</p>
         <div className="mt-12 grid gap-10 lg:grid-cols-2">
-          <Card tone="paper" tag="🛠️ I have an API" title={<>Sell it to<br />every agent.</>} sub="Turn an endpoint into income. No billing system, no signup flow, no API keys to hand out." steps={SELL} cta="Publish my API →" href="/publish" rotate={-3} />
-          <Card tone="signal" tag="🤖 I use Claude Code / Codex" title={<>Give your agent<br />a marketplace.</>} sub="One command and your agent can pay for the best API for any task, within the budget you set." steps={BUY} cta="Connect my Claude →" href="/connect" rotate={3} />
+          <Card tone="paper" tag="🛠️ I have an API" title={<>Sell it to<br />every agent.</>} sub="Turn an endpoint into income. No billing system, no signup flow, no API keys to hand out." steps={SELL} cta="Publish my API →" href={flowHref("/publish")} rotate={-3} />
+          <Card tone="signal" tag="🤖 I use Claude Code / Codex" title={<>Give your agent<br />a marketplace.</>} sub="One command and your agent can pay for the best API for any task, within the budget you set." steps={BUY} cta="Connect my Claude →" href={flowHref("/connect")} rotate={3} />
         </div>
         <div className="mt-12 flex flex-wrap items-center gap-6 border-t border-line pt-8">
           <Buddy mood="wave" className="w-20 md:w-28" />
