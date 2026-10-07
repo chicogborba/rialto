@@ -120,7 +120,7 @@ const SOLANA_FACTS = [
 
 export function Solana() {
   return (
-    <section id="solana" aria-labelledby="solana-title" className="scroll-mt-6 border-y-2 border-coal/10 bg-sand/50 py-16 md:py-24">
+    <section id="solana" aria-labelledby="solana-title" className="scroll-mt-6 overflow-x-clip border-y-2 border-coal/10 bg-sand/50 py-16 md:py-24">
       <div className={WRAP}>
         <h2 id="solana-title" className="text-[clamp(2.8rem,8vw,6rem)] font-bold leading-[0.92] tracking-[-0.05em]">
           Why <span className="home-sol">Solana?</span>
