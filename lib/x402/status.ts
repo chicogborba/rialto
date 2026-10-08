@@ -1,15 +1,6 @@
-import { address, createSolanaRpc } from "@solana/kit";
 import type { Clock } from "@/lib/types";
 import { liveRail } from "./index";
-import { explorerAddress, LIVE_ASSET, liveConfig } from "./solana";
-
-/** USDC (devnet mint) held by `owner`, in micro-USDC; null when it has no USDC account at all. */
-export async function usdcBalance(rpcUrl: string, owner: string): Promise<number | null> {
-  const rpc = createSolanaRpc(rpcUrl);
-  const res = await rpc.getTokenAccountsByOwner(address(owner), { mint: address(LIVE_ASSET) }, { encoding: "jsonParsed" }).send();
-  if (res.value.length === 0) return null;
-  return res.value.reduce((sum, acc) => sum + Number(acc.account.data.parsed.info.tokenAmount.amount), 0);
-}
+import { explorerAddress, LIVE_ASSET, liveConfig, usdcBalance } from "./solana";
 
 export interface LiveStatus {
   mode: "simulated" | "live";
@@ -40,4 +31,17 @@ export async function liveStatus(clock: Clock): Promise<LiveStatus> {
   } catch {
     return { mode: "live", ...base, facilitator: cfg.facilitatorUrl, problem: "SOLANA_PAYER_SECRET_KEY is not a valid secret key" };
   }
+}
+
+/**
+ * Can this address be paid on the live rail? It needs a USDC account, which only exists once it has
+ * received USDC. True when the live rail is off, or when the RPC cannot be reached to check.
+ */
+export async function canReceiveLive(payoutAddress: string): Promise<boolean> {
+  const cfg = liveConfig();
+  if (!cfg) return true;
+  return usdcBalance(cfg.rpcUrl, payoutAddress).then(
+    (balance) => balance !== null,
+    () => true,
+  );
 }

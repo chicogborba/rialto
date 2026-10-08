@@ -4,7 +4,7 @@ import { DemoPaymentRail } from "@/lib/x402/demo-rail";
 import { HybridPaymentRail } from "@/lib/x402/hybrid-rail";
 import type { PaymentAuthorization, PaymentRail, PaymentRequirements, Settlement, VerifyResult } from "@/lib/x402/rail";
 import { parsePaymentRequired, paymentHeader, SIM_PAYMENT_HEADER, X402_PAYMENT_HEADER } from "@/lib/x402/sim-protocol";
-import { explorerTx, isSolanaAddress, liveConfig } from "@/lib/x402/solana";
+import { explainRefusal, explorerTx, isSolanaAddress, liveConfig } from "@/lib/x402/solana";
 import type { Clock, Provider, Service, WalletState } from "@/lib/types";
 
 const clock: Clock = { now: () => 1_000, id: (p) => `${p}_1`, sleep: () => Promise.resolve() };
@@ -45,6 +45,13 @@ describe("live rail configuration", () => {
     expect(isSolanaAddress(SELLER)).toBe(true);
     expect(isSolanaAddress("TEST_SELLER_NO_WALLET")).toBe(false);
     expect(isSolanaAddress("DEMO_AGENT_WALLET")).toBe(false);
+  });
+  it("names the wallet behind a refused payment when it is one of the usual two causes", () => {
+    const refused = "invalid_exact_svm_transaction_simulation_failed";
+    expect(explainRefusal(refused, null, 5, 2_000)).toBe("payer_insufficient_usdc");
+    expect(explainRefusal(refused, 1_999, 5, 2_000)).toBe("payer_insufficient_usdc");
+    expect(explainRefusal(refused, 2_000, null, 2_000)).toBe("seller_has_no_usdc_account");
+    expect(explainRefusal(refused, 2_000, 0, 2_000)).toBe(refused);
   });
   it("links settlements to the devnet explorer", () => {
     expect(explorerTx("abc")).toBe("https://explorer.solana.com/tx/abc?cluster=devnet");

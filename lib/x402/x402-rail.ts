@@ -6,7 +6,7 @@ import { ExactSvmScheme } from "@x402/svm/exact/client";
 import type { Clock, WalletState } from "@/lib/types";
 import type { PaymentAuthorization, PaymentRail, PaymentRequirements, Settlement, VerifyResult } from "./rail";
 import { X402_REQUIRED_HEADER, X402_RESPONSE_HEADER } from "./sim-protocol";
-import { explorerTx, LIVE_ASSET, LIVE_NETWORK, type LiveConfig } from "./solana";
+import { explainRefusal, explorerTx, LIVE_ASSET, LIVE_NETWORK, type LiveConfig, usdcBalance } from "./solana";
 
 const X402_VERSION = 2;
 /** how long a signed payment stays valid for the facilitator */
@@ -105,7 +105,11 @@ export class X402PaymentRail implements PaymentRail {
     }
     try {
       const res = await this.facilitator.verify(payload, wanted);
-      return res.isValid ? { ok: true } : { ok: false, reason: res.invalidReason ?? "invalid_payment" };
+      if (res.isValid) return { ok: true };
+      // the facilitator only says the transaction would fail; say which wallet is the cause when we can tell
+      const balances = await Promise.all([this.payer().then((p) => usdcBalance(this.cfg.rpcUrl, p.address)), usdcBalance(this.cfg.rpcUrl, req.payTo)]).catch(() => null);
+      const reason = res.invalidReason ?? "invalid_payment";
+      return { ok: false, reason: balances ? explainRefusal(reason, balances[0], balances[1], Number(wanted.amount)) : reason };
     } catch (e) {
       return { ok: false, reason: e instanceof Error ? `verify_failed: ${e.message}`.slice(0, 160) : "verify_failed" };
     }

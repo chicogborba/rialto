@@ -6,8 +6,7 @@
 import { realClock } from "../lib/agent/clock";
 import { liveRail } from "../lib/x402";
 import type { PaymentRequirements } from "../lib/x402/rail";
-import { explorerAddress, isSolanaAddress, liveConfig } from "../lib/x402/solana";
-import { usdcBalance } from "../lib/x402/status";
+import { explorerAddress, isSolanaAddress, liveConfig, usdcBalance } from "../lib/x402/solana";
 
 process.loadEnvFile(".env");
 const usd = (micro: number | null): string => (micro === null ? "no USDC account" : `${(micro / 1_000_000).toFixed(6)} USDC`);

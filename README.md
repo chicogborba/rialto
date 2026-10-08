@@ -83,7 +83,7 @@ Then ask your agent: *"Use rialto to make a pixel-art sprite sheet for my game's
 | `npm run setup` | Generate the Prisma client, create the SQLite DB and seed it |
 | `npm run db:reset` | Wipe and reseed the demo data (also the **Reset demo** button in the app) |
 | `npm run check` | Typecheck + lint + unit tests (what CI runs) |
-| `npm run e2e` | End-to-end check of the two-sided platform (needs `npm run dev`) |
+| `npm run e2e` | End-to-end check of the two-sided platform on the simulation (needs `npm run dev` with `PAYMENT_MODE=simulated`) |
 | `npm run mcp` | Local stdio MCP server (development; real users use `/api/mcp`) |
 | `npm run record` | Regenerate the recorded runs the landing page replays |
 | `npm run build:pages` | Static export of the landing page into `./out` (GitHub Pages) |
@@ -131,7 +131,9 @@ What happens on a call to a real seller (one whose payout address is a Solana ad
 3. The gateway has the **facilitator verify** it, calls the seller's API, and only if that succeeds has the facilitator **settle** it on-chain. The facilitator pays the fee, so no wallet here needs SOL.
 4. The transaction signature is the settlement reference; the UI links it on the Solana explorer. The buyer's prepaid balance is debited the buyer price; the commission never leaves the platform wallet.
 
-The 25 fictional demo providers have no wallet and stay on the simulation, labelled `SIMULATED`, in the same run. The rail is pinned to devnet in code (`lib/x402/solana.ts`).
+The 25 fictional demo providers have no wallet and stay on the simulation, labelled `SIMULATED`, in the same run. The rail is pinned to devnet in code (`lib/x402/solana.ts`). With it on, a seller can only sign up with a payout address that already has a USDC account, and a refused payment says which wallet was the cause.
+
+Checked end to end on devnet on 2026-10-08: a "Look up the Pokémon pikachu." run paid the PokéDex seller $0.002 in [this transaction](https://explorer.solana.com/tx/hxEm488sPAtrE6QfkvWfNuLdBNsY5h8UFmxhUQJ3U79rYvaYashAHJTQSLbGfSC9ajtERDJWks7KnFSG4QXYnnh?cluster=devnet), the buyer was debited $0.003, and a run whose upstream returned 404 settled nothing and charged nothing.
 
 ## What is real and what is not
 
