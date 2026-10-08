@@ -219,13 +219,6 @@
 /* ---- landing page (light theme) */
 .home :focus-visible { outline-color: var(--color-coal); }
 .home ::selection { background: var(--color-lime); color: var(--color-coal); }
-.home-sol {
-  /* the Solana gradient, with the green deepened so it reads on the cream page */
-  background: linear-gradient(90deg, #9945ff, #0fb877);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
 .home-mark { background: linear-gradient(transparent 58%, var(--color-lime) 58%); }
 .home-btn {
   display: inline-flex;
@@ -262,7 +255,7 @@
 .home-ghost { transform-origin: 70% 60%; animation: home-ghost 0.5s ease-out both; }
 @keyframes home-ring { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.9; } 100% { transform: translate(-50%, -50%) scale(1.25); opacity: 0; } }
 .home-ring { animation: home-ring 0.5s cubic-bezier(0.1, 0.7, 0.3, 1) both; }
-.home-ring-big { animation-duration: 0.8s; scale: 1.8; }
+.home-ring-big { animation-duration: 0.8s; scale: 1.8; border-width: 0.09em; }
 @keyframes home-need { 0% { transform: translateY(105%); } 100% { transform: translateY(0); } }
 .home-need { animation: home-need 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.1); }
 @media (prefers-reduced-motion: reduce) { .home-slam, .home-need { animation: none; } .home-ghost, .home-ring { display: none; } }

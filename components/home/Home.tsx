@@ -4,6 +4,7 @@ import { Buddy } from "@/components/landing/Buddy";
 import { asset, flowHref, REPO_URL } from "@/lib/site";
 import { HeroMarket, Needs } from "./HeroMarket";
 import { PitchVideo } from "./PitchVideo";
+import { SolanaMark } from "./SolanaMark";
 import { SolanaRace } from "./SolanaRace";
 import { Caption, Story as StoryScroll } from "./Story";
 import { BEATS } from "./story-beats";
@@ -47,7 +48,7 @@ export function Hero() {
           <Link href={flowHref("/signup?next=/dashboard/apis")} className="home-btn home-btn-line bg-cream/70 max-sm:!px-4 max-sm:text-[15px]">Publish an API</Link>
         </div>
       </div>
-      <HeroMarket className="h-[46svh] min-h-[320px] w-full md:h-[56svh] lg:absolute lg:inset-0 lg:h-full" />
+      <HeroMarket className="h-[46svh] min-h-[320px] w-full [mask-image:linear-gradient(to_bottom,#000_80%,transparent)] md:h-[56svh] lg:absolute lg:inset-0 lg:h-full" />
       <p className="home-bob pointer-events-none absolute inset-x-0 bottom-3 z-10 hidden text-center font-mono text-xs font-bold uppercase tracking-[0.16em] text-coal/55 lg:block">↓ Scroll to see how it works</p>
     </section>
   );
@@ -113,26 +114,26 @@ const SOLANA_FACTS = [
 
 export function Solana() {
   return (
-    <section id="solana" aria-labelledby="solana-title" className="scroll-mt-6 overflow-x-clip border-y-2 border-coal/10 bg-sand/50 py-16 md:py-24">
+    <section id="solana" aria-labelledby="solana-title" className="scroll-mt-6 border-y-2 border-coal/10 bg-sand/50 py-16 md:py-24">
       <div className={WRAP}>
-        <h2 id="solana-title" className="text-[clamp(2.8rem,8vw,6rem)] font-bold leading-[0.92] tracking-[-0.05em]">
-          Why <span className="home-sol">Solana?</span>
+        <h2 id="solana-title" className="flex flex-wrap items-baseline gap-x-[0.28em] text-[clamp(2.8rem,8vw,6rem)] font-bold leading-[0.92] tracking-[-0.05em]">
+          Why <SolanaMark className="h-[0.62em] w-auto self-center" /> Solana?
         </h2>
         <p className="mt-3 max-w-3xl text-xl font-bold leading-snug text-coal/80 md:text-3xl">It is paid before the others leave the start line.</p>
-      </div>
-      <div className="mt-8 md:mt-10">
-        <SolanaRace />
-      </div>
-      <div className={WRAP}>
+        <div className="mt-8 md:mt-10">
+          <SolanaRace />
+        </div>
         <dl className="mt-10 grid grid-cols-3 gap-4 md:mt-12 md:gap-8">
           {SOLANA_FACTS.map((fact) => (
             <div key={fact.value}>
-              <dt className="tnum home-sol inline-block whitespace-nowrap font-mono text-xl font-bold md:text-5xl">{fact.value}</dt>
-              <dd className="mt-1 text-xs leading-snug text-coal/65 md:text-base">{fact.label}</dd>
+              <dt className="tnum inline-block whitespace-nowrap font-mono text-xl font-bold md:text-5xl">
+                <span className="home-mark px-1">{fact.value}</span>
+              </dt>
+              <dd className="mt-2 text-xs leading-snug text-coal/65 md:text-base">{fact.label}</dd>
             </div>
           ))}
         </dl>
-        <p className="mt-8 text-xs text-coal/45">Real time: a card payout takes about 2 days, a bank transfer 1 to 3, a wire up to 5. Built for x402 on Solana; payments are simulated in this build.</p>
+        <p className="mt-8 text-xs text-coal/45">Real time: a card payout takes about 2 days, a bank transfer 1 to 3, a wire up to 5. Built for x402 on Solana. This build runs on devnet test money.</p>
       </div>
     </section>
   );
@@ -178,7 +179,7 @@ export function Footer() {
     <footer className="border-t-2 border-coal/10">
       <div className={`${WRAP} flex flex-wrap items-center justify-between gap-3 py-6 text-sm text-coal/60`}>
         <p className="flex items-center gap-2">
-          <Buddy mood="wave" className="w-7" /> Rialto · hackathon build, payments simulated
+          <Buddy mood="wave" className="w-7" /> Rialto · hackathon build · devnet test money, never real funds
         </p>
         <a href={REPO_URL} className="font-medium text-coal hover:underline">GitHub ↗</a>
       </div>

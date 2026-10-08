@@ -68,3 +68,23 @@ export interface ReputationPoint {
   at: string;
   reputation: number;
 }
+
+/** One API in the public catalog. `demo` providers are fictional; the others were published by someone. */
+export interface CatalogEntry {
+  id: string;
+  name: string;
+  description: string;
+  capability: CapabilityId;
+  /** what the buyer pays per call */
+  priceMicro: MicroUsdc;
+  latencyMs: number;
+  quality: number;
+  reputation: number;
+  successRate: number;
+  calls: number;
+  offline: boolean;
+  demo: boolean;
+  /** published, but nobody has called it yet */
+  unproven: boolean;
+  settlement: "solana-devnet" | "simulated";
+}

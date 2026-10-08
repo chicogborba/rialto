@@ -325,7 +325,9 @@ export async function* runAgent(input: RunInput, deps: RunDeps): AsyncGenerator<
       }
       yield await make({ type: "execution.failed", stepId: step.id, providerId: provider.id, error, charged: false });
       await record({ status: "failed_not_charged", requirements, error });
-      yield* recordOutcome(provider.id, 0);
+      // the provider is judged only on what happened after the payment checked out: a payment that
+      // was refused (empty wallet, expired transaction) is the buyer's or the platform's problem
+      if (verified) yield* recordOutcome(provider.id, 0);
       return { ok: false, error };
     };
 

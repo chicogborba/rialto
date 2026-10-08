@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { RaceScene } from "@/components/landing/scene/RaceScene";
 import { LAP } from "@/components/landing/scene/race-timing";
+import { SolanaMark } from "./SolanaMark";
 
 const DAY = 86_400;
 const SLOW = [
@@ -98,29 +99,41 @@ export function SolanaRace() {
   }, []);
 
   return (
-    <div>
+    <div className="border-[3px] border-coal bg-[#fffdf7] shadow-[6px_6px_0_var(--color-coal)] md:border-4 md:shadow-[10px_10px_0_var(--color-coal)]">
       <div className="relative">
         <canvas
           ref={canvasRef}
           role="img"
-          aria-label="A 3D race in real time: the Solana critter finishes a lap every 0.6 seconds while a card, a bank and a globe jog down their lanes and never finish."
-          className={cn("block h-[40svh] min-h-[260px] w-full transition-opacity duration-500 md:h-[56svh]", ready ? "opacity-100" : "opacity-0")}
+          aria-label="A 3D race in real time: Rialto's critter pays over Solana and finishes a lap every 0.6 seconds while a card, a bank and a globe jog down their lanes and never finish."
+          className={cn("block h-[32svh] min-h-[240px] w-full transition-opacity duration-500 md:h-[52svh]", ready ? "opacity-100" : "opacity-0")}
         />
-        {/* the scoreboard: one number, top right, that lands with a slam on every payment */}
-        <p className="pointer-events-none absolute right-5 top-1 md:right-10 md:top-2">
-          <span className="sr-only">Payments settled on Solana: </span>
-          <span key={laps} aria-hidden className="relative inline-block">
-            <span className={cn("home-ring absolute left-1/2 top-1/2 size-[1.5em] rounded-full border-[0.06em] border-[#9945ff] text-7xl md:text-9xl", laps > 0 && laps % 10 === 0 && "home-ring-big border-lime")} />
-            <span className="home-sol home-ghost tnum absolute right-0 top-0 font-mono text-7xl font-bold leading-none md:text-9xl">{laps}</span>
-            <span className="home-sol home-slam tnum relative block font-mono text-7xl font-bold leading-none md:text-9xl">{laps}</span>
-          </span>
-          <span className="sr-only">{laps}. Card, bank and wire: 0.</span>
-        </p>
+        {/* the scoreboard: a sticker like the page's captions; the number lands with a slam on every payment */}
+        <div className="pointer-events-none absolute left-3 top-3 md:left-6 md:top-5">
+          <span className="sr-only">Payments settled on Solana: {laps}. Card, bank and wire: 0.</span>
+          <div aria-hidden className="relative flex items-center gap-2.5 border-[3px] border-coal bg-lime px-3 py-1.5 shadow-[4px_4px_0_var(--color-coal)] md:gap-4 md:px-6 md:py-3 md:shadow-[7px_7px_0_var(--color-coal)]">
+            <span key={laps} className="relative inline-block">
+              <span className={cn("home-ring absolute left-1/2 top-1/2 size-[1.6em] rounded-full border-[0.05em] border-coal text-4xl md:text-7xl", laps > 0 && laps % 10 === 0 && "home-ring-big")} />
+              <span className="home-ghost tnum absolute right-0 top-0 font-mono text-5xl font-bold leading-none md:text-7xl">{laps}</span>
+              <span className="home-slam tnum relative block min-w-[1.2ch] text-right font-mono text-5xl font-bold leading-none md:text-7xl">{laps}</span>
+            </span>
+            <span className="text-xs font-bold leading-tight md:text-base">
+              payments settled
+              <span className="mt-1 flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-coal/70 md:text-xs">
+                on <SolanaMark className="h-[0.9em] w-auto" />
+              </span>
+            </span>
+          </div>
+        </div>
       </div>
-      <ul className="mx-auto mt-4 flex w-full max-w-6xl flex-wrap gap-2 px-5 md:px-8">
+      {/* what the others have managed so far: the time left until each one's first payment lands */}
+      <ul className="grid grid-cols-3 divide-x-[3px] divide-coal border-t-[3px] border-coal md:divide-x-4 md:border-t-4">
         {SLOW.map((rail) => (
-          <li key={rail.name} className="border-2 border-coal bg-[#fffdf7] px-3 py-1.5 font-mono text-xs font-bold md:text-sm">
-            {rail.name} <span className="text-coal/50">first in</span> <span className="tnum">{countdown(Math.max(0, rail.seconds - elapsed))}</span>
+          <li key={rail.name} className="px-3 py-3 md:px-6 md:py-4">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-coal/55 md:text-xs">
+              {rail.name}
+              <span className="hidden sm:inline"> · first payment in</span>
+            </p>
+            <p className="tnum mt-1 font-mono text-base font-bold md:text-3xl">{countdown(Math.max(0, rail.seconds - elapsed))}</p>
           </li>
         ))}
       </ul>

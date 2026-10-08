@@ -41,6 +41,10 @@ class Browser {
   }
 }
 
+interface CatalogResponse {
+  live: { name: string; priceMicro: number; demo: boolean; unproven: boolean; offline: boolean; calls: number; settlement: string }[];
+  demo: { demo: boolean; settlement: string }[];
+}
 const PASSWORD = `correct horse ${run} battery`;
 /** An ed25519 wallet: from the env on the live rail (it needs USDC), fresh on the simulation. */
 function walletFrom(secretBase58?: string) {
@@ -108,6 +112,11 @@ async function main() {
   check("her dry run reaches the real API", dry.body?.ok === true && dry.body?.result?.name === "pikachu");
   const aliceView = await alice.call("/api/account");
   check("the account knows it is a seller now", aliceView.body?.seller?.apis === 1 && aliceView.body?.seller?.online === 1);
+  const entry = async () => ((await (await fetch(`${base}/api/catalog`)).json()) as CatalogResponse).live.find((e) => e.name === `PokeAPI ${run}`);
+  const listed = await entry();
+  check("the public catalog lists it as live, at the buyer price, paid the right way", listed !== undefined && listed.priceMicro === 3_000 && listed.demo === false && listed.unproven === true && listed.settlement === (mode === "live" ? "solana-devnet" : "simulated"), JSON.stringify(listed)?.slice(0, 120));
+  const cat = (await (await fetch(`${base}/api/catalog`)).json()) as CatalogResponse;
+  check("demo providers are listed apart, never among the live ones", cat.demo.length > 0 && cat.demo.every((e) => e.demo && e.settlement === "simulated") && cat.live.every((e) => !e.demo));
 
   // ---- Bob: agent, money, limits, Claude
   const bobUp = await bob.call("/api/auth/signup", { json: { email: `bob-${run}@example.com`, password: PASSWORD, name: "Bob Buyer" } });
@@ -144,6 +153,28 @@ async function main() {
   const fail = await mcp.callTool({ name: "execute_service", arguments: { goal: "Look up the Pokémon notarealmon.", budgetUsd: 0.05 } });
   const afterFail = await bob.call("/api/account");
   check("a failing upstream is not charged", (fail as { isError?: boolean }).isError === true && afterFail.body?.agents?.[0]?.balanceMicro === 497_000);
+
+  // the catalog and the agents' own discovery tell the same story
+  const used = await entry();
+  check("the catalog counts the calls it has had", used !== undefined && used.calls >= 2 && used.unproven === false, `${used?.calls} calls`);
+  const discovered = async () => (JSON.parse(text(await mcp.callTool({ name: "discover_services", arguments: { capability: "data.lookup" } }))) as { services: { provider: string; status: string; demoProvider: boolean }[] }).services;
+  const before = (await discovered()).find((s) => s.provider === `PokeAPI ${run}`);
+  check("an agent discovers the same API, as a real provider", before?.status === "online" && before.demoProvider === false);
+  await alice.call(`/api/sellers/me/apis/${apiId}`, { method: "PATCH", json: { status: "offline" } });
+  const paused = await entry();
+  const stillThere = (await discovered()).find((s) => s.provider === `PokeAPI ${run}`);
+  check("pausing it shows as paused in the catalog and as offline to agents", paused?.offline === true && stillThere?.status === "offline", `${paused?.offline} / ${stillThere?.status}`);
+  // Bob's agent is limited to this API, so with it paused there is nothing left to hire: planning must say so, not pick it
+  const planned = await mcp.callTool({ name: "plan_execution", arguments: { goal: "Look up the Pokémon pikachu." } }).catch((e: unknown) => ({ isError: true, content: [{ text: String(e) }] }));
+  const plannedText = text(planned);
+  let pickedPaused = false;
+  try {
+    pickedPaused = (JSON.parse(plannedText) as { steps?: { selected?: { provider?: string } }[] }).steps?.[0]?.selected?.provider === `PokeAPI ${run}`;
+  } catch {
+    /* not a plan: a refusal in words */
+  }
+  check("a paused API is never the one an agent picks", !pickedPaused, plannedText.slice(0, 70));
+  await alice.call(`/api/sellers/me/apis/${apiId}`, { method: "PATCH", json: { status: "online" } });
   await mcp.close();
 
   // ---- keys
