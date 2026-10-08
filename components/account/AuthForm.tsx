@@ -51,7 +51,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       <div>
         <Label tone="signal">{signup ? "New account" : "Welcome back"}</Label>
         <h1 className="mt-3 text-4xl font-bold uppercase leading-[0.9] tracking-[-0.04em]">{signup ? "Create your account" : "Sign in"}</h1>
-        {signup && <p className="mt-3 text-sm text-muted">One account to connect your Claude Code, publish APIs and manage the money. New accounts start with a test credit.</p>}
+        {signup && <p className="mt-3 text-sm text-muted">One account to connect your AI agents, publish APIs and manage the money. New accounts start with a test credit.</p>}
       </div>
       {signup && (
         <Field label="Your name">

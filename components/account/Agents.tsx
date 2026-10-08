@@ -220,7 +220,7 @@ function AgentCard({ agent, balanceMicro, onKey }: { agent: Agent; balanceMicro:
 
 export function Agents() {
   const { account, refresh } = useAccount();
-  const [name, setName] = useState("My Claude Code");
+  const [name, setName] = useState("My agent");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shown, setShown] = useState<Shown | null>(null);
@@ -244,7 +244,7 @@ export function Agents() {
         <h1 className="mt-3 text-[clamp(2.2rem,6vw,4.5rem)] font-bold uppercase leading-[0.9] tracking-[-0.05em]">
           Give your agent <span className="sy-mark">a marketplace.</span>
         </h1>
-        <p className="mt-4 max-w-2xl text-lg font-medium">Each agent is a key for Claude Code or Codex with its own money and spending limits. You decide how much it gets; it can never spend more than that.</p>
+        <p className="mt-4 max-w-2xl text-lg font-medium">Each agent is a key for an AI agent (Claude Code, Codex or any MCP client) with its own money and spending limits. You decide how much it gets; it can never spend more than that.</p>
       </header>
 
       {shown && <KeyCard shown={shown} onDone={() => setShown(null)} />}

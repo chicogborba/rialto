@@ -16,7 +16,7 @@ function Checklist() {
   const funded = account.agents.some((a) => a.balanceMicro > 0);
   const used = account.ledger.some((l) => l.kind === "purchase");
   const steps = [
-    { done: account.agents.length > 0, title: "Create an agent", text: "A key for Claude Code or Codex.", href: "/dashboard/agents" },
+    { done: account.agents.length > 0, title: "Create an agent", text: "A key for Claude Code, Codex or any MCP client.", href: "/dashboard/agents" },
     { done: funded, title: "Give it some money", text: "Move part of your balance to the agent. It cannot spend more than that.", href: "/dashboard/agents" },
     { done: used, title: "Ask for something", text: "Paste the connect command in your terminal, then ask: “Use rialto to look up the Pokémon pikachu.”", href: "/dashboard/agents" },
     { done: account.user.wallet !== null, title: "Add your wallet", text: "Where you get paid, and where deposits come from.", href: "/dashboard/wallet" },

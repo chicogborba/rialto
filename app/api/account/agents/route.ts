@@ -5,7 +5,7 @@ import { HttpError, handle, readJson } from "@/lib/http";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-/** Create an agent: a key for Claude Code or Codex. The key is returned once; only its hash is stored. */
+/** Create an agent: a key for Claude Code, Codex or any MCP client. The key is returned once; only its hash is stored. */
 export async function POST(req: Request): Promise<Response> {
   return handle(async () => {
     const { user } = await requireUser(req);

@@ -104,7 +104,7 @@ export function SolanaRace() {
         <canvas
           ref={canvasRef}
           role="img"
-          aria-label="A 3D race in real time: Rialto's critter pays over Solana and finishes a lap every 0.6 seconds while a card, a bank and a globe jog down their lanes and never finish."
+          aria-label="A 3D race in real time: Rialto's critter pays over Solana and finishes a lap every 0.6 seconds while a card, a bank and a globe, all in dark tones, jog down their lanes and never finish."
           className={cn("block h-[32svh] min-h-[240px] w-full transition-opacity duration-500 md:h-[52svh]", ready ? "opacity-100" : "opacity-0")}
         />
         {/* the scoreboard: a sticker like the page's captions; the number lands with a slam on every payment */}
@@ -125,15 +125,15 @@ export function SolanaRace() {
           </div>
         </div>
       </div>
-      {/* what the others have managed so far: the time left until each one's first payment lands */}
-      <ul className="grid grid-cols-3 divide-x-[3px] divide-coal border-t-[3px] border-coal md:divide-x-4 md:border-t-4">
+      {/* what the others have managed so far: the time left until each one's first payment lands. Kept dark and small. */}
+      <ul className="grid grid-cols-3 bg-coal text-cream">
         {SLOW.map((rail) => (
-          <li key={rail.name} className="px-3 py-3 md:px-6 md:py-4">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-coal/55 md:text-xs">
+          <li key={rail.name} className="px-3 py-2.5 md:px-6 md:py-3">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-cream/45 md:text-xs">
               {rail.name}
-              <span className="hidden sm:inline"> · first payment in</span>
+              <span className="hidden sm:inline"> · pays in</span>
             </p>
-            <p className="tnum mt-1 font-mono text-base font-bold md:text-3xl">{countdown(Math.max(0, rail.seconds - elapsed))}</p>
+            <p className="tnum mt-0.5 font-mono text-sm font-bold text-cream/70 md:text-xl">{countdown(Math.max(0, rail.seconds - elapsed))}</p>
           </li>
         ))}
       </ul>

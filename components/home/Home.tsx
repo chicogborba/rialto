@@ -21,7 +21,7 @@ export function Header() {
       </Link>
       <nav aria-label="Primary" className="flex items-center gap-6 text-sm font-medium">
         <Link href="/catalog" className="text-coal/70 hover:text-coal">Catalog</Link>
-        <Link href="/#video" className="hidden text-coal/70 hover:text-coal md:block">Video</Link>
+        <Link href="/#story" className="hidden text-coal/70 hover:text-coal md:block">How it works</Link>
         <Link href="/#solana" className="hidden text-coal/70 hover:text-coal md:block">Why Solana</Link>
         <a href={REPO_URL} className="hidden text-coal/70 hover:text-coal sm:block">GitHub</a>
         <Link href={flowHref("/login")} className="hidden text-coal/70 hover:text-coal sm:block">Sign in</Link>
@@ -31,7 +31,7 @@ export function Header() {
   );
 }
 
-/** The promise on the left; to the right the critter, a few trees and clouds. Nothing else. */
+/** The promise on the left; to the right the whole product in one loop: he walks to a stall, pays, takes his parcel, walks on. */
 export function Hero() {
   return (
     <section className="relative isolate overflow-hidden lg:h-[min(88svh,800px)] lg:min-h-[620px]">
@@ -42,14 +42,15 @@ export function Hero() {
         <p className="mt-3 text-[clamp(1.5rem,3.6vw,2.9rem)] font-bold leading-tight tracking-[-0.03em]">
           an API for <Needs />
         </p>
-        <p className="mt-4 max-w-sm text-lg leading-snug text-coal/75 md:mt-6 md:text-xl">They find it, compare it and pay per call. On their own.</p>
+        <p className="mt-4 max-w-sm text-lg leading-snug text-coal/75 md:mt-6 md:text-xl">Find, compare, pay per call. No sign-up, no card.</p>
         <div className="pointer-events-auto mt-5 flex flex-wrap gap-2 md:mt-7 md:gap-3">
-          <Link href={flowHref("/signup?next=/dashboard/agents")} className="home-btn home-btn-ink max-sm:!px-4 max-sm:text-[15px]">Connect my agent</Link>
-          <Link href={flowHref("/signup?next=/dashboard/apis")} className="home-btn home-btn-line bg-cream/70 max-sm:!px-4 max-sm:text-[15px]">Publish an API</Link>
+          <Link href={flowHref("/signup?next=/dashboard/agents")} className="home-btn home-btn-ink max-sm:!px-4 max-sm:text-[15px]"><span aria-hidden>🤖</span> Connect an agent</Link>
+          <Link href={flowHref("/signup?next=/dashboard/apis")} className="home-btn home-btn-line bg-cream/70 max-sm:!px-4 max-sm:text-[15px]"><span aria-hidden>🔌</span> Sell an API</Link>
         </div>
+        <p className="mt-4 font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-coal/50 md:text-xs">Claude Code · Codex · any MCP agent</p>
       </div>
-      <HeroMarket className="h-[46svh] min-h-[320px] w-full [mask-image:linear-gradient(to_bottom,#000_80%,transparent)] md:h-[56svh] lg:absolute lg:inset-0 lg:h-full" />
-      <p className="home-bob pointer-events-none absolute inset-x-0 bottom-3 z-10 hidden text-center font-mono text-xs font-bold uppercase tracking-[0.16em] text-coal/55 lg:block">↓ Scroll to see how it works</p>
+      <HeroMarket className="home-stage h-[46svh] min-h-[320px] w-full md:h-[56svh] lg:absolute lg:inset-0 lg:h-full" />
+      <a href="#video" className="home-bob absolute inset-x-0 bottom-3 z-10 mx-auto hidden w-fit font-mono text-xs font-bold uppercase tracking-[0.16em] text-coal/55 hover:text-coal lg:block">↓ See it in 66 seconds</a>
     </section>
   );
 }
@@ -75,41 +76,19 @@ export function Story() {
   );
 }
 
-const WINS = [
-  { word: "Cheaper", bg: "bg-lime", tilt: "-rotate-2" },
-  { word: "Faster", bg: "bg-[#5ce1e6]", tilt: "rotate-1" },
-  { word: "Better", bg: "bg-[#ffd23f]", tilt: "-rotate-1" },
-] as const;
-
-/** What you end up with, in the video's three words. */
-export function Wins() {
-  return (
-    <section aria-label="What you get" className={`${WRAP} py-16 text-center md:py-24`}>
-      <ul className="flex flex-wrap items-center justify-center gap-4 md:gap-7">
-        {WINS.map((w) => (
-          <li key={w.word} className={`${w.bg} ${w.tilt} border-[3px] border-coal px-5 pb-1 text-[clamp(2.4rem,7.5vw,6rem)] font-bold leading-[1.1] tracking-[-0.05em] shadow-[6px_6px_0_var(--color-coal)] md:border-4 md:px-9 md:shadow-[10px_10px_0_var(--color-coal)]`}>
-            {w.word}
-          </li>
-        ))}
-      </ul>
-      <p className="mt-9 text-xl font-bold text-coal/75 md:text-3xl">One key. One wallet. Your spending limit.</p>
-    </section>
-  );
-}
-
 export function Pitch() {
   return (
-    <section id="video" aria-labelledby="video-title" className={`${WRAP} scroll-mt-6 py-16 md:py-24`}>
-      <h2 id="video-title" className={`${H2} mb-8 text-center`}>Or watch it. 66 seconds.</h2>
+    <section id="video" aria-labelledby="video-title" className={`${WRAP} scroll-mt-6 pb-16 pt-10 md:pb-24 md:pt-14`}>
+      <h2 id="video-title" className={`${H2} mb-8 text-center`}>The whole idea in 66 seconds <span aria-hidden>🍿</span></h2>
       <PitchVideo />
     </section>
   );
 }
 
 const SOLANA_FACTS = [
-  { value: "≈ 400 ms", label: "block time" },
+  { value: "≈ 400 ms", label: "to settle" },
   { value: "< 1¢", label: "fee per payment" },
-  { value: "100×", label: "a card's 30¢ fee next to a $0.003 call" },
+  { value: "100×", label: "what a card fee costs next to a $0.003 call" },
 ] as const;
 
 export function Solana() {
@@ -119,39 +98,42 @@ export function Solana() {
         <h2 id="solana-title" className="flex flex-wrap items-baseline gap-x-[0.28em] text-[clamp(2.8rem,8vw,6rem)] font-bold leading-[0.92] tracking-[-0.05em]">
           Why <SolanaMark className="h-[0.62em] w-auto self-center" /> Solana?
         </h2>
-        <p className="mt-3 max-w-3xl text-xl font-bold leading-snug text-coal/80 md:text-3xl">It is paid before the others leave the start line.</p>
+        <p className="mt-3 max-w-3xl text-xl font-bold leading-snug text-coal/80 md:text-3xl">Paid before the others leave the start line.</p>
         <div className="mt-8 md:mt-10">
           <SolanaRace />
         </div>
         <dl className="mt-10 grid grid-cols-3 gap-4 md:mt-12 md:gap-8">
           {SOLANA_FACTS.map((fact) => (
             <div key={fact.value}>
-              <dt className="tnum inline-block whitespace-nowrap font-mono text-xl font-bold md:text-5xl">
-                <span className="home-mark px-1">{fact.value}</span>
-              </dt>
+              <dt className="tnum whitespace-nowrap font-mono text-xl font-bold md:text-5xl">{fact.value}</dt>
               <dd className="mt-2 text-xs leading-snug text-coal/65 md:text-base">{fact.label}</dd>
             </div>
           ))}
         </dl>
-        <p className="mt-8 text-xs text-coal/45">Real time: a card payout takes about 2 days, a bank transfer 1 to 3, a wire up to 5. Built for x402 on Solana. This build runs on devnet test money.</p>
+        <p className="mt-8 text-xs text-coal/45">Card payouts take about 2 days, bank transfers 1 to 3, wires up to 5. This build pays with x402 on Solana devnet: test money.</p>
       </div>
     </section>
   );
 }
 
 const SIDES = [
-  { title: "I use Claude Code or Codex", steps: ["Create an account", "Paste one command", "Just ask"], cta: "Connect my agent", href: "/signup?next=/dashboard/agents", primary: true },
-  { title: "I have an API", steps: ["Paste your endpoint", "Set a price", "Get paid per call"], cta: "Publish my API", href: "/signup?next=/dashboard/apis", primary: false },
+  { emoji: "🤖", title: "You run an agent", note: "Claude Code, Codex, any MCP client", steps: ["Paste one command", "Set a spending limit", "Just ask"], cta: "Connect an agent", href: "/signup?next=/dashboard/agents", primary: true },
+  { emoji: "🔌", title: "You built an API", note: "No billing code to write", steps: ["Paste your endpoint", "Set a price", "Get paid per call"], cta: "Sell an API", href: "/signup?next=/dashboard/apis", primary: false },
 ] as const;
 
-export function Start() {
+/** Who it is for, said early: the people with agents and the people with APIs. */
+export function Sides() {
   return (
-    <section id="start" aria-labelledby="start-title" className={`${WRAP} scroll-mt-6 py-16 md:py-24`}>
-      <h2 id="start-title" className={H2}>Pick your side.</h2>
+    <section id="start" aria-labelledby="start-title" className={`${WRAP} scroll-mt-6 pb-16 md:pb-24`}>
+      <h2 id="start-title" className={H2}>Two sides. One market.</h2>
       <div className="mt-8 grid gap-6 md:mt-10 md:grid-cols-2">
         {SIDES.map((s) => (
-          <div key={s.title} className={`flex flex-col border-2 border-coal p-6 md:p-9 ${s.primary ? "bg-coal text-cream shadow-[8px_8px_0_var(--color-lime)]" : "bg-cream shadow-[8px_8px_0_var(--color-coal)]"}`}>
-            <h3 className="text-2xl font-bold leading-tight tracking-[-0.03em] md:text-4xl">{s.title}</h3>
+          <div key={s.title} className={`flex flex-col border-2 border-coal p-6 md:p-9 ${s.primary ? "bg-coal text-cream shadow-[8px_8px_0_var(--color-lime)]" : "bg-[#fffdf7] shadow-[8px_8px_0_var(--color-coal)]"}`}>
+            <h3 className="flex items-center gap-3 text-2xl font-bold leading-tight tracking-[-0.03em] md:text-4xl">
+              <span aria-hidden className={`grid size-11 shrink-0 place-items-center border-2 text-2xl md:size-14 md:text-3xl ${s.primary ? "border-cream/25 bg-cream/10" : "border-coal bg-lime"}`}>{s.emoji}</span>
+              {s.title}
+            </h3>
+            <p className={`mt-3 font-mono text-[11px] font-bold uppercase tracking-[0.1em] md:text-xs ${s.primary ? "text-cream/55" : "text-coal/50"}`}>{s.note}</p>
             <ol className="mt-6 space-y-2">
               {s.steps.map((step, i) => (
                 <li key={step} className="flex items-center gap-3 text-lg font-medium md:text-xl">
@@ -164,7 +146,21 @@ export function Start() {
           </div>
         ))}
       </div>
-      <p className="mt-8 text-lg">
+    </section>
+  );
+}
+
+/** The way out of the page: the same two doors, and the catalog for people who only want a look. */
+export function Start() {
+  return (
+    <section aria-labelledby="go-title" className={`${WRAP} py-16 text-center md:py-28`}>
+      <Buddy mood="wave" className="mx-auto w-16 md:w-20" />
+      <h2 id="go-title" className={`${H2} mt-5`}>The market is open <span aria-hidden>🛎️</span></h2>
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <Link href={flowHref("/signup?next=/dashboard/agents")} className="home-btn home-btn-ink"><span aria-hidden>🤖</span> Connect an agent</Link>
+        <Link href={flowHref("/signup?next=/dashboard/apis")} className="home-btn home-btn-line"><span aria-hidden>🔌</span> Sell an API</Link>
+      </div>
+      <p className="mt-7 text-lg">
         Just looking?{" "}
         <Link href="/catalog" className="font-bold underline decoration-lime decoration-4 underline-offset-4 hover:decoration-coal">
           Browse the catalog →

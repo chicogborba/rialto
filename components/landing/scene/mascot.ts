@@ -6,7 +6,7 @@ import * as THREE from "three";
  *
  * Animated procedurally. Scroll decides WHAT he is doing; everything is then eased over time so
  * poses blend instead of snapping, with follow-through (the body leans into turns, legs step when
- * he rotates) and a prop for each job: a magnifier to scout, a clipboard to vet, a coin to pay,
+ * he rotates, and cycle when he walks) and a prop for each job: a magnifier to scout, a clipboard to vet, a coin to pay,
  * confetti when the work ships.
  */
 
@@ -28,6 +28,10 @@ export interface MascotState {
   party: number;
   /** 0..1 let down: worried brows, slumped (optional) */
   sad?: number;
+  /** 0..1 walking on the spot: legs cycle and the body bobs (the scene moves the world past him) */
+  walk?: number;
+  /** radians added to where he faces, e.g. toward the stall he is buying from */
+  turn?: number;
 }
 
 const ORANGE = 0xee7a35;
@@ -97,6 +101,7 @@ export class Mascot {
   private pay = 0;
   private party = 0;
   private sad = 0;
+  private walk = 0;
   private yaw = 0;
   private yawVel = 0;
   private lean = 0;
@@ -213,8 +218,9 @@ export class Mascot {
     this.pay = ease(this.pay, s.pay, 8, dt);
     this.party = ease(this.party, s.party, 6, dt);
     this.sad = ease(this.sad, s.sad ?? 0, 7, dt);
-    const { scout, think, pay, party, sad } = this;
-    const busy = Math.max(scout, think, pay, party, sad, s.hop > 0 && s.hop < 1 ? 1 : 0);
+    this.walk = ease(this.walk, s.walk ?? 0, 9, dt);
+    const { scout, think, pay, party, sad, walk } = this;
+    const busy = Math.max(scout, think, pay, party, sad, walk, s.hop > 0 && s.hop < 1 ? 1 : 0);
     const idle = 1 - busy;
 
     // ---- hops: one big one on the decision, a string of small ones at the party
@@ -265,6 +271,7 @@ export class Mascot {
       sin(t * 1.9) * 0.6 * scout +
       (-0.28 + glance * 0.35) * think +
       sin(t * 0.6) * 0.08 * idle +
+      (s.turn ?? 0) +
       party * party * (3 - 2 * party) * Math.PI * 2;
     const prevYaw = this.yaw;
     this.yaw = ease(this.yaw, targetYaw, 6, dt);
@@ -275,14 +282,15 @@ export class Mascot {
     // ---- body
     const breathe = sin(t * 2.1) * 0.018;
     const sway = sin(t * 1.1) * 0.05 * idle; // weight shifting foot to foot
-    this.body.position.set(sway, sin(t * 2.1) * 0.035 + hop - landing * 0.5 - sad * 0.05, 0);
+    const stride = t * 9;
+    this.body.position.set(sway, sin(t * 2.1) * 0.035 + Math.abs(sin(stride)) * 0.08 * walk + hop - landing * 0.5 - sad * 0.05, 0);
     this.body.scale.set(
       1 - breathe + landing * 0.7 - hop * 0.04 + pokeSquash * 0.25,
       1 + breathe - landing + hop * 0.08 - pokeSquash * 0.35 - sad * 0.1,
       1 - breathe + landing * 0.7 + pokeSquash * 0.25,
     );
     this.body.rotation.y = this.yaw + pokeSpin;
-    this.body.rotation.z = pokeShake + this.lean + sway * 0.6 + sin(t * 1.3) * 0.07 * think + sin(t * 31) * 0.015 * pay;
+    this.body.rotation.z = pokeShake + this.lean + sway * 0.6 + sin(t * 1.3) * 0.07 * think + sin(t * 31) * 0.015 * pay + sin(stride) * 0.045 * walk;
     this.body.rotation.x = -0.14 * scout + 0.16 * think * (1 - glance) - 0.2 * pay + 0.13 * sad + sin(t * 2.1) * 0.02;
 
     // ---- eyes
@@ -345,7 +353,8 @@ export class Mascot {
       const step = Math.max(0, sin(t * 14 + (i % 2) * Math.PI)) * 0.12 * stepping;
       const tap = i === 3 ? Math.max(0, sin(t * 10)) * 0.15 * think : 0;
       const kick = party * Math.max(0, sin(t * 13 + i)) * 0.08;
-      leg.position.y = baseY + shuffle + step + tap + kick + hop * 0.92;
+      const pace = Math.max(0, sin(stride * 2 + (i % 2) * Math.PI + (i > 3 ? 1.2 : 0))) * 0.17 * walk;
+      leg.position.y = baseY + shuffle + step + tap + kick + pace + hop * 0.92;
       leg.position.x = LEG_X[i % 4] + sway * 0.25;
       leg.scale.y = 1 - Math.min(0.35, hop * 0.4);
     });

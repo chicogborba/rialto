@@ -6,8 +6,9 @@ import { drawSolanaMark } from "./solana-mark";
 /**
  * The Solana race, in the same low-poly world as the rest of the page. Four lanes, in real time:
  * Rialto's orange critter pays over Solana and sprints a lap every 0.6 s, while a card, a bank and
- * a globe (the wire) jog down their lanes in muted greys and give up short of the line, because at
- * days per lap they never finish. Colour belongs to the winner; the logo is the only purple here.
+ * a globe (the wire) jog down their lanes in dark tones, on a dimmed stretch of track, and give up
+ * short of the line, because at days per lap they never finish. Colour belongs to the winner alone;
+ * the logo is the only purple here.
  */
 
 const LANE = 2;
@@ -25,9 +26,10 @@ function legs(parent: THREE.Group, xs: number[], hex: number): THREE.Mesh[] {
     return leg;
   });
 }
+/** pale eyes: the only light thing on the slow ones */
 function eyes(parent: THREE.Object3D, y: number, z: number, gap = 0.3): void {
   for (const side of [-1, 1]) {
-    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.24, 0.04), new THREE.MeshBasicMaterial({ color: INK }));
+    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.24, 0.04), new THREE.MeshBasicMaterial({ color: 0xd9cfba }));
     eye.position.set(side * gap, y, z);
     parent.add(eye);
   }
@@ -49,32 +51,32 @@ interface Walker {
 function buildCard(): Walker {
   const group = new THREE.Group();
   const body = new THREE.Group();
-  body.add(shadedBox(1.5, 0.95, 0.14, 0x8a93a3));
-  const stripe = shadedBox(1.52, 0.17, 0.16, 0x3a3f4b);
+  body.add(shadedBox(1.5, 0.95, 0.14, 0x4a4742));
+  const stripe = shadedBox(1.52, 0.17, 0.16, 0x25221f);
   stripe.position.y = 0.22;
-  const chip = shadedBox(0.26, 0.2, 0.16, 0xd9b45a);
+  const chip = shadedBox(0.26, 0.2, 0.16, 0x7d766a);
   chip.position.set(-0.45, -0.1, 0.01);
   body.add(stripe, chip);
   eyes(body, -0.08, 0.09, 0.22);
   body.position.y = 0.42 + 0.475;
   group.add(body);
-  return { group, body, legs: legs(group, [-0.4, 0.4], 0xb9c0cc), rest: body.position.y, pace: 2.2, speed: 0.55 };
+  return { group, body, legs: legs(group, [-0.4, 0.4], 0x35322e), rest: body.position.y, pace: 2.2, speed: 0.55 };
 }
 
 /** A bank with legs: steps, columns, roof. */
 function buildBank(): Walker {
   const group = new THREE.Group();
   const body = new THREE.Group();
-  const stone = 0xe8dfcc;
+  const stone = 0x5a554e;
   const base = shadedBox(1.56, 0.14, 1.0, stone);
   base.position.y = 0.07;
-  const hall = shadedBox(1.3, 0.74, 0.62, 0xcfc6b4);
+  const hall = shadedBox(1.3, 0.74, 0.62, 0x3b3833);
   hall.position.set(0, 0.5, -0.12);
   const beam = shadedBox(1.6, 0.14, 1.02, stone);
   beam.position.y = 0.94;
   body.add(base, hall, beam);
   for (const x of [-0.6, -0.2, 0.2, 0.6]) {
-    const column = shadedBox(0.15, 0.74, 0.15, 0xfffaf0);
+    const column = shadedBox(0.15, 0.74, 0.15, 0x7d766a);
     column.position.set(x, 0.5, 0.36);
     body.add(column);
   }
@@ -85,18 +87,18 @@ function buildBank(): Walker {
   eyes(body, 0.94, 0.52, 0.3);
   body.position.y = 0.42;
   group.add(body);
-  return { group, body, legs: legs(group, [-0.42, 0.42], 0x8b8171), rest: body.position.y, pace: 1.6, speed: 0.28 };
+  return { group, body, legs: legs(group, [-0.42, 0.42], 0x35322e), rest: body.position.y, pace: 1.6, speed: 0.28 };
 }
 
 /** A globe with legs, for the international wire. */
 function buildGlobe(): Walker {
   const group = new THREE.Group();
   const body = new THREE.Group();
-  const globe = faceted(new THREE.IcosahedronGeometry(0.66, 1), (face) => (rnd(face, 7) > 0.62 ? 0x8fae9c : 0x93a8bd));
+  const globe = faceted(new THREE.IcosahedronGeometry(0.66, 1), (face) => (rnd(face, 7) > 0.62 ? 0x6a655c : 0x45423d));
   body.add(globe);
   body.position.y = 0.42 + 0.62;
   group.add(body);
-  return { group, body, legs: legs(group, [-0.26, 0.26], 0xb6c2d0), rest: body.position.y, pace: 1.9, speed: 0.4, spin: globe };
+  return { group, body, legs: legs(group, [-0.26, 0.26], 0x35322e), rest: body.position.y, pace: 1.9, speed: 0.4, spin: globe };
 }
 
 /** The Solana lane's name: the logo mark, then the word, in ink. */
@@ -157,11 +159,16 @@ export class RaceScene {
       line.position.set(0, GROUND + 0.01, laneZ(0) + LANE / 2 - k * LANE);
       this.scene.add(line);
     }
+    // the three slow lanes sit in the shade, so the eye goes to the one that moves
+    const shade = new THREE.Mesh(new THREE.PlaneGeometry(LENGTH, LANE * 3 + 0.25), new THREE.MeshBasicMaterial({ color: INK, transparent: true, opacity: 0.16, depthWrite: false }));
+    shade.rotation.x = -Math.PI / 2;
+    shade.position.set(0, GROUND + 0.006, laneZ(2) - 0.125);
+    this.scene.add(shade);
     const startLine = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, LANE * 4), new THREE.MeshBasicMaterial({ color: 0xfffaf0 }));
     startLine.position.set(START + 0.9, GROUND + 0.012, 0);
     this.scene.add(startLine);
     ["SOLANA", "CARD", "BANK", "WIRE"].forEach((name, k) => {
-      const paint = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.47), new THREE.MeshBasicMaterial({ map: k === 0 ? solanaLabel() : textTexture(name, "#17120f", null, 512, 160), transparent: true, depthWrite: false }));
+      const paint = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.47), new THREE.MeshBasicMaterial({ map: k === 0 ? solanaLabel() : textTexture(name, "#17120f", null, 512, 160), transparent: true, opacity: k === 0 ? 1 : 0.5, depthWrite: false }));
       paint.rotation.x = -Math.PI / 2;
       paint.position.set(START - 0.75, GROUND + 0.02, laneZ(k));
       this.scene.add(paint);

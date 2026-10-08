@@ -1,8 +1,8 @@
 import * as THREE from "three";
 
 /**
- * Building blocks for the page's low-poly world: shaded boxes, signs, trees, clouds and the small
- * critters. No lights anywhere: every face carries its own shade.
+ * Building blocks for the page's low-poly world: shaded boxes, signs, trees, clouds, market stalls
+ * and the small critters. No lights anywhere: every face carries its own shade.
  */
 
 /** where feet stand: the mascot's body is centred on y = 0 */
@@ -150,10 +150,47 @@ export function buildCloud(): THREE.Group {
   return cloud;
 }
 
-export function buildParcel(): THREE.Group {
+export function buildParcel(band = 0xc6ff3d): THREE.Group {
   const parcel = new THREE.Group();
-  parcel.add(shadedBox(0.7, 0.52, 0.52, 0xd9a868), shadedBox(0.14, 0.54, 0.54, 0xc6ff3d));
+  parcel.add(shadedBox(0.7, 0.52, 0.52, 0xd9a868), shadedBox(0.14, 0.54, 0.54, band));
   return parcel;
+}
+
+/** Market stall: counter, posts, striped awning and an optional name board. Stands on y = 0, faces +z. */
+export function buildStall(color: number, label?: string): THREE.Group {
+  const group = new THREE.Group();
+  const add = (w: number, h: number, d: number, hex: number, x: number, y: number, z: number, parent: THREE.Object3D = group) => {
+    const mesh = shadedBox(w, h, d, hex);
+    mesh.position.set(x, y, z);
+    parent.add(mesh);
+  };
+  add(1.7, 0.74, 0.86, 0xb98a5a, 0, 0.37, 0);
+  add(1.84, 0.1, 1.0, 0x8d6540, 0, 0.79, 0);
+  add(0.1, 1.2, 0.1, 0x8d6540, -0.78, 1.4, -0.32);
+  add(0.1, 1.2, 0.1, 0x8d6540, 0.78, 1.4, -0.32);
+  const awning = new THREE.Group();
+  awning.position.set(0, 2.05, 0.05);
+  awning.rotation.x = 0.32;
+  for (let i = 0; i < 5; i++) add(0.38, 0.08, 1.2, i % 2 ? 0xfffaf0 : color, -0.76 + i * 0.38, 0, 0, awning);
+  group.add(awning);
+  if (label) {
+    add(1.66, 0.56, 0.06, INK, 0, 2.86, 0.14);
+    const board = new THREE.Mesh(new THREE.PlaneGeometry(1.56, 0.46), new THREE.MeshBasicMaterial({ map: textTexture(label, "#17120f", "#fffdf7", 512, 152) }));
+    board.position.set(0, 2.86, 0.18);
+    group.add(board);
+    // lets a scene tint the name board, e.g. to point a stall out
+    group.userData.board = board;
+  }
+  return group;
+}
+
+/** A coin, lying flat: stand it up or spin it as you like. */
+export function buildCoin(): THREE.Mesh {
+  return new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.07, 14), [
+    new THREE.MeshBasicMaterial({ color: 0xd9a400 }),
+    new THREE.MeshBasicMaterial({ color: 0xffd23f }),
+    new THREE.MeshBasicMaterial({ color: 0xffd23f }),
+  ]);
 }
 
 const BODY = { w: 1.9, h: 1.25, d: 0.85 };
