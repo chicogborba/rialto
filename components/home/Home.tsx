@@ -29,7 +29,7 @@ export function Header() {
   );
 }
 
-/** The promise on the left. Behind it and to the right, the market at work: the agent buys whatever the headline names. */
+/** The promise on the left; to the right the critter, a few trees and clouds. Nothing else. */
 export function Hero() {
   return (
     <section className="relative isolate overflow-hidden lg:h-[min(88svh,800px)] lg:min-h-[620px]">
@@ -45,14 +45,6 @@ export function Hero() {
           <Link href={flowHref("/connect")} className="home-btn home-btn-ink max-sm:!px-4 max-sm:text-[15px]">Connect my agent</Link>
           <Link href={flowHref("/publish")} className="home-btn home-btn-line bg-cream/70 max-sm:!px-4 max-sm:text-[15px]">Publish an API</Link>
         </div>
-        <ul className="mt-5 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-coal/65 md:mt-6 md:gap-x-5 md:text-xs md:tracking-[0.12em]">
-          {["No sign-up", "No card", "Pay per call"].map((perk) => (
-            <li key={perk} className="flex items-center gap-1.5">
-              <span aria-hidden className="grid size-4 place-items-center bg-lime text-[10px] leading-none text-coal">✓</span>
-              {perk}
-            </li>
-          ))}
-        </ul>
       </div>
       <HeroMarket className="h-[46svh] min-h-[320px] w-full md:h-[56svh] lg:absolute lg:inset-0 lg:h-full" />
       <p className="home-bob pointer-events-none absolute inset-x-0 bottom-3 z-10 hidden text-center font-mono text-xs font-bold uppercase tracking-[0.16em] text-coal/55 lg:block">↓ Scroll to see how it works</p>
