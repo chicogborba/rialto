@@ -11,6 +11,9 @@ Config.setRspack(true);
 Config.setVideoImageFormat("jpeg");
 Config.setOverwriteOutput(true);
 Config.setChromiumOpenGlRenderer("angle");
+// One tab at a time. The GPU is the bottleneck, so more tabs are no faster, and they make Chrome
+// drop layers on random frames: captions vanish for a frame, or the whole frame comes out tiled.
+Config.setConcurrency(1);
 
 // The bundled headless shell crashes on some macOS setups; use the installed Chrome when present.
 import { existsSync } from "node:fs";

@@ -1,7 +1,7 @@
 import type React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import { arc, bounce, prog } from "../lib/anim";
-import { C, display, mono } from "../theme";
+import { C, display } from "../theme";
 import { CUES, wordAt } from "../timeline";
 import { Critter } from "../three/Critter";
 import { Box, Cloud, Label, Stall, Tree } from "../three/Props";
@@ -15,7 +15,6 @@ const STALLS = [
   { x: 0, label: "🎙 VOICE API", gate: "CREDIT CARD", color: C.gold, word: 6 },
   { x: 4.4, label: "🧊 3D API", gate: "API KEY", color: C.purple, word: 9 },
 ];
-const NOTES = ["Verify your email", "Add a payment method", "API key leaked"];
 
 /** Scene 3 — every service wants a signup, a card and a key. The agent has none, so it bugs you. */
 export const S3Wall: React.FC = () => {
@@ -67,42 +66,14 @@ export const S3Wall: React.FC = () => {
         />
       </Stage>
 
-      <Pop at={ask + 6} style={{ left: 150, top: 300, transformOrigin: "bottom right" }} rotate={-3}>
-        <div style={{ fontFamily: display, fontWeight: 700, fontSize: 48, color: C.ink, background: "#fffdf7", border: `4px solid ${C.ink}`, borderRadius: 30, boxShadow: hard(8), padding: "16px 30px" }}>uh… can I borrow your card?</div>
+      {/* the ask sits on open ground to the right of the critter, clear of the gates */}
+      <Pop at={ask + 6} style={{ left: 1040, top: 600, transformOrigin: "left center" }} rotate={2}>
+        <div style={{ fontFamily: display, fontWeight: 700, fontSize: 56, color: C.ink, background: "#fffdf7", border: `4px solid ${C.ink}`, borderRadius: 34, boxShadow: hard(8), padding: "18px 34px" }}>uh… can I borrow your card?</div>
       </Pop>
-      {NOTES.map((note, i) => {
-        const at = ask + 16 + i * 10;
-        const alert = i === NOTES.length - 1;
-        return (
-          <div
-            key={note}
-            style={{
-              position: "absolute",
-              right: 96,
-              top: 104 + i * 92,
-              fontFamily: mono,
-              fontWeight: 800,
-              fontSize: 30,
-              color: alert ? "#fff" : C.ink,
-              background: alert ? C.red : "#fffdf7",
-              border: `4px solid ${C.ink}`,
-              boxShadow: hard(6),
-              padding: "16px 22px",
-              width: 460,
-              opacity: interpolate(f, [at, at + 5], [0, 1], clamp),
-              translate: interpolate(f, [at, at + 12], ["600px 0px", "0px 0px"], { ...clamp, easing: Easing.bezier(0.34, 1.4, 0.64, 1) }),
-            }}
-          >
-            {note}
-          </div>
-        );
-      })}
       {lands.map((at) => (
         <Sfx key={at} at={at} name="switch" volume={0.55} />
       ))}
-      {NOTES.map((note, i) => (
-        <Sfx key={note} at={ask + 16 + i * 10} name="mouse-click" volume={0.3} />
-      ))}
+      <Sfx at={ask + 6} name="mouse-click" volume={0.3} />
       <Narration scene="wall" accent={C.red} mark={["cant", "hire", "sign-up", "credit", "card", "key", "bug", "you"]} />
     </AbsoluteFill>
   );

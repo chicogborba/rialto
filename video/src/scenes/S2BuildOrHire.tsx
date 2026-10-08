@@ -6,7 +6,7 @@ import { C, display } from "../theme";
 import { wordAt } from "../timeline";
 import { Critter } from "../three/Critter";
 import { Box, Cloud, Stall, StreetClock, Tree } from "../three/Props";
-import { BODY_Y, CHISEL, Chips, Chisel, HeroStatue, Mallet, STONE, STONE_DARK, Sparkle, Stand, ToolBox, WonkyHead, jolt, swing, tumble } from "../three/Sculpt";
+import { BODY_Y, CHISEL, Chips, Chisel, Mallet, RobotHero, STONE, STONE_DARK, Sparkle, Stand, ToolBox, WonkyHead, jolt, stonePaint, swing, tumble } from "../three/Sculpt";
 import { Stage } from "../three/Stage";
 import { Chip, Narration, Pop, Sfx } from "../ui/Ui";
 
@@ -87,15 +87,14 @@ export const S2BuildOrHire: React.FC = () => {
           <Box key={i} size={[1.0, 0.16, 0.56]} position={[-2.5, 0.08 + i * 0.17, 2.7]} rotation={[0, (i % 3) * 0.12 + 0.3, 0]} color={i % 2 ? "#57b96a" : "#6fd083"} scale={i < bills ? 1 : 0.001} />
         ))}
 
-        {/* HIRE: the sculptor. Three taps and the hero is standing there, polished. */}
+        {/* HIRE: the sculptor. Three taps and the hero is standing there, clean and finished: still stone. */}
         <Stall position={[6.5, 0, -2.8]} scale={1.5} color={C.cyan} label="SPECIALIST ⭐" />
         <group position={[2.9, 0, 1]} rotation={[0, 0.3, 0]}>
           <ToolBox position={[-1.9, 0, 0.5]} rotation={[0, 0.35, 0]} />
           <Critter
             beret
             moustache
-            color="#fbf6ea"
-            stripes="#2f4b8f"
+            color={C.gold}
             seed={7}
             steady={f < done + 6}
             yaw={-0.42 * bow}
@@ -110,7 +109,7 @@ export const S2BuildOrHire: React.FC = () => {
           </Critter>
           <Stand position={[CENTRE, 0, 0]} w={BLOCK.w * SIZE + 0.5} d={1.9} h={STAND} />
           <group position={[CENTRE, STAND, 0]} scale={SIZE}>
-            <HeroStatue polish={polish} scale={1 + arc(f, done, 10, 0.07)} />
+            <RobotHero paint={stonePaint(polish)} scale={1 + arc(f, done, 10, 0.07)} />
             {ROWS.flatMap((row, k) =>
               [-1, 1].map((side) => (
                 <Box

@@ -1,6 +1,6 @@
 import type React from "react";
 import { AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { arc, keys3, lerp, pop, prog } from "../lib/anim";
+import { arc, eInOut, keys3, lerp, pop, prog } from "../lib/anim";
 import { C, display, mono } from "../theme";
 import { Critter, FACE_Z } from "../three/Critter";
 import { Clipboard, Cloud, Coin, Confetti, Magnifier, Parcel, Stall } from "../three/Props";
@@ -8,18 +8,22 @@ import { Stage } from "../three/Stage";
 import { Chip, Narration, Pop, Sfx, hard } from "../ui/Ui";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
-const STALLS = ["🌦 WEATHER", "🔎 SEARCH", "🎨 PIXELFORGE", "📈 STOCKS", "🖼 SPRITELAB", "🗺 MAPS", "🎮 SPRITEFORGE", "🎙 VOICE", "🧊 MESH"];
-const COLORS = [C.cyan, C.gold, C.purple, C.mint, C.orange, C.cyan, C.lime, C.gold, C.purple];
-const CANDIDATES = [2, 4, 6];
-const WINNER = 6;
+// Seven stalls with room to breathe; every other one sells what the agent is after.
+const STALLS = ["🌦 WEATHER", "🎨 PIXELFORGE", "📈 STOCKS", "🖼 SPRITELAB", "🗺 MAPS", "🎮 SPRITEFORGE", "🎙 VOICE"];
+const COLORS = [C.cyan, C.purple, C.gold, C.orange, C.mint, C.lime, C.gold];
+const CANDIDATES = [1, 3, 5];
+const WINNER = 5;
 const place = (k: number) => {
-  const a = ((-70 + k * 17.5) * Math.PI) / 180;
-  return { a, x: Math.sin(a) * 7.8, z: -Math.cos(a) * 7.8 + 1.2 };
+  const a = ((-69 + k * 23) * Math.PI) / 180;
+  return { a, x: Math.sin(a) * 8.4, z: -Math.cos(a) * 8.4 + 1.2 };
 };
+/** the agent stands a little back from the camera so the caption never covers it */
+const HOME_Z = -1.4;
+/** each card hangs over its own stall */
 const CARDS = [
-  { name: "PixelForge", price: "$0.012", speed: "4.1s", trust: "92", left: 250 },
-  { name: "SpriteLab", price: "$0.004", speed: "9.8s", trust: "71", left: 760 },
-  { name: "SpriteForge", price: "$0.003", speed: "2.4s", trust: "97", left: 1270 },
+  { name: "PixelForge", price: "$0.012", speed: "4.1s", trust: "92", left: 190 },
+  { name: "SpriteLab", price: "$0.004", speed: "9.8s", trust: "71", left: 770 },
+  { name: "SpriteForge", price: "$0.003", speed: "2.4s", trust: "97", left: 1350 },
 ];
 const STEPS = ["01 FIND 🔎", "02 COMPARE ⚖️", "03 PAY 💸", "04 DONE ✅"];
 const WIRE = [
@@ -39,17 +43,17 @@ export const S5How: React.FC = () => {
     [100, [0, 6.4, 15]],
     [132, [0, 4.8, 12.6]],
     [222, [0, 4.8, 12.6]],
-    [250, [-3.6, 3.9, 11]],
-    [334, [-3.6, 3.9, 11]],
-    [366, [0, 3, 9.4]],
+    [250, [-3.6, 3.9, 10]],
+    [334, [-3.6, 3.9, 10]],
+    [366, [0, 3, 7.6]],
   ]);
   const target = keys3(f, [
     [100, [0, 1.8, -2.5]],
     [132, [0, 2.6, -3]],
     [222, [0, 2.6, -3]],
-    [250, [1.8, 1.7, -2.2]],
-    [334, [1.8, 1.7, -2.2]],
-    [366, [0.9, 1.7, 0.5]],
+    [250, [2.6, 1.7, -2.8]],
+    [334, [2.6, 1.7, -2.8]],
+    [366, [0.9, 1.7, -1.5]],
   ]);
   const coin = prog(f, 246, 276);
   const parcel = prog(f, 356, 388);
@@ -64,9 +68,12 @@ export const S5How: React.FC = () => {
         {STALLS.map((label, k) => {
           const p = place(k);
           const candidate = CANDIDATES.includes(k);
-          const fade = candidate ? (k !== WINNER ? prog(f, 204, 222) * 0.8 : 0) : prog(f, 72, 96);
-          const hop = arc(f, 18 + k * 6, 10, 0.4) + (candidate ? arc(f, 98, 12, 0.5) : 0) + (k === WINNER ? arc(f, 204, 14, 0.8) + arc(f, 276, 10, 0.45) : 0);
-          return <Stall key={k} position={[p.x, hop, p.z]} rotation={[0, -p.a, 0]} scale={1 - fade * 0.18} color={COLORS[k]} label={label} dim={fade} />;
+          const fade = candidate ? (k !== WINNER ? prog(f, 204, 222) * 0.8 : 0) : prog(f, 72, 92);
+          // the stalls that do not sell it go grey, then fold away: only the three finalists stay
+          const gone = candidate ? (k !== WINNER ? eInOut(prog(f, 336, 352)) : 0) : eInOut(prog(f, 90, 108));
+          if (gone >= 1) return null;
+          const hop = arc(f, 18 + k * 6, 10, 0.4) + (candidate ? arc(f, 98, 12, 0.5) : 0) + (k === WINNER ? arc(f, 204, 14, 0.45) + arc(f, 276, 10, 0.45) : 0);
+          return <Stall key={k} position={[p.x, hop, p.z]} rotation={[0, -p.a, 0]} scale={(1 - fade * 0.18) * (1 - gone)} color={COLORS[k]} label={label} dim={fade} />;
         })}
         {/* the winner's spot lights up */}
         <mesh position={[w.x, 0.02, w.z]} rotation={[-Math.PI / 2, 0, 0]} scale={Math.max(0.001, pop(f, 204, 14))}>
@@ -75,7 +82,7 @@ export const S5How: React.FC = () => {
         </mesh>
 
         <Critter
-          position={[0, 0, 0.6]}
+          position={[0, 0, HOME_Z]}
           yaw={yaw}
           eyes={step === 3 && f > 392 ? "happy" : f > 204 && f < 228 ? "happy" : step === 0 && f % 50 < 6 ? "wide" : "open"}
           look={step === 1 ? [-0.4, -0.6] : [0, 0.2]}
@@ -87,11 +94,11 @@ export const S5How: React.FC = () => {
           {step === 1 ? <Clipboard checked={prog(f, 128, 198) * 5} position={[-0.5, -0.2 - (1 - pop(f, 114, 10)) * 1.2, FACE_Z + 0.4]} rotation={[-0.45, 0.35, 0.08]} scale={0.9} /> : null}
         </Critter>
 
-        {f >= 246 && f < 278 ? <Coin position={[lerp(1.2, w.x, coin), lerp(1.8, 1.5, coin) + Math.sin(coin * Math.PI) * 3.2, lerp(0.6, w.z, coin)]} spin={f * 0.5} scale={1.5} rotation={[0, f * 0.4, 0]} /> : null}
+        {f >= 246 && f < 278 ? <Coin position={[lerp(1.2, w.x, coin), lerp(1.8, 1.5, coin) + Math.sin(coin * Math.PI) * 3.2, lerp(HOME_Z, w.z, coin)]} spin={f * 0.5} scale={1.5} rotation={[0, f * 0.4, 0]} /> : null}
         {f >= 356 && f < 396 ? (
-          <Parcel position={[lerp(w.x, 1.9, parcel), lerp(1.5, 0.5, parcel) + Math.sin(parcel * Math.PI) * 3.6, lerp(w.z, 1.2, parcel)]} rotation={[parcel * 4, parcel * 6, 0]} scale={1.2 * (1 - prog(f, 390, 396))} />
+          <Parcel position={[lerp(w.x, 1.9, parcel), lerp(1.5, 0.5, parcel) + Math.sin(parcel * Math.PI) * 3.6, lerp(w.z, HOME_Z + 0.6, parcel)]} rotation={[parcel * 4, parcel * 6, 0]} scale={1.2 * (1 - prog(f, 390, 396))} />
         ) : null}
-        <Confetti t={f / fps} amount={party} position={[0, 0, 1]} />
+        <Confetti t={f / fps} amount={party} position={[0, 0, HOME_Z + 0.4]} />
       </Stage>
 
       <div style={{ position: "absolute", left: 96, top: 90, display: "flex", gap: 14 }}>
@@ -103,8 +110,8 @@ export const S5How: React.FC = () => {
       </div>
 
       {/* 01 — the search */}
-      <Pop at={10} out={100} style={{ left: 0, right: 0, top: 210, display: "flex", justifyContent: "center" }}>
-        <div style={{ fontFamily: mono, fontWeight: 800, fontSize: 52, background: "#fffdf7", border: `4px solid ${C.ink}`, boxShadow: hard(8), padding: "16px 32px", color: C.ink }}>🔎 “game-ready robot hero”</div>
+      <Pop at={10} out={100} style={{ right: 96, top: 84, transformOrigin: "right top" }}>
+        <div style={{ fontFamily: mono, fontWeight: 800, fontSize: 38, background: "#fffdf7", border: `4px solid ${C.ink}`, boxShadow: hard(8), padding: "12px 26px", color: C.ink }}>🔎 “game-ready robot hero”</div>
       </Pop>
 
       {/* 02 — the three finalists */}
@@ -119,21 +126,22 @@ export const S5How: React.FC = () => {
             style={{
               position: "absolute",
               left: card.left,
-              top: 190,
-              width: 400,
+              top: 178,
+              width: 380,
               fontFamily: mono,
               fontWeight: 800,
-              fontSize: 32,
+              fontSize: 28,
+              lineHeight: 1.3,
               color: C.ink,
               background: picked && winner ? C.lime : "#fffdf7",
-              border: `6px solid ${C.ink}`,
-              boxShadow: hard(10),
-              padding: "18px 24px",
+              border: `5px solid ${C.ink}`,
+              boxShadow: hard(8),
+              padding: "12px 22px 14px",
               opacity: (picked && !winner ? 0.55 : 1) * interpolate(f, [228, 236], [1, 0], clamp),
-              scale: interpolate(f, [at, at + 12], [0, 1], { ...clamp, easing: Easing.bezier(0.34, 1.56, 0.64, 1) }) * (picked && winner ? 1.08 : 1),
+              scale: interpolate(f, [at, at + 12], [0, 1], { ...clamp, easing: Easing.bezier(0.34, 1.56, 0.64, 1) }) * (picked && winner ? 1.05 : 1),
             }}
           >
-            <div style={{ fontFamily: display, fontSize: 44, letterSpacing: -1, marginBottom: 8 }}>
+            <div style={{ fontFamily: display, fontSize: 40, letterSpacing: -1, marginBottom: 4 }}>
               {card.name} {picked && winner ? "🏆" : ""}
             </div>
             {[
@@ -180,7 +188,7 @@ export const S5How: React.FC = () => {
       {/* 04 — the result */}
       <Pop at={396} rotate={3} style={{ right: 150, top: 190, transformOrigin: "center" }}>
         <div style={{ background: "#fffdf7", border: `6px solid ${C.ink}`, boxShadow: hard(14), padding: 16 }}>
-          <Img src={staticFile("result.jpg")} style={{ width: 400, height: 400, objectFit: "cover", display: "block", border: `4px solid ${C.ink}` }} />
+          <Img src={staticFile("hero.png")} style={{ width: 400, height: 400, objectFit: "cover", display: "block", border: `4px solid ${C.ink}` }} />
           <div style={{ fontFamily: mono, fontWeight: 800, fontSize: 30, color: C.ink, marginTop: 12 }}>hero.png ✅ $0.003 · 2.4s</div>
         </div>
       </Pop>

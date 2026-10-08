@@ -32,8 +32,6 @@ export interface CritterProps {
   /** the artist's kit */
   beret?: boolean;
   moustache?: boolean;
-  /** colour of a striped shirt */
-  stripes?: string;
   /** something held in a hand; it swings with the arm (x points out along the arm) */
   handL?: React.ReactNode;
   handR?: React.ReactNode;
@@ -66,7 +64,6 @@ export const Critter: React.FC<CritterProps> = ({
   steady = false,
   beret = false,
   moustache = false,
-  stripes,
   handL,
   handR,
   children,
@@ -131,14 +128,6 @@ export const Critter: React.FC<CritterProps> = ({
             </group>
           );
         })}
-        {stripes
-          ? [-0.34, -0.52].map((y) => (
-              <mesh key={y} position={[0, y, 0]}>
-                <boxGeometry args={[BODY.w + 0.02, 0.09, BODY.d + 0.02]} />
-                <Mat color={stripes} />
-              </mesh>
-            ))
-          : null}
         {moustache ? (
           <group position={[0, -0.15, FACE_Z]}>
             {[-1, 1].map((side) => (

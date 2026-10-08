@@ -9,7 +9,9 @@ npm run dev       # Remotion Studio: preview, scrub, edit
 npm run render    # renders out/raw.mp4, then masters the audio into out/rialto-pitch.mp4 (needs ffmpeg)
 ```
 
-Rendering uses the installed Google Chrome when it exists (see `remotion.config.ts`) and fetches the sound effects from `remotion.media`, so it needs a network connection.
+Rendering uses the installed Google Chrome when it exists (see `remotion.config.ts`) and fetches the sound effects from `remotion.media`, so it needs a network connection. It runs one browser tab at a time: with more, Chrome drops layers on random frames (a label vanishes for a frame, or the frame comes out tiled). `npm run render` ends with `scripts/check-flicker.mjs`, which fails if it finds such a frame.
+
+`public/hero.png`, the asset the agent buys in scene 5, is a render of the `HeroCard` composition: `npm run hero` redraws it.
 
 Render without a layer (for example, no narrator):
 
@@ -22,13 +24,13 @@ npx remotion render RialtoPitch out/raw.mp4 --props='{"narration":false,"music":
 | # | Scene | On screen | Narration |
 |---|---|---|---|
 | 1 | From scratch | The agent tries to carve a robot hero out of stone with mallet and chisel; the lopsided head appears, then it all crumbles while the token and time counters climb. | Your AI agent is smart. But it builds everything from scratch. Slow. And expensive. |
-| 2 | Build or hire | An amateur keeps tapping at a cracked block: the clock will not stop, the cash shrinks, the head falls off. Then the specialist (beret, moustache, striped shirt): three taps and the polished statue is standing there. | Companies solved this ages ago. Don't build it. Hire the specialist. |
+| 2 | Build or hire | An amateur keeps tapping at a cracked block: the clock will not stop, the cash shrinks, the head falls off. Then the specialist (beret and moustache): three taps and the finished statue is standing there, still plain stone. | Companies solved this ages ago. Don't build it. Hire the specialist. |
 | 3 | Agents can't hire | Three API stalls; a gate slams on each one as it is named. The agent turns to you. | But your agent can't hire. Every API wants a sign-up, a credit card, another key. So it comes back to bug you. |
-| 4 | Rialto | A giant phone book lands, opens, and a market pours out. | Meet Rialto. The phone book for AI agents. Wallet included. |
-| 5 | How it works | Find → compare → pay → done: three finalists scored, a coin flies, `402 → pay → 200`, the result comes back. | Your agent finds the right service, compares price, speed and reputation, and pays per call, right inside the request. No sign-up. No card. Just the result. |
-| 6 | Result | Cheaper · Faster · Better, each word landing as it is spoken. | A cheaper, faster agent, that does better work. One key. One wallet. Your spending limit. |
+| 4 | Rialto | A giant phone book lands and opens on a directory of APIs with prices; a wallet pocket sits inside the cover and a market pours out. | Meet Rialto. The phone book for AI agents. Wallet included. |
+| 5 | How it works | Find → compare → pay → done: the stalls that do not sell it fold away, three finalists are scored, a coin flies, `402 → pay → 200`, and the robot hero comes back as `hero.png`. | Your agent finds the right service, compares price, speed and reputation, and pays per call, right inside the request. No sign-up. No card. Just the result. |
+| 6 | Result | Cheaper · Faster · Better, then One key · One wallet · Your limit, each label landing as it is spoken. | A cheaper, faster agent, that does better work. One key. One wallet. Your spending limit. |
 | 7 | Sellers | Agents queue at "YOUR API": each pays, takes its parcel and leaves. | Got an API? Publish it. And get paid on every call. |
-| 8 | CTA | Logo, tagline, repo. | Rialto. Agents that hire. |
+| 8 | CTA | Logo and tagline. | Rialto. Agents that hire. |
 
 ## How the edit is wired
 

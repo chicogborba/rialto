@@ -15,7 +15,6 @@ type G = { position?: V3; rotation?: V3; scale?: number | V3 };
 
 export const STONE = "#bcc0c8";
 export const STONE_DARK = "#7b808c";
-const MARBLE = "#fbf7ee";
 const STEEL = "#cfd6dc";
 const WOOD_DARK = "#8d6540";
 
@@ -95,27 +94,27 @@ export const Chisel: React.FC<G & { color?: string }> = ({ color = "#e2553f", ..
   </group>
 );
 
-/** An open tool tote with a few more tools standing in it. */
+/** An open tool tote with a few more tools standing in it. No two boards share a face. */
 export const ToolBox: React.FC<G> = (g) => (
   <group {...g}>
-    <Box size={[1.1, 0.1, 0.56]} position={[0, 0.05, 0]} color={C.wood} />
+    <Box size={[1, 0.08, 0.6]} position={[0, 0.04, 0]} color={C.wood} />
     {[-1, 1].map((k) => (
-      <Box key={k} size={[1.1, 0.3, 0.06]} position={[0, 0.2, k * 0.25]} color={C.wood} />
+      <Box key={k} size={[1, 0.28, 0.05]} position={[0, 0.22, k * 0.275]} color={C.wood} />
     ))}
     {[-1, 1].map((k) => (
-      <Box key={k} size={[0.07, 0.62, 0.56]} position={[k * 0.52, 0.31, 0]} color={WOOD_DARK} />
+      <Box key={k} size={[0.07, 0.64, 0.62]} position={[k * 0.535, 0.32, 0]} color={WOOD_DARK} />
     ))}
-    <Box size={[1.04, 0.08, 0.08]} position={[0, 0.58, 0]} color={WOOD_DARK} />
+    <Box size={[1, 0.07, 0.07]} position={[0, 0.57, 0]} color={WOOD_DARK} />
     {/* a second chisel, a rasp and a brush */}
-    <Chisel position={[-0.3, 0.86, 0.08]} rotation={[0, 0, -Math.PI / 2 + 0.16]} color={C.cyan} />
-    <group position={[0.02, 0.1, -0.08]} rotation={[0, 0, -0.12]}>
+    <Chisel position={[-0.28, 0.9, 0.06]} rotation={[0, 0, -Math.PI / 2 + 0.16]} color={C.cyan} />
+    <group position={[0.03, 0.12, -0.09]} rotation={[0, 0, -0.12]}>
       <Box size={[0.1, 0.5, 0.04]} position={[0, 0.5, 0]} color="#9aa5ae" />
       <Box size={[0.09, 0.26, 0.09]} position={[0, 0.88, 0]} color={C.gold} />
     </group>
-    <group position={[0.3, 0.1, 0.06]} rotation={[0, 0, -0.22]}>
+    <group position={[0.3, 0.12, 0.07]} rotation={[0, 0, -0.22]}>
       <Box size={[0.07, 0.5, 0.07]} position={[0, 0.35, 0]} color={C.lime} />
-      <Box size={[0.2, 0.05, 0.1]} position={[0, 0.62, 0]} color={STEEL} />
-      <Box size={[0.2, 0.2, 0.1]} position={[0, 0.74, 0]} color="#3a332c" />
+      <Box size={[0.2, 0.05, 0.1]} position={[0, 0.625, 0]} color={STEEL} />
+      <Box size={[0.19, 0.2, 0.09]} position={[0, 0.75, 0]} color="#3a332c" />
     </group>
   </group>
 );
@@ -207,19 +206,38 @@ export const Antenna: React.FC<G & { color?: string; tip?: string }> = ({ color 
   </group>
 );
 
+/** The colours of a robot hero: its plating, the trim, the dark joints and visor, and the cape. */
+export interface HeroPaint {
+  body: string;
+  trim: string;
+  dark: string;
+  cape: string;
+  /** lit eyes in the visor; a statue has none */
+  eyes?: string;
+}
+/** fresh off the chisel, and after the last tap: the same stone, only cleaner. Never painted. */
+const ROUGH: HeroPaint = { body: STONE, trim: "#a9aeb9", dark: STONE_DARK, cape: "#b0b5bf" };
+const FINISHED: HeroPaint = { body: "#eceef2", trim: "#cdd2da", dark: "#8b919d", cape: "#dadde4" };
+export const stonePaint = (polish: number): HeroPaint => ({
+  body: mix(ROUGH.body, FINISHED.body, polish),
+  trim: mix(ROUGH.trim, FINISHED.trim, polish),
+  dark: mix(ROUGH.dark, FINISHED.dark, polish),
+  cape: mix(ROUGH.cape, FINISHED.cape, polish),
+});
+/** the game character the agent was asked for, in full colour */
+export const GAME_PAINT: HeroPaint = { body: "#4f7cff", trim: C.gold, dark: "#232a4d", cape: "#ff5d52", eyes: C.lime };
+
 /**
- * What the specialist delivers: a little robot hero, fists on hips, cape flying. Rough stone at
- * `polish` 0; white marble with gold details at 1. Stands on y = 0, faces +z, about 2.5 tall.
+ * A little robot hero, fists on hips, cape behind. In stone it is the statue the specialist
+ * carves; in colour it is the character the agent finally buys. Stands on y = 0, faces +z,
+ * about 2.7 tall.
  */
-export const HeroStatue: React.FC<G & { polish?: number }> = ({ polish = 1, ...g }) => {
-  const body = mix(STONE, MARBLE, polish);
-  const trim = mix(STONE, C.gold, polish);
-  const dark = mix(STONE_DARK, "#2b2a35", polish);
+export const RobotHero: React.FC<G & { paint: HeroPaint; plinth?: boolean }> = ({ paint, plinth = true, ...g }) => {
+  const { body, trim, dark, cape, eyes } = paint;
   return (
     <group {...g}>
-      <Box size={[1.2, 0.14, 0.84]} position={[0, 0.07, 0]} color={body} />
-      {/* cape */}
-      <Box size={[0.98, 1.2, 0.07]} position={[0, 1.1, -0.3]} rotation={[0.2, 0, 0]} color={mix(STONE, "#ff6b5e", polish)} />
+      {plinth ? <Box size={[1.2, 0.14, 0.84]} position={[0, 0.07, 0]} color={body} /> : null}
+      <Box size={[0.98, 1.2, 0.07]} position={[0, 1.1, -0.3]} rotation={[0.2, 0, 0]} color={cape} />
       {[-1, 1].map((side) => (
         <group key={side}>
           <Box size={[0.27, 0.66, 0.32]} position={[side * 0.2, 0.47, 0]} color={body} />
@@ -235,10 +253,20 @@ export const HeroStatue: React.FC<G & { polish?: number }> = ({ polish = 1, ...g
         <cylinderGeometry args={[0.6, 0.42, 0.72, 4]} />
         <Flat color={body} />
       </mesh>
-      <Box size={[0.2, 0.2, 0.05]} position={[0, 1.38, 0.25]} rotation={[0, 0, Math.PI / 4]} color={trim} shadow={false} />
+      <group position={[0, 1.4, 0.238]} rotation={[-0.11, 0, 0]}>
+        <Box size={[0.2, 0.2, 0.05]} rotation={[0, 0, Math.PI / 4]} color={trim} shadow={false} />
+      </group>
       <Box size={[0.22, 0.1, 0.22]} position={[0, 1.7, 0]} color={dark} />
       <Box size={[0.6, 0.48, 0.48]} position={[0, 1.98, 0]} color={body} />
       <Box size={[0.44, 0.15, 0.04]} position={[0, 2.01, 0.24]} color={dark} shadow={false} />
+      {eyes
+        ? [-1, 1].map((side) => (
+            <mesh key={side} position={[side * 0.11, 2.01, 0.262]}>
+              <boxGeometry args={[0.09, 0.07, 0.01]} />
+              <meshBasicMaterial color={eyes} />
+            </mesh>
+          ))
+        : null}
       {[-1, 1].map((side) => (
         <Box key={side} size={[0.08, 0.2, 0.2]} position={[side * 0.34, 1.98, 0]} color={trim} />
       ))}

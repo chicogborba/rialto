@@ -23,13 +23,15 @@ export const Stage: React.FC<{
   fov?: number;
   bg?: string;
   ground?: string;
+  /** no sky, no fog, no ground: just the subject and its shadow, on a transparent canvas */
+  bare?: boolean;
   children: React.ReactNode;
-}> = ({ cam, target, fov = 36, bg = C.paper, ground = C.sand, children }) => {
+}> = ({ cam, target, fov = 36, bg = C.paper, ground = C.sand, bare = false, children }) => {
   const { width, height } = useVideoConfig();
   return (
     <ThreeCanvas width={width} height={height} shadows flat dpr={1} gl={{ antialias: true }} style={{ position: "absolute", inset: 0 }}>
-      <color attach="background" args={[bg]} />
-      <fog attach="fog" args={[bg, 22, 60]} />
+      {bare ? null : <color attach="background" args={[bg]} />}
+      {bare ? null : <fog attach="fog" args={[bg, 22, 60]} />}
       <Cam position={cam} target={target} fov={fov} />
       <ambientLight intensity={1.5} />
       <hemisphereLight args={["#ffffff", ground, 0.9]} />
@@ -47,7 +49,7 @@ export const Stage: React.FC<{
       />
       <mesh rotation-x={-Math.PI / 2} receiveShadow>
         <circleGeometry args={[70, 48]} />
-        <meshStandardMaterial color={ground} />
+        {bare ? <shadowMaterial transparent opacity={0.2} /> : <meshStandardMaterial color={ground} />}
       </mesh>
       {children}
     </ThreeCanvas>
