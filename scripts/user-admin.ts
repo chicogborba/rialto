@@ -34,10 +34,17 @@ async function main(): Promise<void> {
     const users = await prisma.user.findMany({ where: { email: { endsWith: arg.toLowerCase() } }, select: { id: true, seller: { select: { id: true } } } });
     const ids = users.map((u) => u.id);
     const sellerIds = users.flatMap((u) => (u.seller ? [u.seller.id] : []));
+    const providerIds = (await prisma.provider.findMany({ where: { sellerId: { in: sellerIds } }, select: { id: true } })).map((p) => p.id);
+    const agentIds = (await prisma.agent.findMany({ where: { userId: { in: ids } }, select: { id: true } })).map((a) => a.id);
+    // their history goes with them: calls to their APIs, calls by their agents, and the ledger lines of both
+    const txIds = (await prisma.transaction.findMany({ where: { OR: [{ providerId: { in: providerIds } }, { agentId: { in: agentIds } }] }, select: { id: true } })).map((t) => t.id);
     await prisma.$transaction([
-      prisma.provider.deleteMany({ where: { sellerId: { in: sellerIds } } }),
+      prisma.ledgerEntry.deleteMany({ where: { OR: [{ transactionId: { in: txIds } }, { agentId: { in: agentIds } }, { sellerId: { in: sellerIds } }, { userId: { in: ids } }] } }),
+      prisma.transaction.deleteMany({ where: { id: { in: txIds } } }),
+      prisma.run.deleteMany({ where: { agentId: { in: agentIds } } }),
+      prisma.provider.deleteMany({ where: { id: { in: providerIds } } }),
       prisma.seller.deleteMany({ where: { id: { in: sellerIds } } }),
-      prisma.agent.deleteMany({ where: { userId: { in: ids } } }),
+      prisma.agent.deleteMany({ where: { id: { in: agentIds } } }),
       prisma.user.deleteMany({ where: { id: { in: ids } } }),
     ]);
     console.log(`Deleted ${ids.length} account(s) ending in ${arg}.`);
