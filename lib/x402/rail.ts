@@ -8,6 +8,13 @@ export interface PaymentRequirements {
   payTo: string;
   resource: string;
   description: string;
+  /** true = this must be paid for real, with x402 on Solana. Absent on simulated providers. */
+  live?: boolean;
+  /**
+   * What actually moves on-chain to `payTo` (the seller's price). The buyer is still debited
+   * `amountMicro`; the difference is Rialto's commission and never leaves the treasury.
+   */
+  settleMicro?: MicroUsdc;
 }
 
 export interface PaymentAuthorization {

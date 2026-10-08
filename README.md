@@ -11,7 +11,7 @@ Rialto has two sides:
 
 The agent decides *what* to buy, from *whom*, for *how much*; the platform runs the 402 payment flow, calls the seller's API, splits the money (seller price + a small platform fee) and keeps an auditable ledger.
 
-**Status: hackathon build.** The decision engine, gateway, accounts, ledger, MCP server and UI are real and tested. **Payments are simulated** (no blockchain is touched; the UI says `SIMULATED` everywhere). Live x402 payments on Solana devnet are the next milestone — see [What is real and what is not](#what-is-real-and-what-is-not).
+**Status: hackathon build.** The decision engine, gateway, accounts, ledger, MCP server and UI are real and tested. **Payments are simulated by default** (no blockchain is touched; the UI says `SIMULATED`). With `PAYMENT_MODE=live`, calls to real sellers are paid with **x402 in USDC on Solana devnet**: test money on a test network, but a real signed transaction, a real facilitator and an explorer link. See [Live payments on Solana devnet](#live-payments-on-solana-devnet) and [What is real and what is not](#what-is-real-and-what-is-not).
 
 🔗 **Landing page preview:** https://chicogborba.github.io/rialto/ (static export; the full platform runs locally)
 
@@ -87,16 +87,23 @@ Then ask your agent: *"Use rialto to make a pixel-art sprite sheet for my game's
 | `npm run mcp` | Local stdio MCP server (development; real users use `/api/mcp`) |
 | `npm run record` | Regenerate the recorded runs the landing page replays |
 | `npm run build:pages` | Static export of the landing page into `./out` (GitHub Pages) |
+| `npm run x402:keys` | Create the devnet wallets the live rail needs, in `.env` (`-- --live` also switches it on) |
+| `npm run x402:check` | Wallets, balances and facilitator for the live rail (`-- --pay` makes one real $0.001 payment) |
+| `npm run seed:pokedex` | Add the PokéDex test seller to an existing database, or re-point it at `SOLANA_PAY_TO` |
 
 ## Configuration (`.env`)
 
 | Variable | Default | Meaning |
 |---|---|---|
 | `DATABASE_URL` | `file:./dev.db` | SQLite file (relative to `prisma/`) |
-| `PAYMENT_MODE` | `simulated` | Only `simulated` is implemented |
+| `PAYMENT_MODE` | `simulated` | `live` pays real sellers with x402 on Solana devnet (needs `SOLANA_PAYER_SECRET_KEY`) |
+| `SOLANA_PAYER_SECRET_KEY` | – | Devnet wallet that pays sellers (base58 secret key). Holds devnet USDC; needs no SOL |
+| `SOLANA_PAY_TO` | – | Payout address of the seeded PokéDex test seller |
+| `X402_FACILITATOR_URL` | `https://x402.org/facilitator` | Verifies and submits the payments, and pays their fees |
+| `SOLANA_RPC_URL` | `https://api.devnet.solana.com` | Devnet RPC used to build the payment transaction |
 | `PLATFORM_FEE_BPS` | `500` | Platform commission in basis points (500 = 5%) |
 | `PLATFORM_MIN_FEE_MICRO` | `1000` | Commission floor per call, in micro-USDC ($0.001) |
-| `TEST_CREDIT_MICRO` | `1000000` | Starter credit for new buyers (simulated mode) |
+| `TEST_CREDIT_MICRO` | `1000000` | Starter credit for new buyers (prepaid test credit, on both rails) |
 | `MIN_PAYOUT_MICRO` | `10000` | Minimum seller withdrawal ($0.01) |
 | `SECRETS_KEY` | – | **Required in production.** `openssl rand -base64 32`; encrypts sellers' upstream secrets |
 | `INTERNAL_TOKEN` | random | Set when running more than one instance |
@@ -107,18 +114,38 @@ Then ask your agent: *"Use rialto to make a pixel-art sprite sheet for my game's
 
 The buyer pays `sellerPrice + max(floor, ceil(sellerPrice × bps / 10000))`. The seller is credited **exactly** their price; the platform keeps the difference; every movement is an append-only ledger entry. Failed upstream calls are never settled. All amounts are integer micro-USDC (`1 USDC = 1_000_000`). Example: seller price $0.002 → buyer pays $0.003 (platform keeps $0.001).
 
+## Live payments on Solana devnet
+
+```bash
+npm run x402:keys -- --live   # two devnet wallets in .env: one pays sellers, one is the test seller
+# fund BOTH printed addresses with devnet USDC at https://faucet.circle.com (Solana Devnet)
+npm run x402:check -- --pay   # one real $0.001 payment; prints the explorer link
+npm run seed:pokedex          # the PokéDex test seller now gets paid at that address
+npm run dev                   # ask for "Look up the Pokémon pikachu." in /app
+```
+
+What happens on a call to a real seller (one whose payout address is a Solana address):
+
+1. The gateway answers **402** with a standard x402 v2 `PAYMENT-REQUIRED` header: exact scheme, USDC, the seller's address, the seller's price.
+2. The agent signs a USDC transfer from the platform wallet to the seller and retries with `PAYMENT-SIGNATURE`.
+3. The gateway has the **facilitator verify** it, calls the seller's API, and only if that succeeds has the facilitator **settle** it on-chain. The facilitator pays the fee, so no wallet here needs SOL.
+4. The transaction signature is the settlement reference; the UI links it on the Solana explorer. The buyer's prepaid balance is debited the buyer price; the commission never leaves the platform wallet.
+
+The 25 fictional demo providers have no wallet and stay on the simulation, labelled `SIMULATED`, in the same run. The rail is pinned to devnet in code (`lib/x402/solana.ts`).
+
 ## What is real and what is not
 
 | Real, tested | Simulated / not built |
 |---|---|
-| Decision engine (qualify → score → plan → explain), multi-step plans, fallback | **Money**: top-ups, settlement and payouts are simulated (`sim_…` refs, no explorer links) |
-| Accounts, hashed API keys, per-buyer wallets and spending policy | **Solana / x402 live rail** (`X402PaymentRail` is a stub; see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)) |
+| Decision engine (qualify → score → plan → explain), multi-step plans, fallback | **Buyer deposits**: balances are prepaid test credit; nobody deposits USDC yet |
+| Accounts, hashed API keys, per-buyer wallets and spending policy | **Mainnet**: the live rail is devnet only, by construction |
+| x402 on Solana devnet for real sellers (opt-in): sign → facilitator verify → call → settle | Payments to the fictional demo providers, and withdrawals of balances earned on the simulation, are simulated (`sim_…` refs) |
 | Seller gateway: 402 → verify → call the seller's real API → settle, SSRF-guarded | Login is **key-only** (no email/password/recovery) |
 | Commission split + ledger, atomic debits, payouts | The planner is **rule-based**; it deduces the API input from the goal heuristically |
 | Hosted MCP endpoint, MCP stdio server | Balances are 32-bit ints in SQLite (~$2,147 max per account) |
 | Visual console, 3D landing | Rate limiting is in-memory (single instance) |
 
-The ~800-cube "market" in the landing animation is illustrative; the demo registry holds 25 providers. All seeded providers are fictional.
+The ~800-cube "market" in the landing animation is illustrative; the demo registry holds 25 providers, all fictional. The one real seller that ships with it is **PokéDex**: the free public PokéAPI behind the gateway, there to test the two-sided flow.
 
 ## Project layout
 

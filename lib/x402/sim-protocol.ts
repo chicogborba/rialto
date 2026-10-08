@@ -1,18 +1,28 @@
+import type { PaymentMode } from "@/lib/types";
 import type { PaymentRequirements, Settlement } from "./rail";
 
 /**
- * SIMULATED wire format between the agent's executor and the mock provider routes.
+ * Wire format between the agent's executor and the provider routes.
  *
- * These header names are deliberately NOT the x402 header names: nothing here is a real x402
- * exchange. The *shapes* mirror x402 (402 + payment requirements → paid retry → settlement) so
- * the agent flow is identical when the real SDK rail is plugged in (Phase 8).
+ * Simulated providers use the `x-sim-*` headers: deliberately NOT the x402 header names, because
+ * nothing there is a real x402 exchange. The shapes mirror x402 (402 + payment requirements → paid
+ * retry → settlement), so the agent flow is the same on both rails.
+ *
+ * Providers paid for real use the x402 v2 headers: `PAYMENT-REQUIRED` on the 402,
+ * `PAYMENT-SIGNATURE` on the paid retry and `PAYMENT-RESPONSE` on success.
  */
 export const SIM_PAYMENT_HEADER = "x-sim-payment";
 export const SIM_SETTLEMENT_HEADER = "x-sim-settlement";
 export const RUN_ID_HEADER = "x-run-id";
+export const X402_REQUIRED_HEADER = "payment-required";
+export const X402_PAYMENT_HEADER = "payment-signature";
+export const X402_RESPONSE_HEADER = "payment-response";
+
+/** The request header that carries the payment on each rail. */
+export const paymentHeader = (mode: PaymentMode): string => (mode === "live" ? X402_PAYMENT_HEADER : SIM_PAYMENT_HEADER);
 
 export interface SimPaymentRequiredBody {
-  simulated: true;
+  simulated: boolean;
   accepts: PaymentRequirements[];
   reason?: string;
 }
@@ -49,6 +59,8 @@ export function parsePaymentRequired(json: unknown): PaymentRequirements | null 
     payTo: r.payTo,
     resource: r.resource,
     description: r.description,
+    ...(r.live === true ? { live: true } : {}),
+    ...(typeof r.settleMicro === "number" && Number.isInteger(r.settleMicro) && r.settleMicro > 0 ? { settleMicro: r.settleMicro } : {}),
   };
 }
 

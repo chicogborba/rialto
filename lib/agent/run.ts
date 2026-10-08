@@ -9,7 +9,7 @@ import {
   parsePaymentRequired,
   parseSuccess,
   RUN_ID_HEADER,
-  SIM_PAYMENT_HEADER,
+  paymentHeader,
 } from "@/lib/x402/sim-protocol";
 import {
   NoQualifiedProviderError,
@@ -318,7 +318,7 @@ export async function* runAgent(input: RunInput, deps: RunDeps): AsyncGenerator<
       mode: auth.mode,
     });
 
-    const paid = await deps.executor.call(service, body, { ...baseHeaders, [SIM_PAYMENT_HEADER]: auth.payload });
+    const paid = await deps.executor.call(service, body, { ...baseHeaders, [paymentHeader(auth.mode)]: auth.payload });
     const fail = async function* (error: string, verified: boolean): AsyncGenerator<RunEvent, PurchaseResult, void> {
       if (verified) {
         yield await make({ type: "execution.started", stepId: step.id, providerId: provider.id });

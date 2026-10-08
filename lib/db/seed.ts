@@ -1,10 +1,14 @@
 import type { PrismaClient } from "@prisma/client";
 import { createHarness, collectRun } from "@/lib/agent/harness";
+import { feeConfigFromEnv, splitFromSellerPrice } from "@/lib/billing/fees";
+import { generateKey } from "@/lib/security/keys";
+import { isSolanaAddress } from "@/lib/x402/solana";
 import { GOAL_CHIPS } from "@/lib/agent/scenarios";
 import { PRESET_WEIGHTS } from "@/lib/routing/weights";
 import { defaultPolicy } from "@/lib/wallet/policy";
 import {
   DEFAULT_AGENT_BALANCE_MICRO,
+  SCHEMAS,
   SEED_PROVIDERS,
   SEED_SERVICES,
 } from "../../prisma/seed-data";
@@ -23,6 +27,55 @@ const HISTORY: { goal: number; preset: "accuracy" | "balanced" | "cost" | "speed
   { goal: 0, preset: "accuracy" },
   { goal: 1, preset: "balanced" },
 ];
+
+/**
+ * The one real seller that exists out of the box: the free, public PokéAPI published through the
+ * gateway, exactly as any seller would publish theirs. Nothing about it is mocked: the gateway
+ * calls pokeapi.co. Its payout address is `SOLANA_PAY_TO`; with the live rail on, every call to it
+ * is paid to that address in devnet USDC. Without an address it is paid on the simulation.
+ */
+export const POKEDEX = {
+  slug: "pokedex",
+  name: "PokéDex",
+  seller: "PokéLab (test seller)",
+  description: "Pokémon data from the public PokéAPI: name, number, types, size and sprite.",
+  capability: "data.lookup",
+  upstreamUrl: "https://pokeapi.co/api/v2/pokemon/{query}",
+  resultPick: "name,id,height,weight,sprite=sprites.front_default,types=types.*.type.name",
+  sellerPriceMicro: 2_000,
+} as const;
+
+/** Creates the PokéDex seller and API, or points an existing one at the current `SOLANA_PAY_TO`. */
+export async function ensurePokedex(prisma: PrismaClient): Promise<{ created: boolean; payTo: string }> {
+  const wanted = process.env.SOLANA_PAY_TO?.trim() ?? "";
+  const payTo = isSolanaAddress(wanted) ? wanted : "TEST_SELLER_NO_WALLET";
+  const existing = await prisma.provider.findUnique({ where: { slug: POKEDEX.slug }, select: { id: true, sellerId: true } });
+  if (existing) {
+    await prisma.provider.update({ where: { id: existing.id }, data: { payTo } });
+    if (existing.sellerId) await prisma.seller.update({ where: { id: existing.sellerId }, data: { payoutAddress: payTo } });
+    return { created: false, payTo };
+  }
+  // nobody signs in as this seller: the key is discarded and only its hash is stored
+  const key = generateKey("seller");
+  const split = splitFromSellerPrice(POKEDEX.sellerPriceMicro, feeConfigFromEnv());
+  const seller = await prisma.seller.create({ data: { name: POKEDEX.seller, payoutAddress: payTo, keyHash: key.hash, keyPrefix: key.prefix } });
+  await prisma.provider.create({
+    data: {
+      slug: POKEDEX.slug, name: POKEDEX.name, description: POKEDEX.description, network: "solana-devnet",
+      x402Enabled: true, status: "online", qualityScore: 95, reputationScore: 80, successRate: 100, latencyMs: 300,
+      requestCount: 0, isDemo: false, payTo, sellerId: seller.id,
+      services: {
+        create: {
+          capability: POKEDEX.capability, endpoint: `/api/gw/${POKEDEX.slug}/${POKEDEX.capability}`,
+          priceMicro: split.buyerMicro, sellerPriceMicro: split.sellerMicro, capabilityMatch: 1,
+          upstreamUrl: POKEDEX.upstreamUrl, upstreamMethod: "GET", resultPick: POKEDEX.resultPick,
+          inputSchema: SCHEMAS[POKEDEX.capability].input, outputSchema: SCHEMAS[POKEDEX.capability].output,
+        },
+      },
+    },
+  });
+  return { created: true, payTo };
+}
 
 /** Wipes and reseeds everything. Safe to call from the reset route. */
 export async function seedDatabase(prisma: PrismaClient, now: Date = new Date()): Promise<void> {
@@ -55,6 +108,7 @@ export async function seedDatabase(prisma: PrismaClient, now: Date = new Date())
       },
     });
   }
+  await ensurePokedex(prisma);
   await prisma.agent.create({
     data: {
       id: "agent_default",

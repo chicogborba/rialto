@@ -45,4 +45,4 @@ Production checklist:
 - [ ] Persist the SQLite file (`prisma/dev.db`) on a volume, and back it up.
 - [ ] Put it behind HTTPS (the MCP install commands use your public URL).
 - [ ] Decide the commission (`PLATFORM_FEE_BPS`, `PLATFORM_MIN_FEE_MICRO`).
-- [ ] Remember payments are **simulated**: do not advertise real payouts until the live Solana rail exists.
+- [ ] Payments are **simulated** unless `PAYMENT_MODE=live`, and then they are **devnet** USDC: do not advertise real payouts. For live, run `npm run x402:keys -- --live` on the server, fund both wallets at the Circle faucet, then `npm run x402:check -- --pay` and `npm run seed:pokedex`.

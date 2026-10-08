@@ -10,8 +10,8 @@ A hackathon-grade **autonomous service procurement layer for AI agents**. Give i
 
 - Every provider is **fictional** (labelled `DEMO PROVIDER`).
 - Every payment in this build is **SIMULATED**. The UI shows a `SIMULATED` badge on every payment and transaction. Simulated settlements carry `sim_…` references and never link to a block explorer.
-- The HTTP 402 handshake between agent and provider is a *real* HTTP exchange against local routes, but it uses `X-Sim-*` headers, **not** the real x402 headers. No blockchain is touched.
-- Live x402 on Solana devnet (plan Phase 8) is **not implemented**; `X402PaymentRail` is a typed stub that throws `live mode not configured`.
+- For the fictional demo providers, the HTTP 402 handshake is a *real* HTTP exchange against local routes, but it uses `X-Sim-*` headers, **not** the real x402 headers. No blockchain is touched.
+- For real sellers, with `PAYMENT_MODE=live`, it is a real x402 v2 exchange settled in USDC on **Solana devnet** (`X402PaymentRail`). Devnet only; buyer balances are still prepaid test credit.
 - We did not invent x402 and we are not the first x402 marketplace. x402 is the payment rail; Rialto is the decision layer on top.
 
 ## What it is
@@ -85,9 +85,17 @@ Scenarios are DAGs. *Research* = `market.quotes ∥ news.search ∥ filings.sec 
 |---|---|
 | `DemoPaymentRail` | Implemented. Simulated, no network, `sim_…` refs. |
 | Mock provider routes `/api/x/[provider]/[capability]` | Real HTTP 402, `X-Sim-Payment` / `X-Sim-Settlement` headers (deliberately not x402 header names). |
-| `X402PaymentRail` | **Stub.** Throws `live mode not configured`. |
+| `X402PaymentRail` | Implemented, devnet only. `@x402/svm` builds and signs the USDC transfer; the facilitator verifies and settles it. |
+| `HybridPaymentRail` | What runs when live is on: requirements marked `live` go to x402, the rest to the simulation. A payment from one rail is never accepted on the other. |
+| Seller gateway `/api/gw/[slug]/[capability]` | On the live rail: `PAYMENT-REQUIRED` on the 402, `PAYMENT-SIGNATURE` on the retry, `PAYMENT-RESPONSE` on success. |
 
-The flow mirrors x402's shape so the real SDK rail can replace the simulated one without changing the agent or UI. To add live mode: install `@x402/core`, `@x402/fetch`, `@x402/next`, `@x402/svm`, `@solana/kit`; read their type definitions (do not rely on memory); protect one provider route with the SDK's Next wrapper; implement `X402PaymentRail` using the SDK's payment-wrapped fetch and a devnet signer; map SDK results onto the same `RunEvent`s. Providers not served live must stay labelled `SIMULATED`.
+The agent and the UI do not know which rail ran: both produce the same `RunEvent`s, and each transaction carries its own `mode`. On the live rail:
+
+- **Who pays.** The platform wallet (`SOLANA_PAYER_SECRET_KEY`) signs a transfer of the *seller's price* to the seller's payout address. The buyer's prepaid balance is debited the *buyer price* in the ledger; the commission stays in the wallet.
+- **Fees.** The facilitator is the transaction's fee payer, so neither wallet needs SOL. The seller's USDC token account must already exist.
+- **Order.** Verify → call the seller's API → settle. A failed call is never settled. If settlement fails the result is withheld and the buyer is not charged.
+- **Ledger.** The seller's share is recorded as paid out, with the transaction signature, instead of accruing as a balance.
+- **Scope.** Network, mint and explorer links are constants for devnet (`lib/x402/solana.ts`). The gateway is still called only by the Rialto orchestrator; opening it to outside x402 clients needs a decision on how the commission is collected.
 
 ## How MCP fits
 
@@ -134,7 +142,7 @@ Design tokens live in `app/globals.css` (near-black / off-white, one accent `sig
 - A registered provider whose endpoint doesn't speak the simulated 402 protocol will fail and trigger fallback. Registered endpoints are fetched server-side — only register URLs you trust (this is a local demo; there is no SSRF hardening).
 - Single local agent wallet, no auth.
 - The `execute_service` MCP tool needs the web server for the provider routes.
-- Live x402 is not implemented.
+- Live x402 is devnet only; buyers do not deposit USDC (prepaid test credit).
 
 ## Future extensions
 
@@ -177,7 +185,7 @@ bearer_token_env_var = "RIALTO_KEY"
 **Verify everything end to end** (needs `npm run dev`): `npm run e2e` publishes the PokéAPI as a seller, uses it as a buyer through the hosted MCP endpoint and checks the money to the micro-USDC, SSRF rejection, failed-call-not-charged, payout, and isolation between accounts.
 
 ### Not built yet (be honest in the pitch)
-- **Real money.** Everything is simulated: top-ups, settlement and payouts. The live Solana rail (x402 + USDC on devnet) is the next milestone; the architecture expects buyers to pay a platform treasury and sellers to be paid out from it.
+- **Real money.** With the live rail, sellers are paid in devnet USDC per call: real transactions, test money. Buyer balances are prepaid test credit; deposits, mainnet and withdrawals of simulated balances are not built.
 - **Auth is key-only** (no email/password/recovery). Lose the key, lose the account.
 - **The planner is rule-based** and derives the API input from the goal heuristically (`{query}`); a real LLM planner would build typed input from each service's schema.
 - **Integers:** balances are Prisma `Int` (SQLite), capping at about $2,147 per account.

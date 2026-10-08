@@ -197,13 +197,14 @@ export async function persistEvent(e: RunEvent): Promise<void> {
 /**
  * Records an attempt. For a settled purchase it also splits the money in the same DB transaction:
  * the seller is credited exactly their price, Rialto keeps the difference, and the append-only
- * ledger gets one entry per party. Failed attempts move no money.
+ * ledger gets one entry per party. Failed attempts move no money. On the live rail the seller's
+ * share has already reached their wallet, so it is recorded as paid out instead of as a balance.
  */
 export async function recordTransaction(tx: TransactionRecord): Promise<void> {
   const [run, service, provider] = await Promise.all([
     prisma.run.findUnique({ where: { id: tx.runId }, select: { agentId: true } }),
     prisma.service.findUnique({ where: { id: tx.serviceId }, select: { sellerPriceMicro: true } }),
-    prisma.provider.findUnique({ where: { id: tx.providerId }, select: { sellerId: true } }),
+    prisma.provider.findUnique({ where: { id: tx.providerId }, select: { sellerId: true, payTo: true } }),
   ]);
   const agentId = run?.agentId ?? AGENT_ID;
   const sellerId = provider?.sellerId ?? null;
@@ -239,8 +240,15 @@ export async function recordTransaction(tx: TransactionRecord): Promise<void> {
     interface Entry { kind: string; agentId?: string; sellerId?: string; amountMicro: number; transactionId: string; note: string }
     const entries: Entry[] = [{ kind: "purchase", agentId, amountMicro: -tx.amountMicro, transactionId: row.id, note: tx.capability }];
     if (sellerId) {
-      await db.seller.update({ where: { id: sellerId }, data: { balanceMicro: { increment: split.sellerMicro } } });
       entries.push({ kind: "seller_earning", sellerId, amountMicro: split.sellerMicro, transactionId: row.id, note: tx.capability });
+      if (tx.mode === "live") {
+        // paid in the same call, on-chain: nothing accrues, and the payout row points at that transaction
+        await db.seller.update({ where: { id: sellerId }, data: { paidOutMicro: { increment: split.sellerMicro } } });
+        await db.payout.create({ data: { sellerId, amountMicro: split.sellerMicro, address: provider?.payTo ?? "", status: "paid", mode: "live", txRef: tx.txRef } });
+        entries.push({ kind: "payout", sellerId, amountMicro: -split.sellerMicro, transactionId: row.id, note: tx.txRef ?? "on-chain" });
+      } else {
+        await db.seller.update({ where: { id: sellerId }, data: { balanceMicro: { increment: split.sellerMicro } } });
+      }
     }
     if (split.feeMicro > 0) entries.push({ kind: "platform_fee", amountMicro: split.feeMicro, transactionId: row.id, note: sellerId ? "commission" : "house provider" });
     await db.ledgerEntry.createMany({ data: entries });
