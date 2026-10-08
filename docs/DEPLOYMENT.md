@@ -4,7 +4,7 @@ Rialto ships in two shapes.
 
 ## 1. Landing page on GitHub Pages (static)
 
-GitHub Pages can only host static files, so the Pages build is an **export of the landing page only**: the 3D story, comparisons and a *recorded* demo run. Links that need the backend (`/publish`, `/connect`) point to the repository's quickstart, and a small banner says so.
+GitHub Pages can only host static files, so the Pages build is an **export of the landing page only**: the 3D story, comparisons and a *recorded* demo run. Links that need the backend (`/signup`, `/login`) point to the repository's quickstart, and a small banner says so.
 
 It deploys automatically on every push to `main` via `.github/workflows/pages.yml`.
 
@@ -16,7 +16,7 @@ Build it locally:
 NEXT_PUBLIC_BASE_PATH=/rialto npm run build:pages   # output in ./out
 ```
 
-`scripts/build-pages.mjs` temporarily moves `app/api`, `app/app`, `app/connect` and `app/publish` aside (they need a server), runs `next build` with `STATIC_EXPORT=1`, and restores everything, even on failure. To preview under the sub-path:
+`scripts/build-pages.mjs` temporarily moves `app/api`, `app/app`, `app/dashboard`, `app/login`, `app/signup`, `app/connect` and `app/publish` aside (they need a server), runs `next build` with `STATIC_EXPORT=1`, and restores everything, even on failure. To preview under the sub-path:
 
 ```bash
 mkdir -p /tmp/serve && ln -sfn "$PWD/out" /tmp/serve/rialto && cd /tmp/serve && python3 -m http.server 8123
@@ -105,7 +105,10 @@ docker compose exec app npm run x402:check -- --pay   # one real $0.001 payment;
 
 ### What a public server changes
 
-- `POST /api/reset` needs `ADMIN_TOKEN`. Without it nobody can wipe the data, and the app's *Reset demo* button says so.
+- `POST /api/reset` needs `ADMIN_TOKEN`. Without it nobody can wipe the data, and the app's *Reset demo* button says so. It wipes **everything**, accounts included.
+- Keys without an account (`POST /api/agents`, `POST /api/sellers`) are off: people sign up, and the account owns the agents and the seller profile. `ALLOW_ANONYMOUS_KEYS=1` turns them back on.
+- Accounts: email + password (scrypt), a 30-day HttpOnly session cookie, requests that started on another site are refused, sign-in attempts are rate limited per address and per email. There is **no email verification and no password recovery**; the operator resets one with `docker compose exec app npm run -s user:admin -- reset-password <email>` (`list` shows the accounts).
+- Behind Traefik the client address comes from `X-Forwarded-For`, which Traefik sets itself and does not accept from clients.
 - Runs without a key use the shared demo agent; in production they are throttled per address.
 - On the live rail the platform wallet pays at most `LIVE_DAILY_CAP_USD` (default 5) per 24 hours.
 - The server calls its own routes on the loopback (`INTERNAL_BASE_URL`), never out through the proxy.

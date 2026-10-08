@@ -1,12 +1,6 @@
-import { ConnectFlow } from "@/components/connect/ConnectFlow";
-import { PageShell } from "@/components/site/PageShell";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Connect — RIALTO" };
-
-export default function ConnectPage() {
-  return (
-    <PageShell>
-      <ConnectFlow />
-    </PageShell>
-  );
+/** Connecting an agent now happens in the dashboard, behind a sign-in. */
+export default function ConnectPage(): never {
+  redirect("/dashboard/agents");
 }

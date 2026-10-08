@@ -10,9 +10,7 @@ export const REPO_URL = "https://github.com/chicogborba/rialto";
 /** Prefix a /public asset path with the deploy base path (needed on GitHub Pages project sites). */
 export const asset = (path: string): string => `${BASE_PATH}${path}`;
 
-type FlowPath = "/publish" | "/connect" | "/app" | "/app/marketplace";
-
 /** Where a flow link goes: the real page, or the repo's quickstart in the static preview. */
-export function flowHref(path: FlowPath): string {
+export function flowHref(path: string): string {
   return STATIC_PREVIEW ? `${REPO_URL}#quickstart` : path;
 }

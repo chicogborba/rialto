@@ -40,3 +40,12 @@ export function bearerFrom(header: string | null | undefined): string | null {
   const m = header?.match(/^Bearer\s+(\S+)$/i);
   return m ? m[1] : null;
 }
+
+/**
+ * Keys made without an account (POST /api/agents, POST /api/sellers) are for development and the
+ * scripts. On a public server they are off: people sign up, and the account owns the keys. Set
+ * ALLOW_ANONYMOUS_KEYS=1 to switch them back on.
+ */
+export function anonymousKeysAllowed(env: Record<string, string | undefined> = process.env): boolean {
+  return env.ALLOW_ANONYMOUS_KEYS === "1" || env.NODE_ENV !== "production";
+}

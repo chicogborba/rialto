@@ -1,12 +1,6 @@
-import { PublishFlow } from "@/components/publish/PublishFlow";
-import { PageShell } from "@/components/site/PageShell";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Publish an API — RIALTO" };
-
-export default function PublishPage() {
-  return (
-    <PageShell>
-      <PublishFlow />
-    </PageShell>
-  );
+/** Publishing now happens in the dashboard, behind a sign-in. */
+export default function PublishPage(): never {
+  redirect("/dashboard/apis");
 }

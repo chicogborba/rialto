@@ -23,7 +23,8 @@ export function Header() {
         <Link href="/#video" className="hidden text-coal/70 hover:text-coal md:block">Video</Link>
         <Link href="/#solana" className="hidden text-coal/70 hover:text-coal md:block">Why Solana</Link>
         <a href={REPO_URL} className="hidden text-coal/70 hover:text-coal sm:block">GitHub</a>
-        <Link href={flowHref("/connect")} className="home-btn home-btn-ink !min-h-10 !px-4 text-sm">Connect</Link>
+        <Link href={flowHref("/login")} className="hidden text-coal/70 hover:text-coal sm:block">Sign in</Link>
+        <Link href={flowHref("/signup")} className="home-btn home-btn-ink !min-h-10 !px-4 text-sm">Get started</Link>
       </nav>
     </header>
   );
@@ -42,8 +43,8 @@ export function Hero() {
         </p>
         <p className="mt-4 max-w-sm text-lg leading-snug text-coal/75 md:mt-6 md:text-xl">They find it, compare it and pay per call. On their own.</p>
         <div className="pointer-events-auto mt-5 flex flex-wrap gap-2 md:mt-7 md:gap-3">
-          <Link href={flowHref("/connect")} className="home-btn home-btn-ink max-sm:!px-4 max-sm:text-[15px]">Connect my agent</Link>
-          <Link href={flowHref("/publish")} className="home-btn home-btn-line bg-cream/70 max-sm:!px-4 max-sm:text-[15px]">Publish an API</Link>
+          <Link href={flowHref("/signup?next=/dashboard/agents")} className="home-btn home-btn-ink max-sm:!px-4 max-sm:text-[15px]">Connect my agent</Link>
+          <Link href={flowHref("/signup?next=/dashboard/apis")} className="home-btn home-btn-line bg-cream/70 max-sm:!px-4 max-sm:text-[15px]">Publish an API</Link>
         </div>
       </div>
       <HeroMarket className="h-[46svh] min-h-[320px] w-full md:h-[56svh] lg:absolute lg:inset-0 lg:h-full" />
@@ -138,8 +139,8 @@ export function Solana() {
 }
 
 const SIDES = [
-  { title: "I use Claude Code or Codex", steps: ["Get a key", "Paste one command", "Just ask"], cta: "Connect my agent", href: "/connect", primary: true },
-  { title: "I have an API", steps: ["Paste your endpoint", "Set a price", "Get paid per call"], cta: "Publish my API", href: "/publish", primary: false },
+  { title: "I use Claude Code or Codex", steps: ["Create an account", "Paste one command", "Just ask"], cta: "Connect my agent", href: "/signup?next=/dashboard/agents", primary: true },
+  { title: "I have an API", steps: ["Paste your endpoint", "Set a price", "Get paid per call"], cta: "Publish my API", href: "/signup?next=/dashboard/apis", primary: false },
 ] as const;
 
 export function Start() {

@@ -54,29 +54,89 @@ model Service {
   @@unique([providerId, capability])
 }
 
+/// A person with an account: email + password. Owns agents (buyer keys), at most one seller
+/// profile, and a registered Solana wallet. Funds sit on the account until the user moves some to an agent.
+model User {
+  id               String    @id @default(cuid())
+  /// lowercased
+  email            String    @unique
+  name             String
+  /// scrypt$N$r$p$salt$hash
+  passwordHash     String
+  /// money the user holds on Rialto and has not given to an agent; micro-USDC
+  balanceMicro     Int       @default(0)
+  /// payouts go here, and deposits are accepted from here once it is verified
+  walletAddress    String?
+  /// set when the user proved they hold this wallet by signing a message
+  walletVerifiedAt DateTime?
+  welcomeCreditAt  DateTime?
+  createdAt        DateTime  @default(now())
+  sessions         Session[]
+  agents           Agent[]
+  seller           Seller?
+  deposits         Deposit[]
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// sha256 of the cookie value
+  tokenHash  String   @unique
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+  expiresAt  DateTime
+  userAgent  String?
+
+  @@index([userId])
+}
+
+/// USDC that arrived on-chain at the platform wallet from a user's verified wallet and was credited to them.
+model Deposit {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Solana transaction signature: unique, so a transfer is credited once
+  signature   String   @unique
+  amountMicro Int
+  fromAddress String
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
 model Agent {
-  id                String   @id @default("agent_default")
-  name              String   @default("Agent-01")
+  id                String    @id @default("agent_default")
+  name              String    @default("Agent-01")
   balanceMicro      Int
-  sessionSpendMicro Int      @default(0)
+  sessionSpendMicro Int       @default(0)
   policy            String
-  /// sha256 of the buyer API key; null for the built-in local demo agent
-  keyHash           String?  @unique
+  /// sha256 of the buyer API key; null for the built-in local demo agent and for revoked agents
+  keyHash           String?   @unique
   keyPrefix         String?
-  createdAt         DateTime @default(now())
+  /// the account that owns this agent; null for the demo agent and for keys created without an account
+  userId            String?
+  user              User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  revokedAt         DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model Seller {
-  id            String   @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String
   email         String?
   payoutAddress String
-  keyHash       String   @unique
+  keyHash       String     @unique
   keyPrefix     String
   /// earned and not yet paid out
-  balanceMicro  Int      @default(0)
-  paidOutMicro  Int      @default(0)
-  createdAt     DateTime @default(now())
+  balanceMicro  Int        @default(0)
+  paidOutMicro  Int        @default(0)
+  createdAt     DateTime   @default(now())
+  /// the account this seller profile belongs to; null for sellers created with a key only
+  userId        String?    @unique
+  user          User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   providers     Provider[]
   payouts       Payout[]
 }
@@ -97,35 +157,37 @@ model Payout {
 model LedgerEntry {
   id            Int      @id @default(autoincrement())
   createdAt     DateTime @default(now())
-  /// topup | purchase | seller_earning | platform_fee | payout
+  /// topup | purchase | seller_earning | platform_fee | payout | welcome_credit | deposit | allocate | reclaim
   kind          String
   agentId       String?
   sellerId      String?
+  userId        String?
   amountMicro   Int
   transactionId String?
   note          String?
 
   @@index([agentId, createdAt])
   @@index([sellerId, createdAt])
+  @@index([userId, createdAt])
 }
 
 model Run {
-  id                      String        @id
-  agentId                 String
-  goal                    String
-  constraints             String
-  status                  String
-  mode                    String
-  plan                    String?
-  result                  String?
-  totalCostMicro          Int           @default(0)
-  premiumBaselineMicro    Int           @default(0)
-  cheapestBaselineMicro   Int           @default(0)
-  qualityDeltaVsCheapest  Float         @default(0)
-  totalLatencyMs          Int           @default(0)
-  createdAt               DateTime      @default(now())
-  events                  RunEvent[]
-  transactions            Transaction[]
+  id                     String        @id
+  agentId                String
+  goal                   String
+  constraints            String
+  status                 String
+  mode                   String
+  plan                   String?
+  result                 String?
+  totalCostMicro         Int           @default(0)
+  premiumBaselineMicro   Int           @default(0)
+  cheapestBaselineMicro  Int           @default(0)
+  qualityDeltaVsCheapest Float         @default(0)
+  totalLatencyMs         Int           @default(0)
+  createdAt              DateTime      @default(now())
+  events                 RunEvent[]
+  transactions           Transaction[]
 }
 
 model RunEvent {

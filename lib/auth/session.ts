@@ -3,6 +3,8 @@ import { DEFAULT_AGENT_ID } from "@/lib/db/repo";
 import { HttpError } from "@/lib/http";
 import { bearerFrom, hashKey, kindOfKey } from "@/lib/security/keys";
 import { allow } from "@/lib/security/rate-limit";
+import { ensureSellerFor } from "@/lib/db/users";
+import { requireUser, userFromRequest } from "./account";
 
 /**
  * Identity for a request. The API key IS the identity (no passwords yet): buyers use `rl_buyer_…`,
@@ -32,9 +34,19 @@ export interface SellerCtx {
   sellerId: string;
 }
 
+/**
+ * A seller is either a seller key (programmatic publishing) or a signed-in account (the dashboard).
+ * An account becomes a seller the first time it needs to be one, paid at the wallet it registered.
+ */
 export async function sellerFromRequest(req: Request): Promise<SellerCtx> {
   const key = bearerFrom(req.headers.get("authorization"));
-  if (!key) throw new HttpError(401, "missing_key", "Send your seller key as `Authorization: Bearer rl_seller_…`");
+  if (!key) {
+    if (!(await userFromRequest(req))) throw new HttpError(401, "missing_key", "Sign in, or send your seller key as `Authorization: Bearer rl_seller_…`");
+    const { user } = await requireUser(req);
+    const sellerId = await ensureSellerFor(user.id);
+    if (!allow(`seller:${sellerId}`, 30, 5)) throw new HttpError(429, "rate_limited", "Too many requests, slow down");
+    return { sellerId };
+  }
   if (kindOfKey(key) !== "seller") throw new HttpError(401, "wrong_key", "That is not a seller key");
   const seller = await prisma.seller.findUnique({ where: { keyHash: hashKey(key) }, select: { id: true } });
   if (!seller) throw new HttpError(401, "invalid_key", "Unknown or revoked key");

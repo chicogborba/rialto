@@ -6,8 +6,8 @@ Rialto has two sides:
 
 | | You are… | You do |
 |---|---|---|
-| 🛠️ **Seller** | someone with an API | Publish it at `/publish`: paste the endpoint, set a price, get paid per successful call. |
-| 🤖 **Buyer** | someone using Claude Code / Codex | Connect at `/connect`: one command gives your agent a wallet and the whole marketplace. |
+| 🛠️ **Seller** | someone with an API | Create an account, then publish it in the dashboard: paste the endpoint, set a price, get paid per successful call. |
+| 🤖 **Buyer** | someone using Claude Code / Codex | Create an account, then an agent: one command gives your agent a wallet and the whole marketplace. |
 
 The agent decides *what* to buy, from *whom*, for *how much*; the platform runs the 402 payment flow, calls the seller's API, splits the money (seller price + a small platform fee) and keeps an auditable ledger.
 
@@ -38,24 +38,31 @@ Then open:
 |---|---|
 | `/` | Landing page: the pitch as a 3D scroll story, the video, the Solana race |
 | `/catalog` | Public catalog of the APIs an agent can hire (demo data from the seed registry) |
-| `/connect` | **Buyer flow**: get a key, copy the install command, see your wallet |
+| `/signup` · `/login` | **Buyer flow**: get a key, copy the install command, see your wallet |
 | `/publish` | **Seller flow**: publish an API, test it, watch earnings, withdraw |
 | `/app` | Visual agent console (runs the decision engine with a live graph) |
 | `/app/marketplace` · `/providers` · `/transactions` · `/reputation` · `/settings` | Exchange, supply, ledger, trust, wallet policy |
 
-### Try the whole two-sided flow in 60 seconds
+### Try the whole flow in a few minutes
 
-With `npm run dev` running, in another terminal:
+1. `npm run dev`, then open `/signup` and create an account (email + password). It starts with a test credit.
+2. **Agents → Create agent.** You get a key once, and the exact command for Claude Code, Codex or `.mcp.json`. Give the agent some money from your account (**Add from account**) and, if you like, set its spending limits.
+3. Paste the command in your terminal and ask: *"Use rialto to look up the Pokémon charizard."*
+4. **Wallet** is where you register your Solana wallet (Phantom: it signs a free message to prove it is yours). With the live rail on, USDC you send from that wallet to Rialto's address is credited to your account, and you are paid at it when your APIs are used.
+5. **My APIs → Fill with a free example (PokéAPI) → Publish.** Other accounts' agents can now hire it; you see every call and every cent.
+
+To check all of it automatically, against a local or a deployed server:
 
 ```bash
-npm run e2e
+npm run e2e:accounts                      # a local server
+E2E_BASE=https://your.server npm run e2e:accounts
 ```
 
-It publishes the public PokéAPI as a seller, uses it as a buyer through the hosted MCP endpoint, and checks the money to the micro-USDC, the SSRF protections, "failed calls are never charged", payouts and account isolation. Or do it by hand: open `/publish`, click **Fill with a free example (PokéAPI)**, publish, then open `/connect` and follow the steps.
+It signs up two accounts, proves a wallet, publishes an API as one, has the other's agent hire it through the hosted MCP endpoint, checks the money to the micro-USDC, then rotates and revokes keys, changes a password and checks sessions. On the live rail it also makes a real USDC deposit. (`npm run e2e` is the older script that uses keys without an account.)
 
 ### Connect your Claude Code / Codex
 
-Create a key at `/connect` (it fills the commands in for you), or by hand:
+Create an agent in the dashboard (**Agents**): it fills the commands in for you. By hand it is:
 
 ```bash
 # Claude Code
@@ -83,7 +90,9 @@ Then ask your agent: *"Use rialto to make a pixel-art sprite sheet for my game's
 | `npm run setup` | Generate the Prisma client, create the SQLite DB and seed it |
 | `npm run db:reset` | Wipe and reseed the demo data (also the **Reset demo** button in the app) |
 | `npm run check` | Typecheck + lint + unit tests (what CI runs) |
-| `npm run e2e` | End-to-end check of the two-sided platform on the simulation (needs `npm run dev` with `PAYMENT_MODE=simulated`) |
+| `npm run e2e:accounts` | End-to-end check of the whole account flow on either rail, against a local or deployed server (`E2E_BASE=https://…`) |
+| `npm run e2e` | Older end-to-end check that uses keys without an account (development only; needs `PAYMENT_MODE=simulated`) |
+| `npm run user:admin` | `list` accounts, or `reset-password <email>` (there is no email recovery) |
 | `npm run mcp` | Local stdio MCP server (development; real users use `/api/mcp`) |
 | `npm run record` | Regenerate the recorded runs the landing page replays |
 | `npm run build:pages` | Static export of the landing page into `./out` (GitHub Pages) |
@@ -108,6 +117,8 @@ Then ask your agent: *"Use rialto to make a pixel-art sprite sheet for my game's
 | `MIN_PAYOUT_MICRO` | `10000` | Minimum seller withdrawal ($0.01) |
 | `SECRETS_KEY` | – | **Required in production.** `openssl rand -base64 32`; encrypts sellers' upstream secrets |
 | `INTERNAL_TOKEN` | random | Set when running more than one instance |
+| `WELCOME_CREDIT_MICRO` | `1000000` | Test credit every new account starts with |
+| `ALLOW_ANONYMOUS_KEYS` | off in production | `1` lets people create keys without an account (development and scripts) |
 | `ADMIN_TOKEN` | – | In production, required as a bearer token to reset the demo data; unset = nobody can |
 | `INTERNAL_BASE_URL` | – | Behind a proxy: where the server reaches itself, e.g. `http://127.0.0.1:3000` |
 | `LIVE_DAILY_CAP_USD` | `5` | Most the platform wallet pays sellers per 24 h on the live rail |
@@ -144,9 +155,9 @@ Checked end to end on devnet on 2026-10-08: a "Look up the Pokémon pikachu." ru
 | Real, tested | Simulated / not built |
 |---|---|
 | Decision engine (qualify → score → plan → explain), multi-step plans, fallback | **Buyer deposits**: balances are prepaid test credit; nobody deposits USDC yet |
-| Accounts, hashed API keys, per-buyer wallets and spending policy | **Mainnet**: the live rail is devnet only, by construction |
+| Accounts (email + password, scrypt, HttpOnly sessions), a dashboard, hashed API keys, per-agent wallets and spending policy | **Mainnet**: the live rail is devnet only, by construction |
 | x402 on Solana devnet for real sellers (opt-in): sign → facilitator verify → call → settle | Payments to the fictional demo providers, and withdrawals of balances earned on the simulation, are simulated (`sim_…` refs) |
-| Seller gateway: 402 → verify → call the seller's real API → settle, SSRF-guarded | Login is **key-only** (no email/password/recovery) |
+| Seller gateway: 402 → verify → call the seller's real API → settle, SSRF-guarded | No email verification or password recovery (the operator resets passwords), no 2FA |
 | Commission split + ledger, atomic debits, payouts | The planner is **rule-based**; it deduces the API input from the goal heuristically |
 | Hosted MCP endpoint, MCP stdio server | Balances are 32-bit ints in SQLite (~$2,147 max per account) |
 | Visual console, 3D landing | Rate limiting is in-memory (single instance) |

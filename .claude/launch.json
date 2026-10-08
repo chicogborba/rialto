@@ -1,1 +1,30 @@
-{ "version": "0.0.1", "configurations": [{ "name": "rialto", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3100, "autoPort": true }] }
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "rialto",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3100,
+      "autoPort": true
+    },
+    {
+      "name": "rialto-sim",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "PAYMENT_MODE=simulated",
+        "DATABASE_URL=file:./sim-test.db",
+        "npm",
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3110"
+      ],
+      "port": 3110
+    }
+  ]
+}

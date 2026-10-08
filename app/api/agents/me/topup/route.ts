@@ -3,6 +3,7 @@ import { buyerFromRequest } from "@/lib/auth/session";
 import { topUpWallet } from "@/lib/db/repo";
 import { HttpError, handle, readJson } from "@/lib/http";
 import { toMicro } from "@/lib/money";
+import { anonymousKeysAllowed } from "@/lib/security/keys";
 import { currentMode } from "@/lib/x402";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,8 @@ const Body = z.object({ amountUsd: z.number().min(0.01).max(10) });
  */
 export async function POST(req: Request): Promise<Response> {
   return handle(async () => {
+    // with the live rail on, test credit is what pays sellers in real devnet USDC: only where keys are anonymous (development)
+    if (currentMode() === "live" && !anonymousKeysAllowed()) throw new HttpError(403, "use_your_account", "Fund this agent from your account balance in the dashboard.");
     const { agentId } = await buyerFromRequest(req, { requireKey: true });
     const parsed = Body.safeParse(await readJson(req));
     if (!parsed.success) throw new HttpError(400, "invalid_body", "amountUsd must be between 0.01 and 10");

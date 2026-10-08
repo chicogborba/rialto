@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Boxes, Gauge, Plug, Receipt, Rocket, Settings, Store } from "lucide-react";
+import { Activity, Boxes, Gauge, Receipt, Rocket, Settings, Store } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -12,8 +12,7 @@ const ITEMS = [
   { href: "/app/transactions", label: "Transactions", icon: Receipt },
   { href: "/app/reputation", label: "Reputation", icon: Gauge },
   { href: "/app/settings", label: "Settings", icon: Settings },
-  { href: "/connect", label: "Connect", icon: Plug },
-  { href: "/publish", label: "Publish", icon: Rocket },
+  { href: "/dashboard", label: "Account", icon: Rocket },
 ] as const;
 
 export function AppNav() {

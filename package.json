@@ -21,7 +21,9 @@
     "x402:check": "tsx scripts/x402-devnet.ts",
     "seed:pokedex": "tsx scripts/seed-pokedex.ts",
     "db:init": "tsx scripts/init-db.ts",
-    "db:backup": "tsx scripts/backup-db.ts"
+    "db:backup": "tsx scripts/backup-db.ts",
+    "e2e:accounts": "tsx scripts/e2e-accounts.ts",
+    "user:admin": "tsx scripts/user-admin.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

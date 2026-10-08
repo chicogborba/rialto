@@ -161,8 +161,8 @@ money: buyer wallet −(seller price + fee) · seller balance +(seller price) ·
 
 | Flow | Where | What happens |
 |---|---|---|
-| Publish | `/publish` | Create seller account (name + Solana payout address) → publish endpoint, price, optional secret header and result fields → test it → watch earnings → withdraw |
-| Connect | `/connect` | Create buyer key (starter test credit) → paste one command → ask your agent for things |
+| Publish | `/dashboard/apis` | Signed in, with a registered wallet to be paid at → publish endpoint, price, optional secret header and result fields → test it → watch earnings → withdraw |
+| Connect | `/dashboard/agents` | Create an agent (key), give it money from the account, paste one command → ask your agent for things |
 | Console | `/app` | The visual console (uses the local demo agent unless you send a key) |
 
 **Install (verified against the Claude Code and Codex docs):**
@@ -190,3 +190,19 @@ bearer_token_env_var = "RIALTO_KEY"
 - **The planner is rule-based** and derives the API input from the goal heuristically (`{query}`); a real LLM planner would build typed input from each service's schema.
 - **Integers:** balances are Prisma `Int` (SQLite), capping at about $2,147 per account.
 - Seller APIs are self-reported quality; reputation starts at 50 and is earned.
+
+
+## Accounts
+
+People sign up with an email and a password (`/signup`) and then work in the dashboard (`/dashboard`). Agents keep using API keys: the account is how you get, fund and revoke them.
+
+| Piece | How it works |
+|---|---|
+| Sign-in | scrypt password hashes (parameters stored in the hash). A random token in an HttpOnly, SameSite=Lax cookie; the server keeps only its sha256. Logout, password change and "sign out other devices" delete the session rows. Mutating requests that started on another site are refused (`Origin`, `Sec-Fetch-Site`). |
+| Money | An account holds a balance. It gives money to its agents (`allocate`) and takes it back (`reclaim`); an agent can only spend what it was given, within its policy. Every move is a pair of ledger entries and an atomic conditional update. New accounts get a welcome test credit. |
+| Agents | Owned by the account. A key is shown once; rotating replaces it, revoking kills it and returns the balance. |
+| Sellers | An account becomes a seller the first time it publishes, paid at the wallet it registered. The same `/api/sellers/me/*` routes serve a seller key (scripts) and a signed-in account (dashboard). |
+| Wallet | Registering an address is enough to be paid. To **deposit**, the user proves they hold the wallet: it signs a message naming the account and the address, checked as an ed25519 signature against the address itself (`lib/auth/wallet-proof.ts`). |
+| Deposits (live rail) | USDC sent from a verified wallet to the platform wallet is found on-chain by reading the platform wallet's token account (`lib/x402/deposits.ts`): only a transaction that moved USDC in from exactly one wallet counts, and a unique signature makes sure it is credited once. The browser never says how much. |
+
+Not built: email verification, password recovery, 2FA, deposits signed in the browser (the user sends the transfer from their wallet app), withdrawing an account balance back on-chain.

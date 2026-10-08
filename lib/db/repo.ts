@@ -300,6 +300,13 @@ function toRow(t: TxWithProvider): TransactionRow | null {
   };
 }
 
+/** The latest transactions of several agents at once (an account's agents), newest first. */
+export async function listTransactionsForAgents(agentIds: string[], limit = 20): Promise<TransactionRow[]> {
+  if (agentIds.length === 0) return [];
+  const rows = await prisma.transaction.findMany({ where: { agentId: { in: agentIds } }, include: { provider: true }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: limit });
+  return rows.map(toRow).filter((r) => r !== null);
+}
+
 export async function listTransactions(limit = 50, cursor?: string, agentId?: string): Promise<{ rows: TransactionRow[]; next: string | null }> {
   const rows = await prisma.transaction.findMany({
     where: agentId ? { agentId } : undefined,

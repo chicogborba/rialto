@@ -57,7 +57,7 @@ export default function CatalogPage() {
             </h1>
             <p className="mt-4 max-w-xl text-lg leading-snug text-coal/75 md:text-xl">Every API your agent can hire, with the price per call. Demo data: these providers are fictional.</p>
           </div>
-          <Link href={flowHref("/publish")} className="home-btn home-btn-ink">Publish yours →</Link>
+          <Link href={flowHref("/signup?next=/dashboard/apis")} className="home-btn home-btn-ink">Publish yours →</Link>
         </div>
         <div className="mt-10">
           <Catalog items={ITEMS} />

@@ -12,7 +12,7 @@ import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
 const stash = path.join(root, ".pages-stash");
-const MOVE = ["app/api", "app/app", "app/connect", "app/publish"];
+const MOVE = ["app/api", "app/app", "app/connect", "app/publish", "app/dashboard", "app/login", "app/signup"];
 const moved = [];
 
 function restore() {
