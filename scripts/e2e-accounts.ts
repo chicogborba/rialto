@@ -158,19 +158,21 @@ async function main() {
 
   // ---- real deposit (live rail only)
   if (mode === "live" && secret && acc.body?.treasury?.address) {
-    const before = (await alice.call("/api/account")).body?.user?.balanceMicro as number;
     const sig = await depositOnChain(secret, acc.body.treasury.address, 50_000);
     console.log(`  deposit sent: ${sig}`);
-    let credited = 0;
-    for (let i = 0; i < 12 && credited === 0; i++) {
+    // the transfer takes a few seconds to be readable; older unclaimed transfers from the same wallet may be credited with it
+    let found = false;
+    for (let i = 0; i < 12 && !found; i++) {
       await new Promise((r) => setTimeout(r, 4000));
-      const check1 = await alice.call("/api/account/deposits", { json: {} });
-      credited = (check1.body?.credited as { amountMicro: number }[] | undefined)?.reduce((s, c) => s + c.amountMicro, 0) ?? 0;
+      await alice.call("/api/account/deposits", { json: {} });
+      found = ((await alice.call("/api/account")).body?.deposits as { signature: string }[] | undefined)?.some((d) => d.signature === sig) ?? false;
     }
     const afterDep = (await alice.call("/api/account")).body;
-    check("a real USDC deposit from her verified wallet is credited", credited === 50_000 && afterDep?.user?.balanceMicro === before + 50_000, `+${credited}`);
+    const mine = (afterDep?.deposits as { signature: string; amountMicro: number }[] | undefined)?.find((d) => d.signature === sig);
+    check("a real USDC deposit from her verified wallet is credited", found && mine?.amountMicro === 50_000, mine ? `+${mine.amountMicro}` : "not found");
+    const total = afterDep?.user?.balanceMicro as number;
     const again = await alice.call("/api/account/deposits", { json: {} });
-    check("the same transfer is never credited twice", (again.body?.credited ?? []).length === 0 && (await alice.call("/api/account")).body?.user?.balanceMicro === before + 50_000);
+    check("the same transfer is never credited twice", (again.body?.credited ?? []).length === 0 && (await alice.call("/api/account")).body?.user?.balanceMicro === total);
     const bobTry = await bob.call("/api/account/deposits", { json: {} });
     check("an account without a verified wallet cannot claim deposits", bobTry.status === 400 && bobTry.body?.error?.code === "wallet_not_verified");
   } else {

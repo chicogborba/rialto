@@ -154,8 +154,9 @@ export async function reclaimFromAgent(userId: string, agentId: string, amountMi
  */
 export async function setWallet(userId: string, address: string, verified: boolean): Promise<void> {
   await prisma.$transaction(async (db) => {
-    const taken = await db.user.findFirst({ where: { walletAddress: address, walletVerifiedAt: { not: null }, id: { not: userId } }, select: { id: true } });
-    if (taken) throw new HttpError(409, "wallet_in_use", "That wallet is already linked to another account.");
+    // a wallet is verified for one account at a time (the deposits it sends are credited to that one):
+    // proving it again somewhere else, which takes its key, moves it
+    if (verified) await db.user.updateMany({ where: { walletAddress: address, walletVerifiedAt: { not: null }, id: { not: userId } }, data: { walletVerifiedAt: null } });
     await db.user.update({ where: { id: userId }, data: { walletAddress: address, walletVerifiedAt: verified ? new Date() : null } });
     const seller = await db.seller.findUnique({ where: { userId }, select: { id: true } });
     if (seller) {

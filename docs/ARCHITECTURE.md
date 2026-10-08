@@ -205,4 +205,6 @@ People sign up with an email and a password (`/signup`) and then work in the das
 | Wallet | Registering an address is enough to be paid. To **deposit**, the user proves they hold the wallet: it signs a message naming the account and the address, checked as an ed25519 signature against the address itself (`lib/auth/wallet-proof.ts`). |
 | Deposits (live rail) | USDC sent from a verified wallet to the platform wallet is found on-chain by reading the platform wallet's token account (`lib/x402/deposits.ts`): only a transaction that moved USDC in from exactly one wallet counts, and a unique signature makes sure it is credited once. The browser never says how much. |
 
+A wallet is verified for one account at a time (proving it again elsewhere, which takes its key, moves it). Use one platform wallet per deployment: two servers reading the same wallet would each credit the same transfer.
+
 Not built: email verification, password recovery, 2FA, deposits signed in the browser (the user sends the transfer from their wallet app), withdrawing an account balance back on-chain.

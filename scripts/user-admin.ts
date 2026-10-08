@@ -2,6 +2,8 @@
 //
 //   npm run user:admin -- list                       who has signed up
 //   npm run user:admin -- reset-password <email>     set a new random password (printed once), sign the user out everywhere
+//   npm run user:admin -- purge <@domain>            delete the accounts whose email ends with this, with their agents and APIs
+//                                                    (e.g. @example.com: what the e2e script leaves behind)
 //
 // On the server: docker compose exec app npm run -s user:admin -- list
 import { randomBytes } from "node:crypto";
@@ -28,8 +30,19 @@ async function main(): Promise<void> {
     const next = randomBytes(9).toString("base64url").replace(/[-_]/g, "x");
     await prisma.$transaction([prisma.user.update({ where: { id: user.id }, data: { passwordHash: await hashPassword(next) } }), prisma.session.deleteMany({ where: { userId: user.id } })]);
     console.log(`New password for ${email}: ${next}\nThey are signed out everywhere. Ask them to change it after signing in.`);
+  } else if (command === "purge" && arg?.startsWith("@")) {
+    const users = await prisma.user.findMany({ where: { email: { endsWith: arg.toLowerCase() } }, select: { id: true, seller: { select: { id: true } } } });
+    const ids = users.map((u) => u.id);
+    const sellerIds = users.flatMap((u) => (u.seller ? [u.seller.id] : []));
+    await prisma.$transaction([
+      prisma.provider.deleteMany({ where: { sellerId: { in: sellerIds } } }),
+      prisma.seller.deleteMany({ where: { id: { in: sellerIds } } }),
+      prisma.agent.deleteMany({ where: { userId: { in: ids } } }),
+      prisma.user.deleteMany({ where: { id: { in: ids } } }),
+    ]);
+    console.log(`Deleted ${ids.length} account(s) ending in ${arg}.`);
   } else {
-    console.log("Usage: user:admin list | reset-password <email>");
+    console.log("Usage: user:admin list | reset-password <email> | purge <@domain>");
     process.exitCode = 1;
   }
 }
