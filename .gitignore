@@ -50,3 +50,6 @@ out/
 # third-party agent skills (reinstall: npx skills add remotion-dev/skills)
 .agents/
 .claude/skills
+
+# database backups made by npm run db:backup
+prisma/backups/
