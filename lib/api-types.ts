@@ -31,12 +31,13 @@ export interface TransactionRow {
   status: TxStatus;
   mode: PaymentMode;
   txRef: string | null;
+  /** block explorer link for payments made on the live rail; null on the simulation */
+  explorerUrl: string | null;
   latencyMs: number | null;
 }
 
 export interface TransactionDetail extends TransactionRow {
   role: string;
-  explorerUrl: string | null;
   requirements: PaymentRequirements | null;
   result: unknown;
   error: string | null;

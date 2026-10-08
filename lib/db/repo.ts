@@ -295,6 +295,7 @@ function toRow(t: TxWithProvider): TransactionRow | null {
     status: asTxStatus(t.status),
     mode: asMode(t.mode),
     txRef: t.txRef,
+    explorerUrl: t.explorerUrl,
     latencyMs: t.latencyMs,
   };
 }
@@ -331,7 +332,6 @@ export async function getTransactionDetail(id: string): Promise<TransactionDetai
   return {
     ...row,
     role: t.role,
-    explorerUrl: t.explorerUrl,
     requirements: parsePaymentRequired({ accepts: [reqJson] }),
     result: t.result ? (JSON.parse(t.result) as unknown) : null,
     error: t.error,
