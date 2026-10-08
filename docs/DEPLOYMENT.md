@@ -46,10 +46,12 @@ push to main ─▶ GitHub Actions ─▶ ghcr.io/<owner>/rialto:sha-…  ─ssh
 ### First time
 
 1. **A server and a name.** Any Ubuntu/Debian VPS with ports 22, 80 and 443 open. Point a DNS A record at it. Without a domain, `<server-ip>.sslip.io` works and still gets a certificate.
-2. **Set the server up** (as root):
+2. **Set the server up** (as root). The script also creates a `deploy` user for the workflow; give it a key made for that purpose:
 
    ```bash
-   scp deploy/setup-server.sh root@SERVER:/root/ && ssh root@SERVER bash /root/setup-server.sh rialto.example.com you@example.com
+   ssh-keygen -t ed25519 -N "" -f deploy_key          # deploy_key goes to GitHub, deploy_key.pub to the server
+   scp deploy/setup-server.sh root@SERVER:/root/
+   ssh root@SERVER "DEPLOY_PUBKEY='$(cat deploy_key.pub)' bash /root/setup-server.sh rialto.example.com"
    ```
 
 3. **Tell GitHub where to deploy.** Repository → Settings → Secrets and variables → Actions:
@@ -57,9 +59,9 @@ push to main ─▶ GitHub Actions ─▶ ghcr.io/<owner>/rialto:sha-…  ─ssh
    | Kind | Name | Value |
    |---|---|---|
    | variable | `VPS_HOST` | the server's address |
-   | variable | `VPS_USER` | the SSH user (must be allowed to run `docker`) |
+   | variable | `VPS_USER` | `deploy` (the user the setup script created; any user allowed to run `docker` works) |
    | variable | `VPS_PORT`, `VPS_PATH` | optional: `22`, `/opt/rialto` |
-   | secret | `VPS_SSH_KEY` | a private key whose public half is in that user's `~/.ssh/authorized_keys` |
+   | secret | `VPS_SSH_KEY` | the contents of `deploy_key` |
    | secret | `VPS_KNOWN_HOSTS` | optional: output of `ssh-keyscan SERVER` (otherwise the host key is trusted on first use) |
 
 4. **Deploy:** push to `main`, or run the *Deploy* workflow by hand. It ends when the app reports healthy; if it does not, the job prints the app's log and fails.
@@ -86,7 +88,7 @@ All from `/opt/rialto` on the server.
 | See logs | `docker compose logs -f app` |
 | Restart after editing `.env` | `docker compose up -d` |
 | Back the database up now | `docker compose exec app npm run -s db:backup` (kept in the `data` volume, last 14) |
-| Back up nightly | cron: `0 4 * * * cd /opt/rialto && docker compose exec -T app npm run -s db:backup` |
+| Back up nightly | already scheduled by the setup script (`/etc/cron.d/rialto-backup`, 04:00) |
 | Reset the demo data | `curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" https://DOMAIN/api/reset` |
 | Roll back | `IMAGE=ghcr.io/<owner>/rialto:sha-<older> docker compose up -d` |
 

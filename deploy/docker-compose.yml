@@ -1,6 +1,6 @@
 # Rialto on one server: Traefik terminates HTTPS (Let's Encrypt) and routes to the app.
 #
-# Lives in /opt/rialto next to a .env that holds DOMAIN, ACME_EMAIL and the app's secrets
+# Lives in /opt/rialto next to a .env that holds DOMAIN and the app's secrets
 # (deploy/setup-server.sh writes it). The GitHub workflow copies this file there and runs
 # `docker compose up -d`; by hand it is the same command.
 name: rialto
@@ -17,7 +17,8 @@ services:
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
       - --entrypoints.websecure.address=:443
       - --certificatesresolvers.le.acme.tlschallenge=true
-      - --certificatesresolvers.le.acme.email=${ACME_EMAIL:?set ACME_EMAIL in .env}
+      # optional: Let's Encrypt no longer sends expiry mail, so an account without a contact is fine
+      - --certificatesresolvers.le.acme.email=${ACME_EMAIL:-}
       - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
       - --log.level=WARN
     ports:
