@@ -34,3 +34,12 @@ export async function readJson(req: Request): Promise<unknown> {
     throw new HttpError(400, "bad_json", "Body must be valid JSON");
   }
 }
+
+/**
+ * Where the server reaches its own routes (the agent calls the provider and gateway routes over
+ * HTTP). Behind a proxy that must be the loopback address, not the public one: set
+ * INTERNAL_BASE_URL. Without it, the address the request came in on.
+ */
+export function internalBase(req: Request): string {
+  return process.env.INTERNAL_BASE_URL?.trim().replace(/\/+$/, "") || new URL(req.url).origin;
+}

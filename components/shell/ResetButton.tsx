@@ -9,10 +9,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 export function ResetButton() {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [refused, setRefused] = useState(false);
   const reset = async () => {
     setBusy(true);
-    await fetch("/api/reset", { method: "POST" });
+    const res = await fetch("/api/reset", { method: "POST" }).catch(() => null);
     setBusy(false);
+    // a public server keeps its data: only its operator can reset it
+    if (!res?.ok) return setRefused(true);
     setOpen(false);
     emitDataChanged();
   };
@@ -24,11 +27,13 @@ export function ResetButton() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Reset the demo?</DialogTitle>
-          <DialogDescription>Wipes all runs, transactions and registered providers, restores the $10.00 wallet and reseeds the fictional providers.</DialogDescription>
+          <DialogDescription>
+            {refused ? "Resetting is turned off on this server. Run it locally to start from a clean demo." : "Wipes all runs, transactions and registered providers, restores the $10.00 wallet and reseeds the fictional providers."}
+          </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <HardButton variant="ghost" onClick={() => setOpen(false)}>Cancel</HardButton>
-          <HardButton variant="pay" onClick={reset} disabled={busy}>{busy ? "Resetting…" : "Reset"}</HardButton>
+          {refused ? null : <HardButton variant="pay" onClick={reset} disabled={busy}>{busy ? "Resetting…" : "Reset"}</HardButton>}
         </DialogFooter>
       </DialogContent>
     </Dialog>

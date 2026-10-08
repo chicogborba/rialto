@@ -1,0 +1,22 @@
+# keep the build context small and secrets out of the image
+.git
+.github
+.next
+out
+node_modules
+video
+docs
+tests
+deploy
+.claude
+.agents
+.pages-stash
+.env
+.env.*
+!.env.example
+prisma/*.db
+prisma/*.db-journal
+prisma/backups
+*.md
+*.tsbuildinfo
+.DS_Store

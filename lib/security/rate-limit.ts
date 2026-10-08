@@ -20,3 +20,11 @@ export function allow(key: string, capacity: number, refillPerSec: number, now: 
 export function signupAllowed(ip: string): boolean {
   return process.env.NODE_ENV === "production" ? allow(`signup:${ip}`, 5, 1 / 60) : allow(`signup:${ip}`, 200, 5);
 }
+
+/**
+ * Runs without a key use the shared demo agent (the public console). Throttled per address in
+ * production so one visitor cannot burn through it: a burst of 12, then one run every 10 seconds.
+ */
+export function anonymousRunAllowed(ip: string): boolean {
+  return process.env.NODE_ENV === "production" ? allow(`anon-run:${ip}`, 12, 1 / 10) : true;
+}

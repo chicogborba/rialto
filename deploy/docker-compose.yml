@@ -1,0 +1,58 @@
+# Rialto on one server: Traefik terminates HTTPS (Let's Encrypt) and routes to the app.
+#
+# Lives in /opt/rialto next to a .env that holds DOMAIN, ACME_EMAIL and the app's secrets
+# (deploy/setup-server.sh writes it). The GitHub workflow copies this file there and runs
+# `docker compose up -d`; by hand it is the same command.
+name: rialto
+
+services:
+  traefik:
+    image: traefik:v3.6
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.le.acme.tlschallenge=true
+      - --certificatesresolvers.le.acme.email=${ACME_EMAIL:?set ACME_EMAIL in .env}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --log.level=WARN
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
+
+  app:
+    image: ${IMAGE:-ghcr.io/chicogborba/rialto:latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: file:/data/rialto.db
+      INTERNAL_BASE_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_APP_URL: https://${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - data:/data
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.rialto.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.rialto.entrypoints=websecure
+      - traefik.http.routers.rialto.tls.certresolver=le
+      - traefik.http.routers.rialto.middlewares=rialto-headers
+      - traefik.http.services.rialto.loadbalancer.server.port=3000
+      - traefik.http.middlewares.rialto-headers.headers.stsSeconds=31536000
+      - traefik.http.middlewares.rialto-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.rialto-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.rialto-headers.headers.frameDeny=true
+      - traefik.http.middlewares.rialto-headers.headers.referrerPolicy=strict-origin-when-cross-origin
+
+volumes:
+  # the SQLite database and its backups
+  data:
+  # Let's Encrypt certificates
+  letsencrypt:

@@ -25,24 +25,93 @@ mkdir -p /tmp/serve && ln -sfn "$PWD/out" /tmp/serve/rialto && cd /tmp/serve && 
 
 Serving from a domain root instead of a sub-path: build without `NEXT_PUBLIC_BASE_PATH`.
 
-## 2. The full platform on a Node host
+## 2. The full platform on a server (Docker + Traefik + GitHub Actions)
 
-The platform needs a Node server and a database file, so use any host that runs a long-lived Node process (a VPS, Fly.io, Railway, Render…). Vercel-style serverless is a poor fit today: the SQLite file, in-memory rate limiter and in-process gateway token assume a single instance.
+One image holds everything (Next.js server, API routes, Prisma + SQLite). Traefik sits in front, gets the HTTPS certificate from Let's Encrypt and routes to it. A push to `main` builds the image and rolls it out.
 
-```bash
-npm ci
-cp .env.example .env     # then edit, see below
-npm run setup            # creates + seeds the database
-npm run build
-npm start                # listens on PORT (default 3000)
+```
+push to main ─▶ GitHub Actions ─▶ ghcr.io/<owner>/rialto:sha-…  ─ssh─▶  server: docker compose pull && up -d
+                                                                        ├─ traefik  :80 → :443, Let's Encrypt
+                                                                        └─ app      :3000, volume /data (SQLite + backups)
 ```
 
-Production checklist:
+| File | What it is |
+|---|---|
+| `Dockerfile` | Builds the image. Nothing about a deployment is baked in: all settings come from the environment. |
+| `deploy/docker-compose.yml` | Traefik + the app, as they run on the server. |
+| `deploy/setup-server.sh` | One-time server setup: Docker, firewall ports, `/opt/rialto/.env` with generated secrets. |
+| `.github/workflows/deploy.yml` | Build, push, and (when a server is configured) deploy over SSH. |
+| `scripts/docker-entrypoint.sh` | Container start: sync the schema, seed an empty database, serve. |
 
-- [ ] `SECRETS_KEY` set (`openssl rand -base64 32`). The app refuses to encrypt seller secrets without it in production.
-- [ ] `INTERNAL_TOKEN` set to a long random string if you run more than one instance (and then also replace the in-memory rate limiter with Redis).
-- [ ] `ALLOW_PRIVATE_UPSTREAMS` unset or `0`.
-- [ ] Persist the SQLite file (`prisma/dev.db`) on a volume, and back it up.
-- [ ] Put it behind HTTPS (the MCP install commands use your public URL).
-- [ ] Decide the commission (`PLATFORM_FEE_BPS`, `PLATFORM_MIN_FEE_MICRO`).
-- [ ] Payments are **simulated** unless `PAYMENT_MODE=live`, and then they are **devnet** USDC: do not advertise real payouts. For live, run `npm run x402:keys -- --live` on the server, fund both wallets at the Circle faucet, then `npm run x402:check -- --pay` and `npm run seed:pokedex`.
+### First time
+
+1. **A server and a name.** Any Ubuntu/Debian VPS with ports 22, 80 and 443 open. Point a DNS A record at it. Without a domain, `<server-ip>.sslip.io` works and still gets a certificate.
+2. **Set the server up** (as root):
+
+   ```bash
+   scp deploy/setup-server.sh root@SERVER:/root/ && ssh root@SERVER bash /root/setup-server.sh rialto.example.com you@example.com
+   ```
+
+3. **Tell GitHub where to deploy.** Repository → Settings → Secrets and variables → Actions:
+
+   | Kind | Name | Value |
+   |---|---|---|
+   | variable | `VPS_HOST` | the server's address |
+   | variable | `VPS_USER` | the SSH user (must be allowed to run `docker`) |
+   | variable | `VPS_PORT`, `VPS_PATH` | optional: `22`, `/opt/rialto` |
+   | secret | `VPS_SSH_KEY` | a private key whose public half is in that user's `~/.ssh/authorized_keys` |
+   | secret | `VPS_KNOWN_HOSTS` | optional: output of `ssh-keyscan SERVER` (otherwise the host key is trusted on first use) |
+
+4. **Deploy:** push to `main`, or run the *Deploy* workflow by hand. It ends when the app reports healthy; if it does not, the job prints the app's log and fails.
+
+Check: `https://DOMAIN/api/health` answers `{"ok":true,…}`.
+
+Until `VPS_HOST` is set, the workflow only builds and pushes the image.
+
+### Without GitHub Actions
+
+```bash
+# on the server, in /opt/rialto, with deploy/docker-compose.yml copied there
+docker compose pull && docker compose up -d
+```
+
+The image is private by default. Either make the package public (GitHub → Packages → rialto → Package settings), or `docker login ghcr.io` on the server with a token that can read packages. The workflow logs in with its own short-lived token on every deploy.
+
+### Running it
+
+All from `/opt/rialto` on the server.
+
+| To | Run |
+|---|---|
+| See logs | `docker compose logs -f app` |
+| Restart after editing `.env` | `docker compose up -d` |
+| Back the database up now | `docker compose exec app npm run -s db:backup` (kept in the `data` volume, last 14) |
+| Back up nightly | cron: `0 4 * * * cd /opt/rialto && docker compose exec -T app npm run -s db:backup` |
+| Reset the demo data | `curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" https://DOMAIN/api/reset` |
+| Roll back | `IMAGE=ghcr.io/<owner>/rialto:sha-<older> docker compose up -d` |
+
+**Live payments (Solana devnet)** on the server:
+
+```bash
+docker compose run --rm --user root -v ./.env:/app/.env app npm run x402:keys -- --live   # prints two addresses
+# fund BOTH addresses with devnet USDC at https://faucet.circle.com (Solana Devnet)
+docker compose up -d                                  # picks up the new settings
+docker compose exec app npm run x402:check -- --pay   # one real $0.001 payment; prints the explorer link
+```
+
+`GET /api/x402` shows which rail is on and what the paying wallet holds.
+
+### What a public server changes
+
+- `POST /api/reset` needs `ADMIN_TOKEN`. Without it nobody can wipe the data, and the app's *Reset demo* button says so.
+- Runs without a key use the shared demo agent; in production they are throttled per address.
+- On the live rail the platform wallet pays at most `LIVE_DAILY_CAP_USD` (default 5) per 24 hours.
+- The server calls its own routes on the loopback (`INTERNAL_BASE_URL`), never out through the proxy.
+- Traefik redirects HTTP to HTTPS and adds HSTS, `nosniff`, frame-deny and a referrer policy.
+
+### Limits to know about
+
+- One instance: the SQLite file, the in-memory rate limiter and the gateway token assume it. Vercel-style serverless is a poor fit.
+- `prisma db push` runs on every start. It applies additive schema changes and **stops the container instead of applying one that would lose data**; such a change needs a manual migration.
+- The image is about 1.7 GB unpacked: it carries the Prisma CLI and `tsx` so the same image can migrate, seed and run the scripts above.
+- Payments are **simulated** unless `PAYMENT_MODE=live`, and then they are **devnet** USDC. Do not advertise real payouts.

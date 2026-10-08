@@ -1,0 +1,108 @@
+name: Deploy
+
+# Builds the platform image, pushes it to GitHub's registry, and (when a server is configured)
+# rolls it out there over SSH. Repository settings, under Secrets and variables → Actions:
+#   variables: VPS_HOST, VPS_USER, optional VPS_PORT (22) and VPS_PATH (/opt/rialto)
+#   secrets:   VPS_SSH_KEY, optional VPS_KNOWN_HOSTS (output of `ssh-keyscan <host>`)
+# Without VPS_HOST the image is still built and pushed; nothing is deployed.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "video/**"
+      - "docs/**"
+      - "**.md"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  image:
+    name: Build and push the image
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        run: echo "tag=sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Roll out on the server
+    needs: image
+    if: vars.VPS_HOST != ''
+    runs-on: ubuntu-latest
+    env:
+      HOST: ${{ vars.VPS_HOST }}
+      USER_NAME: ${{ vars.VPS_USER }}
+      PORT: ${{ vars.VPS_PORT || '22' }}
+      DIR: ${{ vars.VPS_PATH || '/opt/rialto' }}
+      TAG: ${{ needs.image.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: deploy
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -p "$PORT" "$HOST" > ~/.ssh/known_hosts 2>/dev/null
+          fi
+      - name: Copy the compose file
+        run: scp -i ~/.ssh/id_deploy -P "$PORT" deploy/docker-compose.yml "$USER_NAME@$HOST:$DIR/docker-compose.yml"
+      - name: Pull the new image and restart
+        env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$PORT" "$USER_NAME@$HOST" \
+            "DIR='$DIR' IMAGE='$IMAGE:$TAG' GHCR_USER='$GHCR_USER' GHCR_TOKEN='$GHCR_TOKEN' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd "$DIR"
+          # the job's token can pull the image for as long as this job runs
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin >/dev/null
+          export IMAGE
+          docker compose pull --quiet
+          docker compose up -d --remove-orphans
+          docker logout ghcr.io >/dev/null
+          # wait for the app to report healthy; show its log if it does not
+          for _ in $(seq 1 40); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' "$(docker compose ps -q app)" 2>/dev/null || echo starting)
+            [ "$status" = healthy ] && { echo "app is healthy"; docker image prune -f >/dev/null; exit 0; }
+            sleep 3
+          done
+          docker compose logs --tail 80 app
+          exit 1
+          REMOTE

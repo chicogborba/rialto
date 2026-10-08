@@ -3,12 +3,13 @@
 //
 //   npm run x402:check            wallets, balances, facilitator
 //   npm run x402:check -- --pay   also pay once and print the explorer link
+import { existsSync } from "node:fs";
 import { realClock } from "../lib/agent/clock";
 import { liveRail } from "../lib/x402";
 import type { PaymentRequirements } from "../lib/x402/rail";
 import { explorerAddress, isSolanaAddress, liveConfig, usdcBalance } from "../lib/x402/solana";
 
-process.loadEnvFile(".env");
+if (existsSync(".env")) process.loadEnvFile(".env");
 const usd = (micro: number | null): string => (micro === null ? "no USDC account" : `${(micro / 1_000_000).toFixed(6)} USDC`);
 
 async function main(): Promise<void> {

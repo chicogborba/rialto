@@ -194,6 +194,12 @@ export async function persistEvent(e: RunEvent): Promise<void> {
   }
 }
 
+/** What sellers were paid on the live rail since `since`, in micro-USDC. */
+export async function liveSettledSinceMicro(since: Date): Promise<number> {
+  const sum = await prisma.transaction.aggregate({ where: { mode: "live", status: "settled", createdAt: { gte: since } }, _sum: { sellerMicro: true } });
+  return sum._sum.sellerMicro ?? 0;
+}
+
 /**
  * Records an attempt. For a settled purchase it also splits the money in the same DB transaction:
  * the seller is credited exactly their price, Rialto keeps the difference, and the append-only

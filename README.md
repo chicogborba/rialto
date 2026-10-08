@@ -13,7 +13,7 @@ The agent decides *what* to buy, from *whom*, for *how much*; the platform runs 
 
 **Status: hackathon build.** The decision engine, gateway, accounts, ledger, MCP server and UI are real and tested. **Payments are simulated by default** (no blockchain is touched; the UI says `SIMULATED`). With `PAYMENT_MODE=live`, calls to real sellers are paid with **x402 in USDC on Solana devnet**: test money on a test network, but a real signed transaction, a real facilitator and an explorer link. See [Live payments on Solana devnet](#live-payments-on-solana-devnet) and [What is real and what is not](#what-is-real-and-what-is-not).
 
-🔗 **Landing page preview:** https://chicogborba.github.io/rialto/ (static export; the full platform runs locally)
+🔗 **Landing page preview:** https://chicogborba.github.io/rialto/ (static export; the full platform runs locally or on a server: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md))
 
 🎬 **Pitch video (66 s, narrated):** on the landing page (`#pitch`); source in [`video/`](video/README.md) (Remotion + Three.js)
 
@@ -90,6 +90,7 @@ Then ask your agent: *"Use rialto to make a pixel-art sprite sheet for my game's
 | `npm run x402:keys` | Create the devnet wallets the live rail needs, in `.env` (`-- --live` also switches it on) |
 | `npm run x402:check` | Wallets, balances and facilitator for the live rail (`-- --pay` makes one real $0.001 payment) |
 | `npm run seed:pokedex` | Add the PokéDex test seller to an existing database, or re-point it at `SOLANA_PAY_TO` |
+| `npm run db:backup` | Consistent copy of the SQLite database into `backups/` (keeps the last 14) |
 
 ## Configuration (`.env`)
 
@@ -107,6 +108,9 @@ Then ask your agent: *"Use rialto to make a pixel-art sprite sheet for my game's
 | `MIN_PAYOUT_MICRO` | `10000` | Minimum seller withdrawal ($0.01) |
 | `SECRETS_KEY` | – | **Required in production.** `openssl rand -base64 32`; encrypts sellers' upstream secrets |
 | `INTERNAL_TOKEN` | random | Set when running more than one instance |
+| `ADMIN_TOKEN` | – | In production, required as a bearer token to reset the demo data; unset = nobody can |
+| `INTERNAL_BASE_URL` | – | Behind a proxy: where the server reaches itself, e.g. `http://127.0.0.1:3000` |
+| `LIVE_DAILY_CAP_USD` | `5` | Most the platform wallet pays sellers per 24 h on the live rail |
 | `ALLOW_PRIVATE_UPSTREAMS` | `0` | `1` allows http/localhost upstreams (development only) |
 | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Used by the stdio MCP server and scripts |
 

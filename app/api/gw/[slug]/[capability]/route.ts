@@ -1,13 +1,13 @@
 import { realClock } from "@/lib/agent/clock";
 import { toProvider, toService } from "@/lib/db/mappers";
-import { getProviderBySlug } from "@/lib/db/repo";
+import { getProviderBySlug, liveSettledSinceMicro } from "@/lib/db/repo";
 import { HttpError, handle, readJson } from "@/lib/http";
 import { callUpstream, UpstreamError } from "@/lib/gateway/upstream";
 import { handleSimCall } from "@/lib/providers/sim-provider";
 import { isInternal } from "@/lib/security/internal";
 import { getRail, liveRail } from "@/lib/x402";
 import { X402_PAYMENT_HEADER } from "@/lib/x402/sim-protocol";
-import { isSolanaAddress } from "@/lib/x402/solana";
+import { isSolanaAddress, liveDailyCapMicro } from "@/lib/x402/solana";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -38,6 +38,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
     const x402 = liveRail(clock);
     const live = x402 && isSolanaAddress(row.payTo) && svcRow.sellerPriceMicro > 0 ? { settleMicro: svcRow.sellerPriceMicro } : undefined;
     const rail = getRail(clock);
+    if (live && (await liveSettledSinceMicro(new Date(Date.now() - 24 * 3600_000))) + live.settleMicro > liveDailyCapMicro()) {
+      throw new HttpError(503, "live_daily_cap_reached", "The platform wallet has paid out its limit for the last 24 hours.");
+    }
 
     const body = await readJson(req);
     const out = await handleSimCall({

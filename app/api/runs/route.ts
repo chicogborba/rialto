@@ -6,8 +6,9 @@ import type { RunEvent } from "@/lib/agent/events";
 import { runAgent, type RunDeps } from "@/lib/agent/run";
 import { buyerFromRequest } from "@/lib/auth/session";
 import { createRun, persistentDepsFor, getWallet, listCandidates, getHistory } from "@/lib/db/repo";
-import { errorResponse } from "@/lib/http";
+import { errorResponse, internalBase } from "@/lib/http";
 import { createHttpExecutor } from "@/lib/providers/http-executor";
+import { anonymousRunAllowed } from "@/lib/security/rate-limit";
 import { getRail } from "@/lib/x402";
 import type { WalletState } from "@/lib/types";
 
@@ -44,6 +45,9 @@ export async function POST(req: Request): Promise<Response> {
   } catch (e) {
     return errorResponse(e);
   }
+  if (!buyer.authed && !anonymousRunAllowed(req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local")) {
+    return Response.json({ error: "rate_limited", message: "Too many runs from this address. Wait a moment, or connect your own agent." }, { status: 429 });
+  }
   let wallet: WalletState;
   try {
     wallet = await getWallet(buyer.agentId);
@@ -61,7 +65,7 @@ export async function POST(req: Request): Promise<Response> {
     weights: body.weights,
   });
   const runId = clock.id("run");
-  const executor = createHttpExecutor(new URL(req.url).origin);
+  const executor = createHttpExecutor(internalBase(req));
 
   let deps: RunDeps;
   if (body.ephemeral) {

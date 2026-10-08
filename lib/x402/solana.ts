@@ -32,6 +32,15 @@ export function liveConfig(env: Record<string, string | undefined> = process.env
   };
 }
 
+/**
+ * The most the platform wallet may pay sellers in a day, in micro-USDC (`LIVE_DAILY_CAP_USD`,
+ * default 5). On a public server anyone can start runs, so this is what a flood of them can cost.
+ */
+export function liveDailyCapMicro(env: Record<string, string | undefined> = process.env): number {
+  const usd = Number(env.LIVE_DAILY_CAP_USD ?? "5");
+  return Number.isFinite(usd) && usd >= 0 ? Math.round(usd * 1_000_000) : 5_000_000;
+}
+
 const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 /** Looks like a Solana address. (The seeded demo providers use made-up strings that do not.) */
 export const isSolanaAddress = (value: string): boolean => BASE58.test(value);
