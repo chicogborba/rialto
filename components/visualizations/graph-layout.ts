@@ -28,6 +28,7 @@ const SLOT_HINT: Record<CapabilityId, number> = {
   "llm.analysis": 2,
   "text.translate": 2,
   "text.summarize": 2,
+  "audio.speech": 2,
 };
 
 export interface Box {

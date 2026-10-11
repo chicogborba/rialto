@@ -15,6 +15,7 @@ describe("scenarios", () => {
     expect(matchScenario(GOAL_CHIPS[1].goal).id).toBe("research");
     expect(matchScenario(GOAL_CHIPS[2].goal).id).toBe("translate");
     expect(matchScenario(GOAL_CHIPS[3].goal).id).toBe("sprites");
+    expect(matchScenario(GOAL_CHIPS[5].goal).id).toBe("speech");
     expect(matchScenario("tell me a joke").id).toBe("generic");
   });
 });

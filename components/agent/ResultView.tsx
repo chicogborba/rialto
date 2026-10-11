@@ -50,6 +50,15 @@ function StepOutput({ step }: { step: RunResultStep }) {
       return <p className="text-sm leading-relaxed">{str(o.translation)}</p>;
     case "text.summarize":
       return <ul className="list-disc space-y-1 pl-5 text-sm">{arr(o.summary).map((b, i) => <li key={i}>{str(b)}</li>)}</ul>;
+    case "audio.speech": {
+      const audio = str(o.audio);
+      return audio ? (
+        <div className="space-y-2">
+          <audio controls preload="metadata" className="w-full" src={`data:audio/mpeg;base64,${audio}`}>Your browser cannot play this audio.</audio>
+          <p className="font-mono text-[11px] text-muted">Live audio from {str(o.source)}.</p>
+        </div>
+      ) : <p className="text-sm text-muted">{str(o.note) || "No audio returned."}</p>;
+    }
     case "news.search":
       return <ul className="space-y-1 text-sm">{arr(o.headlines).filter(isRecord).map((h, i) => <li key={i}>{str(h.title)} <span className="font-mono text-[11px] text-muted">{str(h.source)}</span></li>)}</ul>;
     case "market.quotes":

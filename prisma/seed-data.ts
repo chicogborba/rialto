@@ -73,6 +73,7 @@ export const SCHEMAS: Record<CapabilityId, { input: string; output: string }> = 
   "llm.analysis": { input: '{"question":"string","context":"object"}', output: '{"analysis":"string","citations":"string[]"}' },
   "text.translate": { input: '{"text":"string","target":"string"}', output: '{"translation":"string"}' },
   "text.summarize": { input: '{"text":"string","bullets":"number?"}', output: '{"summary":"string[]"}' },
+  "audio.speech": { input: '{"text":"string","voice":"string?"}', output: '{"audio":"base64 mp3","alignment":"object?"}' },
 };
 
 export function slugify(name: string): string {

@@ -99,5 +99,11 @@ export function buildMockResult(capability: CapabilityId, provider: string, body
           "A notificação às partes envolvidas deve ocorrer em até 24 horas.",
         ],
       };
+    case "audio.speech":
+      return {
+        ...base,
+        audio: null,
+        note: "Demo speech provider: connect a live TTS API to receive audio.",
+      };
   }
 }

@@ -12,4 +12,5 @@ export const LOOK: Record<CapabilityId, { emoji: string; color: string }> = {
   "llm.analysis": { emoji: "🧠", color: "#ee7a35" },
   "text.translate": { emoji: "🌍", color: "#5ce1e6" },
   "text.summarize": { emoji: "✂️", color: "#ffd23f" },
+  "audio.speech": { emoji: "🔊", color: "#b98cff" },
 };

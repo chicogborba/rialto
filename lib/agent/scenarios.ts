@@ -55,6 +55,13 @@ export const SCENARIOS: Scenario[] = [
     defaultPreset: "cost",
     confidenceCap: 1,
   },
+  {
+    id: "speech",
+    keywords: ["text to speech", "tts", "voiceover", "narrate", "say this", "speak this", "read aloud", "natural voice"],
+    dag: [{ id: "s1", capability: "audio.speech", dependsOn: [] }],
+    defaultPreset: "balanced",
+    confidenceCap: 1,
+  },
 ];
 
 export const GENERIC_SCENARIO: Scenario = {
@@ -79,6 +86,7 @@ export const GOAL_CHIPS: { label: string; goal: string }[] = [
   { label: "Translate + summarize", goal: "Translate this document to Portuguese and summarize the important parts." },
   { label: "Make game sprites", goal: "Make a pixel-art sprite sheet for my game's hero: idle, run and jump." },
   { label: "Look up a Pokémon", goal: "Look up the Pokémon pikachu." },
+  { label: "Generate a voice", goal: "Say \"Welcome to Rialto\" in a natural voice." },
 ];
 
 export function presetFromGoal(goal: string): PriorityPreset | null {
