@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_FEES, feeConfigFromEnv, splitFromCharge, splitFromSellerPrice } from "@/lib/billing/fees";
 import { deriveInput, fill, pick } from "@/lib/gateway/template";
+import { isTripoTaskEndpoint } from "@/lib/gateway/upstream";
 import { bearerFrom, generateKey, hashKey, kindOfKey } from "@/lib/security/keys";
 import { allow } from "@/lib/security/rate-limit";
 import { decryptSecret, encryptSecret } from "@/lib/security/secrets";
@@ -98,6 +99,15 @@ describe("gateway templates", () => {
     const d = { name: "pikachu", id: 25, sprites: { front_default: "u" }, types: [{ type: { name: "electric" } }, { type: { name: "x" } }] };
     expect(pick(d, "name,id,sprite=sprites.front_default,types=types.*.type.name")).toEqual({ name: "pikachu", id: 25, sprite: "u", types: ["electric", "x"] });
     expect(pick(d, "nope.deep")).toEqual({});
+  });
+});
+
+describe("Tripo task endpoint", () => {
+  it("only enables polling for the documented public v2 task endpoint", () => {
+    expect(isTripoTaskEndpoint("https://api.tripo3d.ai/v2/openapi/task")).toBe(true);
+    expect(isTripoTaskEndpoint("https://api.tripo3d.ai/v2/openapi/task?x=1")).toBe(true);
+    expect(isTripoTaskEndpoint("https://api.tripo3d.ai/v2/openapi/task/abc")).toBe(false);
+    expect(isTripoTaskEndpoint("https://evil.example/v2/openapi/task")).toBe(false);
   });
 });
 

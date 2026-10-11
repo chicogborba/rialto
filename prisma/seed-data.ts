@@ -74,6 +74,7 @@ export const SCHEMAS: Record<CapabilityId, { input: string; output: string }> = 
   "text.translate": { input: '{"text":"string","target":"string"}', output: '{"translation":"string"}' },
   "text.summarize": { input: '{"text":"string","bullets":"number?"}', output: '{"summary":"string[]"}' },
   "audio.speech": { input: '{"text":"string","voice":"string?"}', output: '{"audio":"base64 mp3","alignment":"object?"}' },
+  "model.3d": { input: '{"prompt":"string"}', output: '{"model":"url","preview":"url?","taskId":"string"}' },
 };
 
 export function slugify(name: string): string {

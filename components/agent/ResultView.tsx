@@ -59,6 +59,24 @@ function StepOutput({ step }: { step: RunResultStep }) {
         </div>
       ) : <p className="text-sm text-muted">{str(o.note) || "No audio returned."}</p>;
     }
+    case "model.3d": {
+      const model = str(o.model);
+      const preview = str(o.preview);
+      return model ? (
+        <div className="flex flex-wrap items-center gap-4">
+          {preview && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={preview} alt="Generated 3D model preview" className="size-28 border border-line bg-paper object-cover" />
+          )}
+          <div className="space-y-2">
+            <a href={model} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center border-2 border-ink bg-signal px-3 font-mono text-xs font-bold uppercase tracking-[0.08em] text-ink">
+              Download 3D model (.glb)
+            </a>
+            <p className="font-mono text-[11px] text-muted">Tripo task {str(o.taskId)} · link expires after a few minutes.</p>
+          </div>
+        </div>
+      ) : <p className="text-sm text-muted">{str(o.note) || "No 3D model returned."}</p>;
+    }
     case "news.search":
       return <ul className="space-y-1 text-sm">{arr(o.headlines).filter(isRecord).map((h, i) => <li key={i}>{str(h.title)} <span className="font-mono text-[11px] text-muted">{str(h.source)}</span></li>)}</ul>;
     case "market.quotes":

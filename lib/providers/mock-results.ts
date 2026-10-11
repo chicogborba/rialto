@@ -105,5 +105,12 @@ export function buildMockResult(capability: CapabilityId, provider: string, body
         audio: null,
         note: "Demo speech provider: connect a live TTS API to receive audio.",
       };
+    case "model.3d":
+      return {
+        ...base,
+        model: "https://assets.example.com/models/low-poly-delivery-van.glb",
+        preview: "https://assets.example.com/models/low-poly-delivery-van.png",
+        note: "Demo 3D provider: connect Tripo to receive a downloadable GLB model.",
+      };
   }
 }

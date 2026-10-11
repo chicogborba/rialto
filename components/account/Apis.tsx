@@ -50,6 +50,19 @@ const ELEVENLABS = {
   quality: "96",
   latencyMs: "1200",
 };
+const TRIPO = {
+  name: "Tripo 3D",
+  description: "Generate downloadable 3D models from a text prompt with Tripo.",
+  capability: "model.3d" as CapabilityId,
+  upstreamUrl: "https://api.tripo3d.ai/v2/openapi/task",
+  method: "POST" as const,
+  bodyTemplate: '{"type":"text_to_model","prompt":"{goal}"}',
+  headerName: "Authorization",
+  resultPick: "model=data.output.model,preview=data.output.rendered_image,taskId=data.task_id",
+  priceUsd: "0.35",
+  quality: "95",
+  latencyMs: "45000",
+};
 const BLANK = { name: "", description: "", capability: "data.lookup" as CapabilityId, upstreamUrl: "", method: "GET" as "GET" | "POST", bodyTemplate: "", headerName: "", headerValue: "", resultPick: "", priceUsd: "0.01", quality: "85", latencyMs: "400" };
 
 export function Apis() {
@@ -113,9 +126,10 @@ export function Apis() {
     await Promise.all([load(), refresh()]);
   };
 
-  const test = async (id: string) => {
+  const test = async (id: string, capability: string) => {
     setTests((t) => ({ ...t, [id]: "running" }));
-    const r = await api<TestResult>(`/api/sellers/me/apis/${id}/test`, { json: { goal: "Look up the Pokémon pikachu." } });
+    const goal = capability === "model.3d" ? "Generate a 3D model of a low-poly orange delivery van with rounded edges." : capability === "audio.speech" ? 'Say "Welcome to Rialto" in a natural voice.' : "Look up the Pokémon pikachu.";
+    const r = await api<TestResult>(`/api/sellers/me/apis/${id}/test`, { json: { goal } });
     setTests((t) => ({ ...t, [id]: r.data ?? { ok: false, latencyMs: 0, error: r.error ?? "failed" } }));
   };
   const toggle = async (id: string, status: string) => {
@@ -184,7 +198,7 @@ export function Apis() {
                           </p>
                         </div>
                         <div className="flex gap-2">
-                          <HardButton variant="ghost" onClick={() => test(a.id)} disabled={t === "running"}>
+                          <HardButton variant="ghost" onClick={() => test(a.id, svc?.capability ?? "")} disabled={t === "running"}>
                             {t === "running" ? "Testing…" : "Test it"}
                           </HardButton>
                           <HardButton variant="ghost" onClick={() => toggle(a.id, a.status)}>
@@ -207,6 +221,9 @@ export function Apis() {
               </HardButton>
               <HardButton variant="ghost" onClick={() => setF((p) => ({ ...p, ...ELEVENLABS, headerValue: p.headerName === "xi-api-key" ? p.headerValue : "" }))}>
                 🔊 Fill with ElevenLabs TTS
+              </HardButton>
+              <HardButton variant="ghost" onClick={() => setF((p) => ({ ...p, ...TRIPO, headerValue: p.headerName === "Authorization" ? p.headerValue : "" }))}>
+                🧊 Fill with Tripo 3D
               </HardButton>
               <span className="font-mono text-[11px] text-muted">Good for trying the whole flow without your own API.</span>
             </div>
@@ -236,7 +253,7 @@ export function Apis() {
                 </div>
               </div>
               {f.method === "POST" && (
-                <Field label="Body template (JSON)" hint={f.capability === "audio.speech" ? "Use {query}; ask the agent to say a short quoted phrase (up to 80 characters)." : 'Default: {"query":"{query}"}'}>
+                <Field label="Body template (JSON)" hint={f.capability === "audio.speech" ? "Use {query}; ask the agent to say a short quoted phrase (up to 80 characters)." : f.capability === "model.3d" ? "Tripo uses {goal} as the full 3D-model prompt and Rialto waits for its task to finish." : 'Default: {"query":"{query}"}'}>
                   <textarea className={`${inputCls} min-h-24`} value={f.bodyTemplate} onChange={(e) => set("bodyTemplate", e.target.value)} placeholder='{"q":"{query}"}' />
                 </Field>
               )}

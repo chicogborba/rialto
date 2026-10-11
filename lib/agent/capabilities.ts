@@ -12,6 +12,7 @@ export const CAPABILITY_LABELS: Record<CapabilityId, string> = {
   "text.translate": "Translation",
   "text.summarize": "Summarization",
   "audio.speech": "Text to speech",
+  "model.3d": "3D model generation",
 };
 
 export const CAPABILITY_SHORT: Record<CapabilityId, string> = {
@@ -26,6 +27,7 @@ export const CAPABILITY_SHORT: Record<CapabilityId, string> = {
   "text.translate": "TRANSLATE",
   "text.summarize": "SUMMARY",
   "audio.speech": "SPEECH",
+  "model.3d": "3D MODEL",
 };
 
 export const ALL_CAPABILITIES = Object.keys(CAPABILITY_LABELS) as CapabilityId[];

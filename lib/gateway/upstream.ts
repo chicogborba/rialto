@@ -9,6 +9,8 @@ export interface UpstreamConfig {
   /** AES-GCM blob of a JSON object of headers */
   encryptedHeaders: string | null;
   resultPick: string | null;
+  /** Some upstreams return a task ID and must be polled before the buyer is charged. */
+  taskMode?: "tripo-v2";
 }
 
 export class UpstreamError extends Error {}
@@ -29,6 +31,60 @@ async function readCapped(res: Response, max: number): Promise<string> {
     chunks.push(value);
   }
   return Buffer.concat(chunks).toString("utf8");
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+async function requestJson(url: URL, init: RequestInit): Promise<unknown> {
+  let res: Response;
+  try {
+    res = await fetch(url, { ...init, redirect: "manual", signal: AbortSignal.timeout(8000), cache: "no-store" });
+  } catch (e) {
+    throw new UpstreamError(e instanceof Error && e.name === "TimeoutError" ? "upstream_timeout" : "upstream_unreachable");
+  }
+  if (res.status >= 300 && res.status < 400) throw new UpstreamError("upstream_redirect_blocked");
+  if (!res.ok) throw new UpstreamError(`upstream_${res.status}`);
+
+  const text = await readCapped(res, MAX_UPSTREAM_BYTES);
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { text: text.slice(0, 4000) };
+  }
+}
+
+const TRIPO_WAIT_MS = 45_000;
+const TRIPO_POLL_INTERVAL_MS = 2_000;
+
+/** Only this documented Tripo v2 task endpoint gets task polling; all other seller APIs remain one request. */
+export function isTripoTaskEndpoint(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" && url.hostname === "api.tripo3d.ai" && url.pathname === "/v2/openapi/task";
+  } catch {
+    return false;
+  }
+}
+
+async function waitForTripoTask(url: URL, headers: Record<string, string>, created: unknown): Promise<unknown> {
+  const taskId = isRecord(created) && isRecord(created.data) && typeof created.data.task_id === "string" ? created.data.task_id : null;
+  if (!taskId) throw new UpstreamError("upstream_task_missing_id");
+
+  const pollUrl = new URL(url);
+  pollUrl.pathname = `/v2/openapi/task/${encodeURIComponent(taskId)}`;
+  pollUrl.search = "";
+  const deadline = Date.now() + TRIPO_WAIT_MS;
+  while (Date.now() < deadline) {
+    await new Promise<void>((resolve) => setTimeout(resolve, TRIPO_POLL_INTERVAL_MS));
+    const response = await requestJson(pollUrl, { method: "GET", headers });
+    const task = isRecord(response) && isRecord(response.data) ? response.data : null;
+    const status = task && typeof task.status === "string" ? task.status : "";
+    if (status === "success") return response;
+    if (["failed", "banned", "expired", "cancelled", "unknown"].includes(status)) throw new UpstreamError(`upstream_task_${status}`);
+  }
+  throw new UpstreamError("upstream_task_timeout");
 }
 
 /**
@@ -60,22 +116,8 @@ export async function callUpstream(cfg: UpstreamConfig, requestBody: unknown): P
     headers["content-type"] = "application/json";
   }
 
-  let res: Response;
-  try {
-    res = await fetch(url, { method: cfg.method, headers, body, redirect: "manual", signal: AbortSignal.timeout(8000), cache: "no-store" });
-  } catch (e) {
-    throw new UpstreamError(e instanceof Error && e.name === "TimeoutError" ? "upstream_timeout" : "upstream_unreachable");
-  }
-  if (res.status >= 300 && res.status < 400) throw new UpstreamError("upstream_redirect_blocked");
-  if (!res.ok) throw new UpstreamError(`upstream_${res.status}`);
-
-  const text = await readCapped(res, MAX_UPSTREAM_BYTES);
-  let data: unknown;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    data = { text: text.slice(0, 4000) };
-  }
+  let data = await requestJson(url, { method: cfg.method, headers, body });
+  if (cfg.taskMode === "tripo-v2") data = await waitForTripoTask(url, headers, data);
   const payload = cfg.resultPick ? { ...pick(data, cfg.resultPick) } : { data };
   const result = { liveData: true, source: url.host, ...payload };
   if (Buffer.byteLength(JSON.stringify(result)) > MAX_RESULT_BYTES) throw new UpstreamError("result_too_large: set 'fields to return' on your API");

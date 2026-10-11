@@ -1,6 +1,6 @@
 import { sellerFromRequest } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
-import { callUpstream, UpstreamError } from "@/lib/gateway/upstream";
+import { callUpstream, isTripoTaskEndpoint, UpstreamError } from "@/lib/gateway/upstream";
 import { HttpError, handle, readJson } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     const t0 = Date.now();
     try {
       const result = await callUpstream(
-        { url: service.upstreamUrl, method: service.upstreamMethod, bodyTemplate: service.upstreamBody, encryptedHeaders: service.upstreamHeaders, resultPick: service.resultPick },
+        {
+          url: service.upstreamUrl,
+          method: service.upstreamMethod,
+          bodyTemplate: service.upstreamBody,
+          encryptedHeaders: service.upstreamHeaders,
+          resultPick: service.resultPick,
+          taskMode: service.capability === "model.3d" && isTripoTaskEndpoint(service.upstreamUrl) ? "tripo-v2" : undefined,
+        },
         { goal },
       );
       return Response.json({ ok: true, latencyMs: Date.now() - t0, result });

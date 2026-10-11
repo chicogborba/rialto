@@ -62,6 +62,13 @@ export const SCENARIOS: Scenario[] = [
     defaultPreset: "balanced",
     confidenceCap: 1,
   },
+  {
+    id: "model3d",
+    keywords: ["3d model", "3d asset", "3d object", "glb", "mesh", "low-poly", "low poly", "generate a model"],
+    dag: [{ id: "s1", capability: "model.3d", dependsOn: [] }],
+    defaultPreset: "accuracy",
+    confidenceCap: 1,
+  },
 ];
 
 export const GENERIC_SCENARIO: Scenario = {
@@ -87,6 +94,7 @@ export const GOAL_CHIPS: { label: string; goal: string }[] = [
   { label: "Make game sprites", goal: "Make a pixel-art sprite sheet for my game's hero: idle, run and jump." },
   { label: "Look up a Pokémon", goal: "Look up the Pokémon pikachu." },
   { label: "Generate a voice", goal: "Say \"Welcome to Rialto\" in a natural voice." },
+  { label: "Generate a 3D model", goal: "Generate a 3D model of a low-poly orange delivery van with rounded edges." },
 ];
 
 export function presetFromGoal(goal: string): PriorityPreset | null {

@@ -13,4 +13,5 @@ export const LOOK: Record<CapabilityId, { emoji: string; color: string }> = {
   "text.translate": { emoji: "🌍", color: "#5ce1e6" },
   "text.summarize": { emoji: "✂️", color: "#ffd23f" },
   "audio.speech": { emoji: "🔊", color: "#b98cff" },
+  "model.3d": { emoji: "🧊", color: "#5ce1e6" },
 };

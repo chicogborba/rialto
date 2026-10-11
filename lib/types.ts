@@ -15,7 +15,8 @@ export type CapabilityId =
   | "llm.analysis"
   | "text.translate"
   | "text.summarize"
-  | "audio.speech";
+  | "audio.speech"
+  | "model.3d";
 
 export type ProviderStatus = "online" | "degraded" | "offline";
 
@@ -161,7 +162,7 @@ export interface ExecutionPlan {
   plannerKind: "demo" | "llm";
 }
 
-export type ScenarioId = "lookup" | "sprites" | "vision" | "research" | "translate" | "speech" | "generic";
+export type ScenarioId = "lookup" | "sprites" | "vision" | "research" | "translate" | "speech" | "model3d" | "generic";
 
 export type ProviderHistory = Record<string, { recentSuccessRate: number; samples: number }>;
 

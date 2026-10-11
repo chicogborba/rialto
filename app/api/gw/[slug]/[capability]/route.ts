@@ -2,7 +2,7 @@ import { realClock } from "@/lib/agent/clock";
 import { toProvider, toService } from "@/lib/db/mappers";
 import { getProviderBySlug, liveSettledSinceMicro } from "@/lib/db/repo";
 import { HttpError, handle, readJson } from "@/lib/http";
-import { callUpstream, UpstreamError } from "@/lib/gateway/upstream";
+import { callUpstream, isTripoTaskEndpoint, UpstreamError } from "@/lib/gateway/upstream";
 import { handleSimCall } from "@/lib/providers/sim-provider";
 import { isInternal } from "@/lib/security/internal";
 import { getRail, liveRail } from "@/lib/x402";
@@ -55,7 +55,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
       live,
       produce: (b) =>
         callUpstream(
-          { url: svcRow.upstreamUrl ?? "", method: svcRow.upstreamMethod, bodyTemplate: svcRow.upstreamBody, encryptedHeaders: svcRow.upstreamHeaders, resultPick: svcRow.resultPick },
+          {
+            url: svcRow.upstreamUrl ?? "",
+            method: svcRow.upstreamMethod,
+            bodyTemplate: svcRow.upstreamBody,
+            encryptedHeaders: svcRow.upstreamHeaders,
+            resultPick: svcRow.resultPick,
+            taskMode: svcRow.capability === "model.3d" && isTripoTaskEndpoint(svcRow.upstreamUrl ?? "") ? "tripo-v2" : undefined,
+          },
           b,
         ).catch((e: unknown) => {
           throw e instanceof UpstreamError ? e : new Error("upstream_error");
