@@ -65,8 +65,8 @@ const MAX_TIMEOUT_MS = 240_000;
  * (its published typical latency), then four times that latency, up to 4 minutes (a video or a 3D
  * model takes that long).
  */
-export function timeoutFor(latencyMs: number | null | undefined): number {
-  return Math.min(MAX_TIMEOUT_MS, Math.max(DEFAULT_TIMEOUT_MS, (latencyMs ?? 0) * 4));
+export function timeoutFor(latencyMs: number | null | undefined, floorMs: number = DEFAULT_TIMEOUT_MS): number {
+  return Math.min(MAX_TIMEOUT_MS, Math.max(floorMs, (latencyMs ?? 0) * 4));
 }
 
 const TRIPO_WAIT_MS = 45_000;

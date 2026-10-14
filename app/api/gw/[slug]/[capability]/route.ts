@@ -61,7 +61,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
       encryptedHeaders: svcRow.upstreamHeaders,
       resultPick: svcRow.resultPick,
       taskMode: svcRow.capability === "model.3d" && isTripoTaskEndpoint(svcRow.upstreamUrl) ? ("tripo-v2" as const) : undefined,
-      timeoutMs: timeoutFor(row.latencyMs),
+      // Rialto's own integrations call hosted models that queue and cold-start; a published API keeps the short floor
+      timeoutMs: timeoutFor(row.latencyMs, row.seller?.name === OPERATOR_SELLER ? 60_000 : undefined),
     };
     const produce = (b: unknown) =>
       callUpstream(upstream, b).catch((e: unknown) => {
@@ -73,7 +74,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
     if (live) {
       const caller = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
       if (!allow(`gw:${caller}`, 60, 1)) throw new HttpError(429, "rate_limited", "Too many calls from this address. Slow down.");
-      const out = await handleLiveCall({ gateway, provider, service, sellerMicro: svcRow.sellerPriceMicro, payTo: row.payTo, resourceUrl: req.url, headers, body, produce });
+      const out = await handleLiveCall({ gateway, provider, service, sellerMicro: svcRow.sellerPriceMicro, payTo: row.payTo, resourceUrl: new URL(new URL(req.url).pathname, process.env.NEXT_PUBLIC_APP_URL ?? req.url).toString(), headers, body, produce });
       if (out.outcome) {
         const o = out.outcome;
         // judged only on what happened after a payment checked out: a refused payment is the buyer's problem
