@@ -182,6 +182,14 @@ claude mcp add rialto \
 
 The wallet needs USDC and no SOL. `SOLANA_KEYPAIR_PATH` accepts a `solana-keygen` JSON file instead. Codex and any other MCP client take the same command and environment.
 
+**A hard limit.** Add `-e RIALTO_TOTAL_LIMIT_USD=10` and this wallet can never spend more than $10 through the signer, counted in `~/.rialto/spend.json` so a restart does not reset it (the agent's limits from the dashboard apply on top). Or skip the AI entirely and buy from the command line with the same buyer:
+
+```bash
+npm run buy -- --status                      # wallet, USDC balance, what is left
+npm run buy -- --list image.sprites          # who sells it, and for how much
+npm run buy -- "a pixel-art hero sprite" --capability image.sprites --budget 0.1
+```
+
 **2. The hosted endpoint (test credit, simulated providers).** Nothing to install; it can discover, compare and plan everything, and it buys from the fictional demo providers with play money:
 
 ```bash
@@ -338,8 +346,9 @@ docs/                architecture, deployment, credits
 | `npm run check` | Typecheck + lint + unit tests |
 | `npm run e2e:accounts` | End-to-end check of the account flow and the simulated hosted agent (`E2E_BASE=https://…`) |
 | `npm run e2e` | Older end-to-end check with keys that have no account (needs `PAYMENT_MODE=simulated`) |
-| `npm run user:admin` | `list` accounts, `reset-password <email>`, `purge <domain>` |
+| `npm run user:admin` | `list` accounts, `reset-password <email>`, `create-agent <email> <name> [perCallUsd] [sessionUsd]`, `purge <domain>` |
 | `npm run mcp` | The local signer: an MCP server that holds the buyer's wallet and pays sellers directly |
+| `npm run buy` | The same buyer on the command line: `--status`, `--list [capability]`, or a goal to buy |
 | `npm run x402:keys` | Create the local test wallets (buyer, test seller, fee address) in `.env` (`-- --live` also switches the rail on) |
 | `npm run x402:check` | Network, wallets, balances and facilitator of the live rail (`-- --pay` makes one real two-payment purchase) |
 | `npm run e2e:live` | End-to-end check of real payments against a server on the live rail |
