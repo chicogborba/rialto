@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Rialto exchange mark</title>
+  <desc id="desc">Two machine-facing modules exchange a lime payment token.</desc>
+  <path fill="#17120f" d="M48 80h144v144H48zm272 0h144v144H320zM48 288h144v144H48zm272 0h144v144H320z"/>
+  <path fill="#f6efe0" d="M72 104h96v96H72zm272 0h96v96h-96zM72 312h96v96H72zm272 0h96v96h-96z"/>
+  <path fill="#17120f" d="M104 128h32v16h-32zm0 32h32v16h-32zm272-32h32v16h-32zm0 32h32v16h-32zm-272 176h32v16h-32zm272 0h32v16h-32z"/>
+  <path fill="#17120f" d="M192 184h128v48H192zm0 96h128v48H192z"/>
+  <path fill="#c6ff3d" d="M208 208h96v96h-96z"/>
+  <path fill="#17120f" d="M232 232h48v16h-48zm16 24h16v24h-16z"/>
+  <path fill="#ee7a35" d="M232 304h48v24h-48z"/>
+</svg>

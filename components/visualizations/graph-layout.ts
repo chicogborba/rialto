@@ -20,6 +20,12 @@ export const GROUP_W = NODE_W + GROUP_PAD * 2;
 const SLOT_HINT: Record<CapabilityId, number> = {
   "data.lookup": 2,
   "image.sprites": 5,
+  "image.generate": 5,
+  "image.vector": 2,
+  "image.edit": 3,
+  "image.background_removal": 2,
+  "image.upscale": 2,
+  "vision.describe": 2,
   "vision.damage_detection": 5,
   "market.quotes": 3,
   "news.search": 2,
@@ -29,7 +35,12 @@ const SLOT_HINT: Record<CapabilityId, number> = {
   "text.translate": 2,
   "text.summarize": 2,
   "audio.speech": 2,
+  "audio.sfx": 2,
+  "audio.music": 2,
+  "audio.transcribe": 2,
+  "video.generate": 3,
   "model.3d": 2,
+  "model.image_to_3d": 4,
 };
 
 export interface Box {

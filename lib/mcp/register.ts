@@ -1,5 +1,4 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
 import {
   compareInput, compareServices, discoverInput, discoverServices, executeService, getProviderReputation, getTransactions,
   getWalletStatus, planExecution, planInput, reputationInput, ToolError, transactionsInput, type ToolCtx,
@@ -17,13 +16,11 @@ async function respond(run: () => Promise<unknown>): Promise<ToolResult> {
   }
 }
 
-const goalInput = { goal: z.string().min(3), budgetUsd: z.number().min(0).optional(), preset: z.enum(["balanced", "accuracy", "cost", "speed"]).optional() };
-
 /** The seven Rialto tools, bound to one caller. Used by both the stdio server and the hosted HTTP endpoint. */
 export function registerRialtoTools(server: McpServer, ctx: ToolCtx): void {
   server.registerTool("discover_services", {
     title: "Discover services",
-    description: "List providers that offer a capability (e.g. image.sprites, data.lookup, vision.damage_detection) with price, quality, latency, reputation and x402 status. Includes APIs published by third-party sellers.",
+    description: "What can be bought on Rialto. Without arguments: every capability (images, sprites, video, 3D models, music, sound effects, speech, transcription, translation, web search, …) and how many providers offer it. With a capability: its providers with price, quality, latency, reputation and x402 status.",
     inputSchema: discoverInput,
   }, (args) => respond(() => discoverServices(args)));
 
@@ -41,14 +38,14 @@ export function registerRialtoTools(server: McpServer, ctx: ToolCtx): void {
 
   server.registerTool("plan_execution", {
     title: "Plan execution",
-    description: "Decompose a goal into capabilities, pick the best provider for each under your wallet policy and budget, and return the plan with reasoning. Spends nothing.",
-    inputSchema: goalInput,
+    description: "Decompose a goal into capabilities, pick the best provider for each under your wallet policy and budget, and return the plan with reasoning. Spends nothing. Pass `capability` (and `provider`) to choose them yourself.",
+    inputSchema: planInput,
   }, (args) => respond(() => planExecution(args, ctx)));
 
   server.registerTool("execute_service", {
     title: "Execute goal",
-    description: "Plan AND execute a goal: picks the best provider, pays it from your Rialto wallet, runs it, falls back on failure, and returns the result plus transactions. Payments are SIMULATED unless the platform reports mode=live.",
-    inputSchema: goalInput,
+    description: "Plan AND execute a goal: picks the best provider, pays it from your Rialto wallet, runs it, falls back on failure, and returns the result plus transactions. Generated files (images, audio, video, 3D models) come back as https links to download. Pass `capability` (and `provider`) to choose them yourself; put the link of any input file in `goal`. Payments are SIMULATED unless the platform reports mode=live.",
+    inputSchema: planInput,
   }, (args) => respond(() => executeService(args, ctx)));
 
   server.registerTool("get_transactions", {
@@ -63,6 +60,3 @@ export function registerRialtoTools(server: McpServer, ctx: ToolCtx): void {
     inputSchema: {},
   }, () => respond(() => getWalletStatus(ctx)));
 }
-
-// keep the planInput export referenced so the shared schema stays the single source of truth
-void planInput;

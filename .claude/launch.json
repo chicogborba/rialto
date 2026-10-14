@@ -25,6 +25,19 @@
         "3110"
       ],
       "port": 3110
+    },
+    {
+      "name": "rialto-demo",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "DATABASE_URL=file:./demo.db",
+        "LIVE_DAILY_CAP_USD=20",
+        "OPERATOR_DAILY_CAP_USD=50",
+        "npm",
+        "run",
+        "dev"
+      ],
+      "port": 3100
     }
   ]
 }

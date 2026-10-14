@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Rialto route mark</title>
+  <desc id="desc">A compact R made of a service route, a payment dot, and a destination block.</desc>
+  <path fill="#17120f" d="M72 48h232c76 0 136 54 136 132 0 52-26 92-70 113l82 171H320l-73-151h-47v151H72zm128 104v65h100c24 0 40-13 40-34 0-19-16-31-40-31z"/>
+  <path fill="#c6ff3d" d="M104 80h198c64 0 106 43 106 100 0 48-30 81-76 94l73 158h-64l-75-151H168v151h-64zm64 72v97h136c42 0 72-18 72-50 0-29-27-47-72-47z"/>
+  <path fill="#ee7a35" d="M320 200h56v56h-56z"/>
+  <path fill="#17120f" d="M336 216h24v24h-24z"/>
+</svg>

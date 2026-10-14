@@ -45,13 +45,66 @@ function StepOutput({ step }: { step: RunResultStep }) {
         </div>
       );
     case "llm.analysis":
-      return <p className="text-sm leading-relaxed">{str(o.analysis)}</p>;
+      return <p className="whitespace-pre-wrap text-sm leading-relaxed">{str(o.analysis)}</p>;
     case "text.translate":
-      return <p className="text-sm leading-relaxed">{str(o.translation)}</p>;
+      return <p className="whitespace-pre-wrap text-sm leading-relaxed">{str(o.translation)}</p>;
     case "text.summarize":
-      return <ul className="list-disc space-y-1 pl-5 text-sm">{arr(o.summary).map((b, i) => <li key={i}>{str(b)}</li>)}</ul>;
+      // a list from the demo providers, one block of text from a live model
+      return typeof o.summary === "string" ? <p className="whitespace-pre-wrap text-sm leading-relaxed">{o.summary}</p> : <ul className="list-disc space-y-1 pl-5 text-sm">{arr(o.summary).map((b, i) => <li key={i}>{str(b)}</li>)}</ul>;
+    case "vision.describe":
+      return <p className="whitespace-pre-wrap text-sm leading-relaxed">{str(o.description) || str(o.note)}</p>;
+    case "audio.transcribe":
+      return (
+        <div className="space-y-2">
+          <p className="whitespace-pre-wrap text-sm leading-relaxed">{str(o.text) || str(o.note)}</p>
+          {str(o.language) && <p className="font-mono text-[11px] text-muted">Language: {str(o.language)}</p>}
+        </div>
+      );
+    case "image.sprites":
+    case "image.generate":
+    case "image.vector":
+    case "image.edit":
+    case "image.background_removal":
+    case "image.upscale": {
+      const image = str(o.image);
+      return image.startsWith("https://") ? (
+        <div className="flex flex-wrap items-end gap-4">
+          {/* the checkerboard shows through a transparent sprite or cut-out */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={image} alt="Generated image" className="max-h-72 max-w-full border border-line object-contain" style={{ background: "repeating-conic-gradient(#e9e2d3 0% 25%, #f7f2e7 0% 50%) 50% / 20px 20px" }} />
+          <div className="space-y-2">
+            <a href={image} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center border-2 border-ink bg-signal px-3 font-mono text-xs font-bold uppercase tracking-[0.08em] text-ink">
+              Open image
+            </a>
+            <p className="font-mono text-[11px] text-muted">Live image from {str(o.source)}.</p>
+          </div>
+        </div>
+      ) : <pre className="overflow-x-auto font-mono text-[11px] text-muted">{JSON.stringify(o, null, 1).slice(0, 600)}</pre>;
+    }
+    case "video.generate": {
+      const video = str(o.video);
+      return video.startsWith("https://") ? (
+        <div className="space-y-2">
+          <video controls preload="metadata" className="max-h-80 w-full border border-line bg-ink" src={video}>Your browser cannot play this video.</video>
+          <p className="font-mono text-[11px] text-muted">Live video from {str(o.source)}.</p>
+        </div>
+      ) : <p className="text-sm text-muted">{str(o.note) || "No video returned."}</p>;
+    }
+    case "web.search":
+      // a written answer from a live model, a list of hits from the demo providers
+      return typeof o.answer === "string" ? <p className="whitespace-pre-wrap text-sm leading-relaxed">{o.answer}</p> : (
+        <ul className="space-y-1 text-sm">{arr(o.results).filter(isRecord).map((h, i) => <li key={i}>{str(h.title)} <span className="font-mono text-[11px] text-muted">{str(h.snippet)}</span></li>)}</ul>
+      );
     case "audio.speech": {
       const audio = str(o.audio);
+      if (audio.startsWith("https://")) {
+        return (
+          <div className="space-y-2">
+            <audio controls preload="metadata" className="w-full" src={audio}>Your browser cannot play this audio.</audio>
+            <p className="font-mono text-[11px] text-muted">Live audio from {str(o.source)}.</p>
+          </div>
+        );
+      }
       return audio ? (
         <div className="space-y-2">
           <audio controls preload="metadata" className="w-full" src={`data:audio/mpeg;base64,${audio}`}>Your browser cannot play this audio.</audio>
@@ -59,7 +112,18 @@ function StepOutput({ step }: { step: RunResultStep }) {
         </div>
       ) : <p className="text-sm text-muted">{str(o.note) || "No audio returned."}</p>;
     }
-    case "model.3d": {
+    case "audio.sfx":
+    case "audio.music": {
+      const audio = str(o.audio);
+      return audio.startsWith("https://") ? (
+        <div className="space-y-2">
+          <audio controls preload="metadata" className="w-full" src={audio}>Your browser cannot play this audio.</audio>
+          <p className="font-mono text-[11px] text-muted">Live audio from {str(o.source)}.</p>
+        </div>
+      ) : <p className="text-sm text-muted">{str(o.note) || "No audio returned."}</p>;
+    }
+    case "model.3d":
+    case "model.image_to_3d": {
       const model = str(o.model);
       const preview = str(o.preview);
       return model ? (
@@ -70,9 +134,9 @@ function StepOutput({ step }: { step: RunResultStep }) {
           )}
           <div className="space-y-2">
             <a href={model} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center border-2 border-ink bg-signal px-3 font-mono text-xs font-bold uppercase tracking-[0.08em] text-ink">
-              Download 3D model (.glb)
+              Download 3D model
             </a>
-            <p className="font-mono text-[11px] text-muted">Tripo task {str(o.taskId)} · link expires after a few minutes.</p>
+            <p className="font-mono text-[11px] text-muted">{str(o.taskId) ? `Tripo task ${str(o.taskId)} · link expires after a few minutes.` : `Live model from ${str(o.source)}.`}</p>
           </div>
         </div>
       ) : <p className="text-sm text-muted">{str(o.note) || "No 3D model returned."}</p>;

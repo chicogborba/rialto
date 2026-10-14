@@ -4,9 +4,10 @@ import { AbsoluteFill, interpolateColors, useCurrentFrame } from "remotion";
 import * as THREE from "three";
 import { arc, bounce, eInOut, eOut, lerp, mix3, pop, prog, rnd } from "../lib/anim";
 import type { V3 } from "../lib/anim";
-import { C, display } from "../theme";
+import { C } from "../theme";
 import { Critter } from "../three/Critter";
 import { CUES, DURATIONS, wordAt } from "../timeline";
+import { Logo } from "../ui/Brand";
 import { Box, Coin, Label } from "../three/Props";
 import { Stage } from "../three/Stage";
 import { Narration, Pop, Sfx } from "../ui/Ui";
@@ -164,8 +165,10 @@ export const S4Reveal: React.FC = () => {
         {f >= wallet ? <Coin position={[cx + 1.3, 2.3 + Math.abs(Math.sin((f - wallet) * 0.16)) * 1.5, 1.4]} spin={f * 0.5} rotation={[0, f * 0.3, 0]} scale={Math.max(0.001, pop(f, wallet, 8)) * 1.7} /> : null}
       </Stage>
 
-      <Pop at={CUES.reveal["4a"] + 8} style={{ left: 0, right: 0, top: 50, display: "flex", justifyContent: "center" }}>
-        <div style={{ fontFamily: display, fontWeight: 700, fontSize: 200, letterSpacing: -10, lineHeight: 1, color: C.ink, background: C.lime, border: `8px solid ${C.ink}`, padding: "0 44px 10px", boxShadow: `16px 16px 0 ${C.ink}` }}>RIALTO</div>
+      <Pop at={CUES.reveal["4a"] + 8} style={{ left: 0, right: 0, top: 44, display: "flex", justifyContent: "center" }}>
+        <div style={{ background: "#fffdf7", border: `8px solid ${C.ink}`, padding: "26px 54px 26px 40px", boxShadow: `16px 16px 0 ${C.lime}, 16px 16px 0 8px ${C.ink}` }}>
+          <Logo height={170} t={f - CUES.reveal["4a"] - 10} />
+        </div>
       </Pop>
       <Sfx at={50} name="page-turn" volume={0.3} />
       <Sfx at={wallet} name="ding" volume={0.18} />

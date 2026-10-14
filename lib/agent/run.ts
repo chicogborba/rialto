@@ -26,7 +26,7 @@ import {
   type WalletState,
 } from "@/lib/types";
 import type { PurchaseRole, RunEvent, RunEventBody } from "./events";
-import { matchScenario } from "./scenarios";
+import { directScenario, matchScenario } from "./scenarios";
 import { TIMING } from "./timing";
 
 export interface ExecutorResponse {
@@ -133,7 +133,9 @@ export async function* runAgent(input: RunInput, deps: RunDeps): AsyncGenerator<
     plan = await deps.planner.plan(goal, constraints, candidates, history);
   } catch (err) {
     if (err instanceof NoQualifiedProviderError) {
-      const scenario = matchScenario(goal);
+      // the capability may have been named by the caller rather than read from the goal
+      const matched = matchScenario(goal);
+      const scenario = matched.dag.some((n) => n.capability === err.capability) ? matched : directScenario(err.capability);
       yield await make({
         type: "goal.parsed",
         scenario: scenario.id,
@@ -309,7 +311,7 @@ export async function* runAgent(input: RunInput, deps: RunDeps): AsyncGenerator<
       return { ok: false, error: "policy_rejected" };
     }
 
-    const auth = await rail.requestPayment(requirements, wallet);
+    let auth = await rail.requestPayment(requirements, wallet);
     yield await make({
       type: "payment.signed",
       stepId: step.id,
@@ -318,7 +320,13 @@ export async function* runAgent(input: RunInput, deps: RunDeps): AsyncGenerator<
       mode: auth.mode,
     });
 
-    const paid = await deps.executor.call(service, body, { ...baseHeaders, [paymentHeader(auth.mode)]: auth.payload });
+    let paid = await deps.executor.call(service, body, { ...baseHeaders, [paymentHeader(auth.mode)]: auth.payload });
+    // A refusal is often only timing: the facilitator's node has not seen the block the payment
+    // was signed against yet. Nothing was charged, so sign a fresh payment and try once more.
+    if (paid.status === 402 && auth.mode === "live") {
+      auth = await rail.requestPayment(requirements, wallet);
+      paid = await deps.executor.call(service, body, { ...baseHeaders, [paymentHeader(auth.mode)]: auth.payload });
+    }
     const fail = async function* (error: string, verified: boolean): AsyncGenerator<RunEvent, PurchaseResult, void> {
       if (verified) {
         yield await make({ type: "execution.started", stepId: step.id, providerId: provider.id });
@@ -331,7 +339,10 @@ export async function* runAgent(input: RunInput, deps: RunDeps): AsyncGenerator<
       return { ok: false, error };
     };
 
-    if (paid.status === 402) return yield* fail("payment_rejected", false);
+    if (paid.status === 402) {
+      console.warn("[rialto-pay] refused:", JSON.stringify(paid.json).slice(0, 400));
+      return yield* fail("payment_rejected", false);
+    }
 
     yield await make({ type: "payment.verified", stepId: step.id, providerId: provider.id });
 

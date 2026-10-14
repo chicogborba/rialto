@@ -7,6 +7,12 @@ export type Network = "solana-devnet";
 export type CapabilityId =
   | "data.lookup"
   | "image.sprites"
+  | "image.generate"
+  | "image.vector"
+  | "image.edit"
+  | "image.background_removal"
+  | "image.upscale"
+  | "vision.describe"
   | "vision.damage_detection"
   | "market.quotes"
   | "news.search"
@@ -16,7 +22,12 @@ export type CapabilityId =
   | "text.translate"
   | "text.summarize"
   | "audio.speech"
-  | "model.3d";
+  | "audio.sfx"
+  | "audio.music"
+  | "audio.transcribe"
+  | "video.generate"
+  | "model.3d"
+  | "model.image_to_3d";
 
 export type ProviderStatus = "online" | "degraded" | "offline";
 
@@ -162,7 +173,11 @@ export interface ExecutionPlan {
   plannerKind: "demo" | "llm";
 }
 
-export type ScenarioId = "lookup" | "sprites" | "vision" | "research" | "translate" | "speech" | "model3d" | "generic";
+export type ScenarioId =
+  | "lookup" | "sprites" | "image" | "vector" | "edit" | "cutout" | "upscale" | "describe" | "vision" | "research" | "translate" | "summarize" | "search"
+  | "speech" | "transcribe" | "sfx" | "music" | "video" | "model3d" | "image3d" | "generic"
+  /** the caller named the capability (and maybe the provider) instead of leaving it to the goal's wording */
+  | "direct";
 
 export type ProviderHistory = Record<string, { recentSuccessRate: number; samples: number }>;
 

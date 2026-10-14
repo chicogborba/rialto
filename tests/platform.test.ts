@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_FEES, feeConfigFromEnv, splitFromCharge, splitFromSellerPrice } from "@/lib/billing/fees";
-import { deriveInput, fill, pick } from "@/lib/gateway/template";
+import { deriveInput, fill, pick, placeholders } from "@/lib/gateway/template";
 import { isTripoTaskEndpoint } from "@/lib/gateway/upstream";
 import { bearerFrom, generateKey, hashKey, kindOfKey } from "@/lib/security/keys";
 import { allow } from "@/lib/security/rate-limit";
@@ -89,6 +89,22 @@ describe("gateway templates", () => {
     expect(deriveInput('Weather for "São Paulo"').query).toBe("São Paulo");
     expect(deriveInput("tell me about Ditto").query).toBe("ditto");
     expect(deriveInput("charizard").query).toBe("charizard");
+  });
+  it("keeps apostrophes inside a quoted phrase and takes long ones", () => {
+    expect(deriveInput(`Say "don't stop" in a calm voice`).query).toBe("don't stop");
+    expect(deriveInput("Say 'hello there' out loud").query).toBe("hello there");
+    const line = "word ".repeat(120).trim();
+    expect(deriveInput(`Read this aloud: "${line}"`).query).toBe(line);
+  });
+  it("finds the link in a request and the instruction around it", () => {
+    const edit = deriveInput("Make the car blue in https://v3.fal.media/files/a/car_1.png.");
+    expect(edit.url).toBe("https://v3.fal.media/files/a/car_1.png");
+    expect(edit.text).toBe("Make the car blue in.");
+    const cut = deriveInput("Remove the background (https://x.example/a.png) please");
+    expect(cut.url).toBe("https://x.example/a.png");
+    expect(cut.text).toBe("Remove the background please");
+    expect(deriveInput("no link here").url).toBe("");
+    expect(placeholders('{"image_url":"{url}","prompt":"{text}"}')).toEqual(["url", "text"]);
   });
   it("encodes per mode", () => {
     expect(fill("https://x/{query}", { query: "a b/c" }, "url")).toBe("https://x/a%20b%2Fc");

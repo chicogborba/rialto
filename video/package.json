@@ -22,6 +22,7 @@
     "@types/react": "19.2.7",
     "@types/three": "^0.186.0",
     "@types/web": "0.0.166",
+    "@xterm/xterm": "^6.0.0",
     "eslint": "9.39.5",
     "prettier": "3.8.1",
     "typescript": "5.9.3"
@@ -29,10 +30,12 @@
   "scripts": {
     "dev": "remotion studio",
     "render": "remotion render RialtoPitch out/raw.mp4 && npm run master && node scripts/check-flicker.mjs out/rialto-pitch.mp4",
-    "master": "ffmpeg -nostdin -y -loglevel error -i out/raw.mp4 -c:v copy -af loudnorm=I=-15:TP=-1.5:LRA=11 -c:a aac -b:a 192k -movflags +faststart out/rialto-pitch.mp4",
+    "master": "ffmpeg -nostdin -y -loglevel error -i out/raw.mp4 -c:v copy -af loudnorm=I=-14:TP=-1.5:LRA=11 -c:a aac -b:a 192k -movflags +faststart out/rialto-pitch.mp4",
     "voiceover": "node --env-file=.env scripts/voiceover.mjs",
     "lint": "eslint src && tsc",
     "upgrade": "remotion upgrade",
-    "hero": "remotion still HeroCard public/hero.png --image-format=png"
+    "hero": "remotion still HeroCard public/hero.png --image-format=png",
+    "record:demo": "node scripts/record-demo.mjs",
+    "render:demo": "remotion render RialtoDemo out/demo-raw.mp4 && ffmpeg -nostdin -y -loglevel error -i out/demo-raw.mp4 -c:v copy -af loudnorm=I=-14:TP=-1.5:LRA=11 -c:a aac -b:a 192k -movflags +faststart out/rialto-demo.mp4"
   }
 }

@@ -1,8 +1,9 @@
 import { realClock } from "@/lib/agent/clock";
 import { toProvider, toService } from "@/lib/db/mappers";
-import { getProviderBySlug, liveSettledSinceMicro } from "@/lib/db/repo";
+import { getProviderBySlug, liveSettledSinceMicro, soldBySellerSinceMicro } from "@/lib/db/repo";
+import { OPERATOR_SELLER, operatorDailyCapMicro } from "@/lib/gateway/operator";
 import { HttpError, handle, readJson } from "@/lib/http";
-import { callUpstream, isTripoTaskEndpoint, UpstreamError } from "@/lib/gateway/upstream";
+import { callUpstream, isTripoTaskEndpoint, timeoutFor, UpstreamError } from "@/lib/gateway/upstream";
 import { handleSimCall } from "@/lib/providers/sim-provider";
 import { isInternal } from "@/lib/security/internal";
 import { getRail, liveRail } from "@/lib/x402";
@@ -42,6 +43,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
       throw new HttpError(503, "live_daily_cap_reached", "The platform wallet has paid out its limit for the last 24 hours.");
     }
 
+    // Rialto's own integrations spend its upstream keys even when the buyer pays in test credit
+    if (row.seller?.name === OPERATOR_SELLER && (await soldBySellerSinceMicro(OPERATOR_SELLER, new Date(Date.now() - 24 * 3600_000))) + svcRow.sellerPriceMicro > operatorDailyCapMicro()) {
+      throw new HttpError(503, "operator_daily_cap_reached", "Rialto's own integrations have sold their limit for the last 24 hours.");
+    }
+
     const body = await readJson(req);
     const out = await handleSimCall({
       provider: toProvider(row),
@@ -62,6 +68,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
             encryptedHeaders: svcRow.upstreamHeaders,
             resultPick: svcRow.resultPick,
             taskMode: svcRow.capability === "model.3d" && isTripoTaskEndpoint(svcRow.upstreamUrl ?? "") ? "tripo-v2" : undefined,
+            timeoutMs: timeoutFor(row.latencyMs),
           },
           b,
         ).catch((e: unknown) => {

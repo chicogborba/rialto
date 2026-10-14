@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Rialto">
+  <path d="M3 3H72L93 21V42L80 54L97 71V97H65L39 71V38L29 48V97H3Z" fill="#17120f" stroke="#17120f" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M16 16H40L48 24V50" fill="none" stroke="#f6efe0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M48 50L84 86" fill="none" stroke="#f6efe0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M30.5 10.5L36 16L30.5 21.5" fill="none" stroke="#f6efe0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M64.5 74.5H72.5V66.5" fill="none" stroke="#f6efe0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="8.5" y="8.5" width="15" height="15" rx="2.6" fill="#c6ff3d"/>
+  <rect x="40.5" y="42.5" width="15" height="15" rx="2.6" fill="#ee7a35"/>
+  <rect x="76.5" y="78.5" width="15" height="15" rx="2.6" fill="#ee7a35"/>
+</svg>

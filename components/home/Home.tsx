@@ -14,18 +14,18 @@ const H2 = "text-[clamp(2rem,5.6vw,4rem)] font-bold leading-[1.02] tracking-[-0.
 
 export function Header() {
   return (
-    <header className={`${WRAP} flex items-center justify-between py-5`}>
-      <Link href="/" className="flex items-center gap-2 text-xl font-bold tracking-tight">
-        <Buddy className="w-8" />
-        Rialto
+    <header className={`${WRAP} flex items-center justify-between gap-3 py-4 md:py-5`}>
+      <Link href="/" aria-label="Rialto" className="flex shrink-0 items-center">
+        <Image src={asset("/brand/rialto-logo.svg")} alt="Rialto" width={358} height={100} priority unoptimized className="h-8 w-auto shrink-0 sm:h-9 md:h-10" />
       </Link>
-      <nav aria-label="Primary" className="flex items-center gap-6 text-sm font-medium">
-        <Link href="/catalog" className="text-coal/70 hover:text-coal">Catalog</Link>
+      <nav aria-label="Primary" className="flex items-center gap-4 text-sm font-medium sm:gap-6">
+        <Link href="/catalog" className="hidden text-coal/70 hover:text-coal min-[400px]:block">Catalog</Link>
+        <Link href="/demo" className="text-coal/70 hover:text-coal">Demo</Link>
         <Link href="/#story" className="hidden text-coal/70 hover:text-coal md:block">How it works</Link>
         <Link href="/#solana" className="hidden text-coal/70 hover:text-coal md:block">Why Solana</Link>
         <a href={REPO_URL} className="hidden text-coal/70 hover:text-coal sm:block">GitHub</a>
         <Link href={flowHref("/login")} className="hidden text-coal/70 hover:text-coal sm:block">Sign in</Link>
-        <Link href={flowHref("/signup")} className="home-btn home-btn-ink !min-h-10 !px-4 text-sm">Get started</Link>
+        <Link href={flowHref("/signup")} className="home-btn home-btn-ink !min-h-10 whitespace-nowrap !px-3.5 text-sm sm:!px-4">Get started</Link>
       </nav>
     </header>
   );
@@ -36,16 +36,16 @@ export function Hero() {
   return (
     <section className="relative isolate overflow-hidden lg:h-[min(88svh,800px)] lg:min-h-[620px]">
       <div className={`${WRAP} pointer-events-none relative z-10 flex flex-col justify-center pb-2 pt-6 lg:h-full lg:pb-16 lg:pt-0`}>
-        <h1 className="text-[clamp(3.2rem,8.4vw,7rem)] font-bold leading-[0.9] tracking-[-0.055em]">
+        <h1 className="text-[clamp(3.6rem,16vw,4.6rem)] font-bold leading-[0.9] tracking-[-0.055em] md:text-[clamp(3.2rem,8.4vw,7rem)]">
           Agents <span className="block whitespace-nowrap">that hire</span>
         </h1>
         <p className="mt-3 text-[clamp(1.5rem,3.6vw,2.9rem)] font-bold leading-tight tracking-[-0.03em]">
           an API for <Needs />
         </p>
-        <p className="mt-4 max-w-sm text-lg leading-snug text-coal/75 md:mt-6 md:text-xl">Find, compare, pay per call. No sign-up, no card.</p>
-        <div className="pointer-events-auto mt-5 flex flex-wrap gap-2 md:mt-7 md:gap-3">
-          <Link href={flowHref("/signup?next=/dashboard/agents")} className="home-btn home-btn-ink max-sm:!px-4 max-sm:text-[15px]"><span aria-hidden>🤖</span> Connect an agent</Link>
-          <Link href={flowHref("/signup?next=/dashboard/apis")} className="home-btn home-btn-line bg-cream/70 max-sm:!px-4 max-sm:text-[15px]"><span aria-hidden>🔌</span> Sell an API</Link>
+        <p className="mt-4 max-w-sm text-lg leading-snug text-coal/75 md:mt-6 md:text-xl">Find, compare, pay per call. <span className="whitespace-nowrap">No sign-up,</span> no card.</p>
+        <div className="pointer-events-auto mt-5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap md:mt-7 md:gap-3">
+          <Link href={flowHref("/signup?next=/dashboard/agents")} className="home-btn home-btn-ink justify-center max-sm:text-[17px]"><span aria-hidden>🤖</span> Connect an agent</Link>
+          <Link href={flowHref("/signup?next=/dashboard/apis")} className="home-btn home-btn-line justify-center bg-cream/70 max-sm:text-[17px]"><span aria-hidden>🔌</span> Sell an API</Link>
         </div>
         <p className="mt-4 font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-coal/50 md:text-xs">Claude Code · Codex · any MCP agent</p>
       </div>
@@ -81,6 +81,12 @@ export function Pitch() {
     <section id="video" aria-labelledby="video-title" className={`${WRAP} scroll-mt-6 pb-16 pt-10 md:pb-24 md:pt-14`}>
       <h2 id="video-title" className={`${H2} mb-8 text-center`}>The whole idea in 66 seconds <span aria-hidden>🍿</span></h2>
       <PitchVideo />
+      <p className="mt-8 text-center text-lg">
+        <span aria-hidden>🎮</span> One prompt, with and without Rialto.{" "}
+        <Link href="/demo" className="font-bold underline decoration-lime decoration-4 underline-offset-4 hover:decoration-coal">
+          Play both games →
+        </Link>
+      </p>
     </section>
   );
 }
@@ -88,7 +94,7 @@ export function Pitch() {
 const SOLANA_FACTS = [
   { value: "≈ 400 ms", label: "to settle" },
   { value: "< 1¢", label: "fee per payment" },
-  { value: "100×", label: "what a card fee costs next to a $0.003 call" },
+  { value: "100×", label: "a card fee next to a $0.003 call" },
 ] as const;
 
 export function Solana() {
@@ -102,11 +108,11 @@ export function Solana() {
         <div className="mt-8 md:mt-10">
           <SolanaRace />
         </div>
-        <dl className="mt-10 grid grid-cols-3 gap-4 md:mt-12 md:gap-8">
+        <dl className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-6 md:mt-12 md:gap-8">
           {SOLANA_FACTS.map((fact) => (
-            <div key={fact.value}>
-              <dt className="tnum whitespace-nowrap font-mono text-xl font-bold md:text-5xl">{fact.value}</dt>
-              <dd className="mt-2 text-xs leading-snug text-coal/65 md:text-base">{fact.label}</dd>
+            <div key={fact.value} className="flex items-baseline gap-4 border-2 border-coal/15 bg-cream/60 px-4 py-3 sm:block sm:border-0 sm:bg-transparent sm:p-0">
+              <dt className="tnum shrink-0 whitespace-nowrap font-mono text-2xl font-bold sm:text-3xl md:text-5xl">{fact.value}</dt>
+              <dd className="text-sm leading-snug text-coal/70 sm:mt-2 md:text-base">{fact.label}</dd>
             </div>
           ))}
         </dl>
@@ -175,7 +181,7 @@ export function Footer() {
     <footer className="border-t-2 border-coal/10">
       <div className={`${WRAP} flex flex-wrap items-center justify-between gap-3 py-6 text-sm text-coal/60`}>
         <p className="flex items-center gap-2">
-          <Buddy mood="wave" className="w-7" /> Rialto · hackathon build · devnet test money, never real funds
+          <Image src={asset("/brand/rialto-mark.svg")} alt="" width={100} height={100} unoptimized className="size-7" /> Rialto · hackathon build · devnet test money, never real funds
         </p>
         <a href={REPO_URL} className="font-medium text-coal hover:underline">GitHub ↗</a>
       </div>

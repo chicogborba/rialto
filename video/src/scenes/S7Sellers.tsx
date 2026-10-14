@@ -30,13 +30,13 @@ export const S7Sellers: React.FC = () => {
         <Tree position={[-6.5, 0, -5]} scale={1.3} />
         <Tree position={[8.8, 0, -4]} scale={1.2} color="#6dbb86" />
         <group position={STALL} rotation={[0, -0.45, 0]}>
-          <Stall color={C.purple} label="YOUR API 🛠️" />
+          <Stall color={"#8fb4ff"} label="YOUR API 🛠️" />
           <Box size={[0.6, 0.7 + sale * 0.08, 0.6]} position={[0, 1.42, 0.1]} color={C.cyan} opacity={0.5} shadow={false} />
           {Array.from({ length: calls }).map((_, i) => (
             <Box key={i} size={[0.44, 0.07, 0.44]} position={[0, 1.12 + i * 0.08, 0.1]} color={C.gold} shadow={false} />
           ))}
         </group>
-        <Critter position={[5.5, 0, -0.1]} yaw={-0.6} scale={0.9} color={C.purple} eyes="happy" armR={1} hop={sale * 0.3} seed={3} />
+        <Critter position={[5.5, 0, -0.1]} yaw={-0.6} scale={0.9} color={"#8fb4ff"} eyes="happy" armR={1} hop={sale * 0.3} seed={3} />
 
         {/* the queue: the front agent pays and leaves with its result, everyone else steps up */}
         {BUYERS.map((color, i) => {

@@ -1,0 +1,61 @@
+<!doctype html>
+<!-- Replays a recorded terminal session (an asciicast) in a real terminal emulator, at the speed it happened.
+     scripts/record-demo.mjs opens this page and films it. -->
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css" />
+<style>
+  html, body { margin: 0; height: 100%; background: #16130f; overflow: hidden; }
+  #term { position: absolute; inset: 18px 22px; }
+  .xterm-viewport { overflow: hidden !important; }
+</style>
+<div id="term"></div>
+<script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
+<script>
+  /** Set up a terminal of the cast's size that fills the page; `play` resolves when the last byte is on screen. */
+  window.load = (castText) => {
+    const lines = castText.trim().split("\n");
+    const header = JSON.parse(lines[0]);
+    const events = lines.slice(1).map((l) => JSON.parse(l));
+    const fontSize = Math.floor(((innerWidth - 44) / header.width / 0.6021) * 10) / 10;
+    const term = new Terminal({
+      cols: header.width,
+      rows: header.height,
+      fontSize,
+      lineHeight: Math.min(1.25, (innerHeight - 36) / header.height / fontSize / 1.17),
+      fontFamily: 'Menlo, Monaco, "SF Mono", monospace',
+      cursorBlink: false,
+      allowProposedApi: true,
+      scrollback: 0,
+      theme: { background: "#16130f", foreground: "#efe8d8", cursor: "#c6ff3d", selectionBackground: "#3a352c", black: "#16130f", brightBlack: "#7a7466", green: "#a5d65a", brightGreen: "#c6ff3d", yellow: "#ffd23f", blue: "#8fb4ff", magenta: "#ff8fb3", cyan: "#5ce1e6", red: "#ff6b5e", white: "#efe8d8", brightWhite: "#ffffff" },
+    });
+    term.open(document.getElementById("term"));
+    // frame by frame: put everything received up to `seconds` on screen; tells whether anything was new
+    let shown = 0;
+    window.advance = (seconds) =>
+      new Promise((resolve) => {
+        const from = shown;
+        let data = "";
+        while (shown < events.length && events[shown][0] <= seconds) data += events[shown++][2];
+        if (shown === from) return resolve(false);
+        // the emulator paints on the next animation frame; wait for it (or 150 ms, if frames are being throttled)
+        term.write(data, () => {
+          const done = () => resolve(true);
+          const timer = setTimeout(done, 150);
+          requestAnimationFrame(() => requestAnimationFrame(() => { clearTimeout(timer); done(); }));
+        });
+      });
+    window.play = () =>
+      new Promise((resolve) => {
+        const start = performance.now();
+        let next = 0;
+        const tick = () => {
+          const now = (performance.now() - start) / 1000;
+          while (next < events.length && events[next][0] <= now) term.write(events[next++][2]);
+          if (next < events.length) requestAnimationFrame(tick);
+          else term.write("", resolve);
+        };
+        tick();
+      });
+    return events.length;
+  };
+</script>

@@ -62,6 +62,12 @@ export const SCHEMAS: Record<CapabilityId, { input: string; output: string }> = 
     input: '{"prompt":"string","frames":"number?","style":"string?"}',
     output: '{"sheetUrl":"string","frames":"Frame[]","frameSize":"[number,number]","palette":"string[]"}',
   },
+  "image.generate": { input: '{"prompt":"string"}', output: '{"image":"url"}' },
+  "image.vector": { input: '{"prompt":"string"}', output: '{"image":"url (svg)"}' },
+  "image.edit": { input: '{"imageUrl":"string","instruction":"string"}', output: '{"image":"url"}' },
+  "image.background_removal": { input: '{"imageUrl":"string"}', output: '{"image":"url (transparent png)"}' },
+  "image.upscale": { input: '{"imageUrl":"string"}', output: '{"image":"url"}' },
+  "vision.describe": { input: '{"imageUrl":"string","question":"string?"}', output: '{"description":"string"}' },
   "vision.damage_detection": {
     input: '{"imageUrl":"string","assetType":"string?"}',
     output: '{"damageDetected":"boolean","findings":"Finding[]","recommendation":"string"}',
@@ -74,7 +80,12 @@ export const SCHEMAS: Record<CapabilityId, { input: string; output: string }> = 
   "text.translate": { input: '{"text":"string","target":"string"}', output: '{"translation":"string"}' },
   "text.summarize": { input: '{"text":"string","bullets":"number?"}', output: '{"summary":"string[]"}' },
   "audio.speech": { input: '{"text":"string","voice":"string?"}', output: '{"audio":"base64 mp3","alignment":"object?"}' },
-  "model.3d": { input: '{"prompt":"string"}', output: '{"model":"url","preview":"url?","taskId":"string"}' },
+  "audio.sfx": { input: '{"description":"string"}', output: '{"audio":"url (mp3)"}' },
+  "audio.music": { input: '{"description":"string"}', output: '{"audio":"url"}' },
+  "audio.transcribe": { input: '{"audioUrl":"string"}', output: '{"text":"string","language":"string?"}' },
+  "video.generate": { input: '{"prompt":"string"}', output: '{"video":"url (mp4)"}' },
+  "model.3d": { input: '{"prompt":"string"}', output: '{"model":"url","preview":"url?","taskId":"string?"}' },
+  "model.image_to_3d": { input: '{"imageUrl":"string"}', output: '{"model":"url (glb)","preview":"url?"}' },
 };
 
 export function slugify(name: string): string {

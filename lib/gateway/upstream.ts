@@ -1,6 +1,6 @@
 import { decryptSecret } from "@/lib/security/secrets";
 import { assertPublicUrl, UnsafeUpstreamError } from "@/lib/security/ssrf";
-import { deriveInput, fill, MAX_RESULT_BYTES, MAX_UPSTREAM_BYTES, pick } from "./template";
+import { deriveInput, fill, MAX_RESULT_BYTES, MAX_UPSTREAM_BYTES, pick, placeholders } from "./template";
 
 export interface UpstreamConfig {
   url: string;
@@ -11,6 +11,8 @@ export interface UpstreamConfig {
   resultPick: string | null;
   /** Some upstreams return a task ID and must be polled before the buyer is charged. */
   taskMode?: "tripo-v2";
+  /** How long the one request may take (see `timeoutFor`); 8 s when not given. */
+  timeoutMs?: number;
 }
 
 export class UpstreamError extends Error {}
@@ -37,10 +39,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-async function requestJson(url: URL, init: RequestInit): Promise<unknown> {
+async function requestJson(url: URL, init: RequestInit, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<unknown> {
   let res: Response;
   try {
-    res = await fetch(url, { ...init, redirect: "manual", signal: AbortSignal.timeout(8000), cache: "no-store" });
+    res = await fetch(url, { ...init, redirect: "manual", signal: AbortSignal.timeout(timeoutMs), cache: "no-store" });
   } catch (e) {
     throw new UpstreamError(e instanceof Error && e.name === "TimeoutError" ? "upstream_timeout" : "upstream_unreachable");
   }
@@ -53,6 +55,18 @@ async function requestJson(url: URL, init: RequestInit): Promise<unknown> {
   } catch {
     return { text: text.slice(0, 4000) };
   }
+}
+
+const MAX_INPUTS_CHARS = 6_000;
+const DEFAULT_TIMEOUT_MS = 8_000;
+const MAX_TIMEOUT_MS = 240_000;
+/**
+ * How long one call to a seller's API may take: 8 s unless the API says it is slower than that
+ * (its published typical latency), then four times that latency, up to 4 minutes (a video or a 3D
+ * model takes that long).
+ */
+export function timeoutFor(latencyMs: number | null | undefined): number {
+  return Math.min(MAX_TIMEOUT_MS, Math.max(DEFAULT_TIMEOUT_MS, (latencyMs ?? 0) * 4));
 }
 
 const TRIPO_WAIT_MS = 45_000;
@@ -89,12 +103,16 @@ async function waitForTripoTask(url: URL, headers: Record<string, string>, creat
 
 /**
  * Call the seller's real API on behalf of a buyer. Hardened: https + public addresses only (checked
- * again here, after placeholder substitution), no redirects, 8 s timeout, bounded response size,
+ * again here, after placeholder substitution), no redirects, a timeout (see `timeoutFor`), bounded response size,
  * bounded result size. Any throw means "failed" and the buyer is not charged.
  */
 export async function callUpstream(cfg: UpstreamConfig, requestBody: unknown): Promise<Record<string, unknown>> {
   const goal = typeof requestBody === "object" && requestBody !== null && "goal" in requestBody && typeof requestBody.goal === "string" ? requestBody.goal : "";
-  const values = { ...deriveInput(goal) };
+  // what the earlier steps of the same run returned, for an API that builds on them (an analysis of search results)
+  const earlier = isRecord(requestBody) && isRecord(requestBody.inputs) && Object.keys(requestBody.inputs).length > 0 ? JSON.stringify(requestBody.inputs).slice(0, MAX_INPUTS_CHARS) : "";
+  const values = { ...deriveInput(goal), inputs: earlier };
+  // an API that works on a file (an image to edit, audio to transcribe) is not called without one
+  if (!values.url && [cfg.url, cfg.bodyTemplate].some((t) => placeholders(t).includes("url"))) throw new UpstreamError("missing_link: this API works on a file, put its https link in the request");
 
   const finalUrl = fill(cfg.url, values, "url");
   const templateHost = new URL(cfg.url.replace(/\{\w+\}/g, "x")).host;
@@ -116,7 +134,7 @@ export async function callUpstream(cfg: UpstreamConfig, requestBody: unknown): P
     headers["content-type"] = "application/json";
   }
 
-  let data = await requestJson(url, { method: cfg.method, headers, body });
+  let data = await requestJson(url, { method: cfg.method, headers, body }, cfg.timeoutMs);
   if (cfg.taskMode === "tripo-v2") data = await waitForTripoTask(url, headers, data);
   const payload = cfg.resultPick ? { ...pick(data, cfg.resultPick) } : { data };
   const result = { liveData: true, source: url.host, ...payload };

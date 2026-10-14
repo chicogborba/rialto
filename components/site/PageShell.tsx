@@ -21,15 +21,3 @@ export function PageShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-
-export function Step({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
-  return (
-    <section className="grid gap-4 border-t border-line py-8 md:grid-cols-[120px_1fr]" aria-labelledby={`step-${n}`}>
-      <p className="font-mono text-5xl font-bold leading-none text-signal md:text-6xl">{n}</p>
-      <div className="min-w-0 space-y-4">
-        <h2 id={`step-${n}`} className="text-2xl font-bold uppercase leading-none tracking-tight md:text-4xl">{title}</h2>
-        {children}
-      </div>
-    </section>
-  );
-}

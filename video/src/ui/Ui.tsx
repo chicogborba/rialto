@@ -2,6 +2,7 @@ import { Audio } from "@remotion/media";
 import type React from "react";
 import { createContext, useContext } from "react";
 import { AbsoluteFill, Easing, Sequence, interpolate, staticFile, useCurrentFrame } from "remotion";
+import { spring } from "../lib/anim";
 import { C, display, mono } from "../theme";
 import { CUES, FPS, type SceneId } from "../timeline";
 import { VO } from "../vo";
@@ -18,15 +19,23 @@ const plain = (word: string) => word.toLowerCase().replace(/[^a-z0-9-]/g, "");
  * The narration for one scene: plays each line and shows it as a caption whose words light up as
  * they are spoken. `mark` lists the words that get the highlighter.
  */
-export const Narration: React.FC<{ scene: SceneId; mark?: string[]; accent?: string; captions?: boolean }> = ({ scene, mark = [], accent = C.lime, captions = true }) => {
+export const Narration: React.FC<{ scene?: SceneId; cues?: Record<string, number>; mark?: string[]; accent?: string; captions?: boolean }> = ({ scene, cues: own, mark = [], accent = C.lime, captions = true }) => {
   const frame = useCurrentFrame();
   const { narration } = useContext(AudioFlags);
-  const cues = Object.entries(CUES[scene]);
+  const cues = Object.entries(own ?? (scene ? CUES[scene] : {}));
   const index = cues.reduce((last, [, at], i) => (frame >= at - 4 ? i : last), -1);
   const [line, start] = index >= 0 ? cues[index] : ["", 0];
   const clip = VO[line];
   const end = clip ? start + clip.seconds * FPS : 0;
   const visible = captions && clip !== undefined && frame <= end + 22;
+  // a long line is captioned one sentence at a time
+  const sentences: number[][] = [];
+  clip?.words.forEach((w, i) => {
+    if (i === 0 || /[.?!]$/.test(clip.words[i - 1].word)) sentences.push([]);
+    sentences[sentences.length - 1].push(i);
+  });
+  const now = sentences.reduce((last, group, k) => (frame >= start + clip.words[group[0]].start * FPS - 3 ? k : last), 0);
+  const shown = clip && clip.words.length > 14 ? new Set(sentences[now]) : null;
 
   return (
     <>
@@ -58,6 +67,7 @@ export const Narration: React.FC<{ scene: SceneId; mark?: string[]; accent?: str
             }}
           >
             {clip.words.map((w, i) => {
+              if (shown && !shown.has(i)) return null;
               const at = start + w.start * FPS;
               const said = frame >= at - 1;
               const hot = mark.includes(plain(w.word));
@@ -131,7 +141,7 @@ export const Pop: React.FC<{ at: number; out?: number; style?: React.CSSProperti
         position: "absolute",
         rotate: `${rotate}deg`,
         opacity: out === undefined ? 1 : interpolate(frame, [out, out + 8], [1, 0], clamp),
-        scale: interpolate(frame, [at, at + 12], [0, 1], { ...clamp, easing: Easing.bezier(0.34, 1.56, 0.64, 1) }),
+        scale: spring(frame - at),
         ...style,
       }}
     >

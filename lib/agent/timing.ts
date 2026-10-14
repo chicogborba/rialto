@@ -25,14 +25,6 @@ export const TIMING: Record<RunEvent["type"], number> = {
   "run.failed": 600,
 };
 
-/** Speed multipliers (1 = real time as in TIMING). */
-export const SPEED = {
-  fullDemo: 1.2,
-  singleStep: 1,
-  multiStep: 0.45,
-  instant: 0,
-} as const;
-
 export const MOTION = {
   snap: { duration: 0.12, ease: [0.2, 0, 0, 1] as [number, number, number, number] },
   move: { type: "spring" as const, stiffness: 520, damping: 38 },

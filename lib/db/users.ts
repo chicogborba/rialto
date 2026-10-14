@@ -166,10 +166,6 @@ export async function setWallet(userId: string, address: string, verified: boole
   });
 }
 
-export async function clearWalletVerification(userId: string): Promise<void> {
-  await prisma.user.update({ where: { id: userId }, data: { walletVerifiedAt: null } });
-}
-
 /** The seller profile of this account, made on first use. Needs a registered wallet to be paid at. */
 export async function ensureSellerFor(userId: string): Promise<string> {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true, walletAddress: true, seller: { select: { id: true, payoutAddress: true } } } });

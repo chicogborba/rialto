@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Traffic Dodge</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body { margin: 0; height: 100%; background: #111; color: #fff; font-family: system-ui, sans-serif; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { background: #333; max-height: 100vh; border: 2px solid #000; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c" width="400" height="640"></canvas>
+<script>
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
+const LANES = 4, ROAD_X = 40, LANE_W = (W - ROAD_X * 2) / LANES;
+const CAR_W = 36, CAR_H = 66;
+const laneX = i => ROAD_X + LANE_W * i + LANE_W / 2;
+
+let state = 'menu', player, cars, score, speed, spawnT, lineOff, best = +localStorage.trafficBest || 0;
+const keys = {};
+
+function reset() {
+  player = { x: laneX(1), y: H - 110, vx: 0 };
+  cars = []; score = 0; speed = 5; spawnT = 0; lineOff = 0;
+  state = 'play';
+}
+
+function spawn() {
+  // pick a lane; never block every lane at the same height
+  const lane = Math.floor(Math.random() * LANES);
+  const recent = cars.filter(c => c.y < 0 && c.y > -CAR_H * 2.5).map(c => c.lane);
+  if (recent.length >= LANES - 1 && !recent.includes(lane)) {
+    // would close the last gap? skip if so
+  }
+  if (recent.includes(lane) || new Set(recent).size >= LANES - 1) return;
+  const colors = ['#e63946', '#f4a261', '#2a9d8f', '#e9c46a', '#9b5de5', '#4cc9f0'];
+  cars.push({
+    lane, x: laneX(lane), y: -CAR_H,
+    v: speed * (0.35 + Math.random() * 0.35), // relative drift speed
+    color: colors[Math.floor(Math.random() * colors.length)],
+  });
+}
+
+function drawCar(x, y, color, isPlayer) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x - CAR_W / 2, y - CAR_H / 2, CAR_W, CAR_H);
+  ctx.fillStyle = 'rgba(0,0,0,.55)';
+  ctx.fillRect(x - CAR_W / 2 + 4, y - CAR_H / 2 + (isPlayer ? 10 : CAR_H - 28), CAR_W - 8, 18);
+  ctx.fillStyle = '#000';
+  for (const sx of [-1, 1]) for (const sy of [-1, 1])
+    ctx.fillRect(x + sx * (CAR_W / 2) - (sx > 0 ? 0 : 5), y + sy * 20 - 7, 5, 14);
+}
+
+function update() {
+  const ax = (keys.ArrowRight || keys.d ? 1 : 0) - (keys.ArrowLeft || keys.a ? 1 : 0);
+  player.vx += ax * 1.1;
+  player.vx *= 0.82;
+  player.x = Math.max(ROAD_X + CAR_W / 2, Math.min(W - ROAD_X - CAR_W / 2, player.x + player.vx));
+
+  speed = 5 + score / 400;
+  lineOff = (lineOff + speed) % 40;
+  score += speed / 10;
+
+  spawnT -= speed;
+  if (spawnT <= 0) { spawn(); spawnT = 130 + Math.random() * 90; }
+
+  for (const c of cars) c.y += speed - c.v + 2;
+  cars = cars.filter(c => c.y < H + CAR_H);
+
+  for (const c of cars) {
+    if (Math.abs(c.x - player.x) < CAR_W - 4 && Math.abs(c.y - player.y) < CAR_H - 6) {
+      state = 'over';
+      best = Math.max(best, Math.floor(score));
+      localStorage.trafficBest = best;
+    }
+  }
+}
+
+function text(s, x, y, size, align = 'center') {
+  ctx.font = `bold ${size}px system-ui, sans-serif`;
+  ctx.textAlign = align; ctx.fillStyle = '#fff';
+  ctx.fillText(s, x, y);
+}
+
+function draw() {
+  ctx.fillStyle = '#2d6a4f'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#3a3a3a'; ctx.fillRect(ROAD_X, 0, W - ROAD_X * 2, H);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(ROAD_X - 4, 0, 4, H); ctx.fillRect(W - ROAD_X, 0, 4, H);
+  ctx.fillStyle = '#ddd';
+  for (let i = 1; i < LANES; i++)
+    for (let y = -40 + lineOff; y < H; y += 40)
+      ctx.fillRect(ROAD_X + LANE_W * i - 2, y, 4, 20);
+
+  if (player) {
+    for (const c of cars) drawCar(c.x, c.y, c.color, false);
+    drawCar(player.x, player.y, '#1d70f5', true);
+  }
+
+  if (state === 'play') {
+    text('Score ' + Math.floor(score), 12, 28, 20, 'left');
+    text('Best ' + best, W - 12, 28, 20, 'right');
+  } else {
+    ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(0, 0, W, H);
+    if (state === 'menu') {
+      text('TRAFFIC DODGE', W / 2, 230, 36);
+      text('← → or A / D to steer', W / 2, 290, 18);
+      text('(or drag / tap left & right)', W / 2, 318, 16);
+    } else {
+      text('CRASH!', W / 2, 230, 48);
+      text('Score ' + Math.floor(score), W / 2, 285, 24);
+      text('Best ' + best, W / 2, 318, 20);
+    }
+    text('Press SPACE or click to ' + (state === 'menu' ? 'start' : 'retry'), W / 2, 400, 18);
+  }
+}
+
+function loop() {
+  if (state === 'play') update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if (e.key === ' ' && state !== 'play') reset();
+  if (e.key.startsWith('Arrow') || e.key === ' ') e.preventDefault();
+});
+addEventListener('keyup', e => keys[e.key] = false);
+
+// touch / mouse: hold left or right half of the canvas
+function pointer(e, down) {
+  if (state !== 'play') { if (down) reset(); return; }
+  keys.ArrowLeft = keys.ArrowRight = false;
+  if (!down) return;
+  const r = cv.getBoundingClientRect();
+  (e.clientX - r.left < r.width / 2 ? keys.ArrowLeft = true : keys.ArrowRight = true);
+}
+cv.addEventListener('pointerdown', e => pointer(e, true));
+addEventListener('pointerup', e => pointer(e, false));
+
+loop();
+</script>
+</body>
+</html>

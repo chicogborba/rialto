@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Rush Hour Rialto</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b0614; overflow: hidden; touch-action: none; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { background: #000; box-shadow: 0 0 60px rgba(255, 80, 160, .35); }
+</style>
+</head>
+<body>
+<canvas id="c" width="560" height="840"></canvas>
+<script>
+(() => {
+'use strict';
+
+// ---------------------------------------------------------------- setup
+const W = 560, H = 840;
+const ROAD_W = 400, ROAD_L = (W - ROAD_W) / 2, LANE_W = ROAD_W / 4;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+function fit() {
+  const s = Math.min(innerWidth / W, innerHeight / H);
+  canvas.style.width = W * s + 'px';
+  canvas.style.height = H * s + 'px';
+}
+addEventListener('resize', fit);
+fit();
+
+const laneX = i => ROAD_L + LANE_W * (i + 0.5);
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+
+// ---------------------------------------------------------------- assets
+// crop = visible bounds inside the 1024x1024 sprite, w = on-screen width in px
+const SPR = {
+  player: { file: 'car_player.png', sx: 310, sy: 120, sw: 390, sh: 800, w: 62 },
+  blue:   { file: 'car_blue.png',   sx: 310, sy: 85,  sw: 400, sh: 855, w: 62 },
+  taxi:   { file: 'car_taxi.png',   sx: 310, sy: 120, sw: 405, sh: 785, w: 62 },
+  police: { file: 'car_police.png', sx: 320, sy: 85,  sw: 385, sh: 855, w: 62 },
+  purple: { file: 'car_purple.png', sx: 305, sy: 130, sw: 400, sh: 765, w: 62 },
+  truck:  { file: 'car_truck.png',  sx: 330, sy: 40,  sw: 365, sh: 945, w: 68 },
+  bus:    { file: 'car_bus.png',    sx: 370, sy: 65,  sw: 280, sh: 895, w: 66 },
+  coin:   { file: 'coin.png',       sx: 95,  sy: 95,  sw: 835, sh: 835, w: 38 },
+  boom:   { file: 'explosion.png',  sx: 120, sy: 120, sw: 790, sh: 790, w: 220 },
+};
+for (const s of Object.values(SPR)) s.h = s.sh * s.w / s.sw;
+
+const IMG = {};
+const loadImg = src => new Promise((res, rej) => {
+  const i = new Image();
+  i.onload = () => res(i);
+  i.onerror = () => rej(new Error('Could not load ' + src));
+  i.src = src;
+});
+
+// ---------------------------------------------------------------- audio
+const AUDIO = {};
+let muted = false;
+function addAudio(name, file, volume, loop = false) {
+  const a = new Audio('assets/' + file);
+  a.preload = 'auto';
+  a.loop = loop;
+  a.volume = volume;
+  AUDIO[name] = a;
+}
+addAudio('music', 'music.wav', 0.5, true);
+addAudio('crash', 'sfx_crash.mp3', 0.9);
+addAudio('whoosh', 'sfx_whoosh.mp3', 0.6);
+addAudio('start', 'sfx_start.mp3', 0.7);
+addAudio('coin', 'sfx_coin.mp3', 0.6);
+addAudio('go', 'voice_go.mp3', 1);
+addAudio('gameover', 'voice_gameover.mp3', 1);
+addAudio('closecall', 'voice_closecall.mp3', 1);
+addAudio('faster', 'voice_faster.mp3', 1);
+
+function sfx(name) {
+  if (muted) return null;
+  const c = AUDIO[name].cloneNode();
+  c.volume = AUDIO[name].volume;
+  c.play().catch(() => {});
+  return c;
+}
+let voice = null;
+function say(name, force = false) {
+  if (muted) return;
+  if (voice && !voice.ended && !voice.paused && !force) return;
+  if (voice && force) voice.pause();
+  voice = sfx(name);
+}
+function setMusic(vol, restart = false) {
+  const m = AUDIO.music;
+  m.volume = vol;
+  if (restart) m.currentTime = 0;
+  if (!muted) m.play().catch(() => {});
+}
+function toggleMute() {
+  muted = !muted;
+  if (muted) AUDIO.music.pause();
+  else if (state === 'playing' || state === 'countdown' || state === 'crashed') AUDIO.music.play().catch(() => {});
+}
+
+// ---------------------------------------------------------------- game state
+// lane 0-1: oncoming traffic (sprite faces down). lane 2-3: same direction (rotated 180).
+// k = how fast the car moves down the screen relative to the road scroll speed.
+const LANES = [
+  { onc: true,  k: 1.30 },
+  { onc: true,  k: 1.12 },
+  { onc: false, k: 0.58 },
+  { onc: false, k: 0.42 },
+];
+const KINDS = [
+  ['blue', 0.24], ['taxi', 0.20], ['police', 0.14],
+  ['purple', 0.20], ['truck', 0.12], ['bus', 0.10],
+];
+const S_START = 320, S_MAX = 640;
+
+let state = 'loading';            // loading | title | countdown | playing | paused | crashed | gameover
+let prevState = 'playing';
+let t = 0;                        // seconds of play time
+let S = 0;                        // road scroll speed (px/s)
+let scroll = 0;
+let score = 0;
+let best = +localStorage.getItem('rushhour_best') || 0;
+let newBest = false;
+let combo = 0, comboTimer = 0;
+let coins = 0;
+let spawnTimer = 0, coinTimer = 0, voiceTier = 0;
+let countdown = 0, stateTime = 0, shake = 0, nearFlash = 0;
+let cars = [], pickups = [], floaters = [], booms = [];
+const player = { x: 0, y: 0, vx: 0, vy: 0, w: SPR.player.w, h: SPR.player.h };
+const keys = {};
+let pointer = null;
+
+const streaks = Array.from({ length: 16 }, () => ({
+  x: rand(ROAD_L, ROAD_L + ROAD_W), y: rand(0, H), len: rand(40, 110),
+}));
+
+function resetGame() {
+  t = 0; S = 0; scroll = 0; score = 0; combo = 0; comboTimer = 0; coins = 0;
+  spawnTimer = 1.4; coinTimer = 3; voiceTier = 0; shake = 0; nearFlash = 0; newBest = false;
+  cars = []; pickups = []; floaters = []; booms = [];
+  player.x = laneX(2); player.y = H * 0.78; player.vx = 0; player.vy = 0;
+}
+
+function startRun() {
+  resetGame();
+  state = 'countdown';
+  countdown = 3;
+  stateTime = 0;
+  setMusic(0.5, true);
+  sfx('start');
+}
+
+// ---------------------------------------------------------------- spawning
+function pickWeighted(list) {
+  let r = Math.random() * list.reduce((a, b) => a + b[1], 0);
+  for (const [v, w] of list) { if ((r -= w) <= 0) return v; }
+  return list[0][0];
+}
+const arrival = c => (player.y - c.y) / c.vy;   // seconds until car centre reaches player row
+
+function trySpawn() {
+  const weights = t < 30 ? [.14, .18, .38, .30] : [.22, .24, .28, .26];
+  let lane = 0, r = Math.random();
+  for (let i = 0; i < 4; i++) { if ((r -= weights[i]) <= 0) { lane = i; break; } }
+  const kind = pickWeighted(KINDS);
+  const spr = SPR[kind];
+  const L = LANES[lane];
+
+  // last car in this lane must have cleared a gap
+  for (const c of cars) if (c.lane === lane && c.y - c.h / 2 < 140) return false;
+
+  // fairness: never let too many lanes reach the player's row at the same moment
+  const y0 = -spr.h / 2 - 10;
+  const ta = (player.y - y0) / (S * L.k);
+  const blocked = new Set([lane]);
+  for (const c of cars) {
+    if (c.lane !== lane && Math.abs(arrival(c) - ta) < 0.6) blocked.add(c.lane);
+  }
+  if (blocked.size > (t < 45 ? 2 : 3)) return false;
+
+  cars.push({
+    kind, lane, x: laneX(lane) + rand(-8, 8), y: y0, w: spr.w, h: spr.h,
+    k: L.k, vy: S * L.k, onc: L.onc, minGap: Infinity, inBand: false, done: false,
+  });
+  return true;
+}
+
+function trySpawnCoin() {
+  const lane = Math.floor(Math.random() * 4);
+  for (const c of cars) if (c.lane === lane && c.y - c.h / 2 < 260) return;
+  pickups.push({ x: laneX(lane), y: -30, spin: rand(0, 6) });
+}
+
+// ---------------------------------------------------------------- update
+function playerHit() {
+  state = 'crashed';
+  stateTime = 0;
+  shake = 1;
+  booms.push({ x: player.x, y: player.y - 10, age: 0 });
+  sfx('crash');
+  setTimeout(() => { if (state === 'crashed' || state === 'gameover') say('gameover', true); }, 450);
+  AUDIO.music.volume = 0.15;
+  if (score > best) { best = Math.floor(score); newBest = true; localStorage.setItem('rushhour_best', best); }
+}
+
+function addFloater(text, x, y, color) {
+  floaters.push({ text, x, y, age: 0, color });
+}
+
+function update(dt) {
+  stateTime += dt;
+
+  if (state === 'countdown') {
+    S = lerp(S, S_START, Math.min(1, dt * 2));
+    scroll += S * dt;
+    countdown -= dt / 0.65;
+    if (countdown <= 0) { state = 'playing'; say('go'); }
+    steerPlayer(dt);
+    return;
+  }
+
+  if (state !== 'playing' && state !== 'crashed') return;
+
+  const crashed = state === 'crashed';
+  const target = crashed ? 0 : Math.min(S_MAX, S_START + t * 3.2);
+  S = lerp(S, target, Math.min(1, dt * (crashed ? 2.6 : 1.5)));
+  scroll += S * dt;
+
+  if (!crashed) {
+    t += dt;
+    score += S * dt * 0.02;
+    steerPlayer(dt);
+    comboTimer -= dt;
+    if (comboTimer <= 0) combo = 0;
+    const tier = Math.floor(t / 25);
+    if (tier > voiceTier) { voiceTier = tier; say('faster'); }
+
+    spawnTimer -= dt;
+    if (spawnTimer <= 0) {
+      const base = Math.max(0.34, 0.85 - t * 0.006);
+      spawnTimer = trySpawn() ? base * rand(0.75, 1.25) : 0.1;
+    }
+    coinTimer -= dt;
+    if (coinTimer <= 0) { trySpawnCoin(); coinTimer = rand(2.2, 4.5); }
+  }
+
+  // traffic
+  for (const c of cars) {
+    c.vy = S * c.k;
+    c.y += c.vy * dt;
+  }
+  cars = cars.filter(c => c.y - c.h / 2 < H + 20);
+  for (const p of pickups) { p.y += S * dt; p.spin += dt * 4; }
+  pickups = pickups.filter(p => p.y < H + 40);
+
+  if (!crashed) {
+    const pw = player.w * 0.76, ph = player.h * 0.86;
+    for (const c of cars) {
+      const dx = Math.abs(c.x - player.x), dy = Math.abs(c.y - player.y);
+      // collision
+      if (dx < (pw + c.w * 0.8) / 2 && dy < (ph + c.h * 0.9) / 2) { playerHit(); break; }
+      // near miss: track tightest horizontal gap while overlapping the player's row
+      const band = (c.h + player.h) / 2;
+      if (dy < band) {
+        c.inBand = true;
+        c.minGap = Math.min(c.minGap, dx - (c.w + player.w) / 2);
+      } else if (c.inBand && !c.done && c.y > player.y) {
+        c.done = true;
+        if (c.minGap < 20) {
+          combo = Math.min(5, combo + 1);
+          comboTimer = 3;
+          const pts = 100 * combo;
+          score += pts;
+          nearFlash = 1;
+          addFloater('NEAR MISS +' + pts, player.x, player.y - 60, '#ffe14d');
+          sfx('whoosh');
+          if (combo >= 2 && Math.random() < 0.6) say('closecall');
+        }
+      }
+    }
+    if (state === 'playing') {
+      for (const p of pickups) {
+        if (p.got) continue;
+        if (Math.abs(p.x - player.x) < 36 && Math.abs(p.y - player.y) < player.h / 2 + 14) {
+          p.got = true; p.y = H + 100;
+          coins++; score += 50;
+          addFloater('+50', p.x, player.y - 40, '#ffffff');
+          sfx('coin');
+        }
+      }
+    }
+  }
+
+  for (const f of floaters) f.age += dt;
+  floaters = floaters.filter(f => f.age < 1.1);
+  for (const b of booms) b.age += dt;
+  shake = Math.max(0, shake - dt * 1.6);
+  nearFlash = Math.max(0, nearFlash - dt * 3);
+
+  if (crashed && stateTime > 1.5) { state = 'gameover'; stateTime = 0; }
+}
+
+function steerPlayer(dt) {
+  const accel = 2600, maxV = 430, drag = 7;
+  let ix = (keys.ArrowRight || keys.d ? 1 : 0) - (keys.ArrowLeft || keys.a ? 1 : 0);
+  let iy = (keys.ArrowDown || keys.s ? 1 : 0) - (keys.ArrowUp || keys.w ? 1 : 0);
+  if (pointer) {
+    // finger / mouse drag: steer toward pointer, car sits a bit above the finger
+    const dx = pointer.x - player.x, dy = pointer.y - 70 - player.y;
+    ix = clamp(dx / 40, -1, 1);
+    iy = clamp(dy / 40, -1, 1);
+  }
+  player.vx += ix * accel * dt;
+  player.vy += iy * accel * 0.7 * dt;
+  player.vx -= player.vx * Math.min(1, drag * dt);
+  player.vy -= player.vy * Math.min(1, drag * dt);
+  player.vx = clamp(player.vx, -maxV, maxV);
+  player.vy = clamp(player.vy, -maxV * 0.7, maxV * 0.7);
+  player.x = clamp(player.x + player.vx * dt, ROAD_L + player.w / 2 + 4, ROAD_L + ROAD_W - player.w / 2 - 4);
+  player.y = clamp(player.y + player.vy * dt, H * 0.5, H - player.h / 2 - 16);
+}
+
+// ---------------------------------------------------------------- drawing
+function drawSprite(key, cx, cy, rot = 0, scale = 1, sx = 1) {
+  const s = SPR[key];
+  ctx.save();
+  ctx.translate(cx, cy);
+  if (rot) ctx.rotate(rot);
+  ctx.scale(sx, 1);
+  ctx.drawImage(IMG[key], s.sx, s.sy, s.sw, s.sh, -s.w * scale / 2, -s.h * scale / 2, s.w * scale, s.h * scale);
+  ctx.restore();
+}
+
+function tileRegion(img, size, x0, y0, w, h, ox, oy) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x0, y0, w, h);
+  ctx.clip();
+  const startY = -size + ((oy % size) + size) % size;
+  for (let y = startY; y < H; y += size) {
+    for (let x = x0 - (((x0 - ox) % size) + size) % size; x < x0 + w; x += size) {
+      ctx.drawImage(img, x, y, size, size);
+    }
+  }
+  ctx.restore();
+}
+
+function drawRoad() {
+  tileRegion(IMG.grass, 256, 0, 0, ROAD_L, H, 0, scroll);
+  tileRegion(IMG.grass, 256, ROAD_L + ROAD_W, 0, ROAD_L, H, -110, scroll * 1.0 + 90);
+  tileRegion(IMG.asphalt, 200, ROAD_L, 0, ROAD_W, H, ROAD_L, scroll);
+
+  // soft shoulder shadow on the grass
+  for (const [x, dir] of [[ROAD_L, -1], [ROAD_L + ROAD_W, 1]]) {
+    const g = ctx.createLinearGradient(x, 0, x + dir * 16, 0);
+    g.addColorStop(0, 'rgba(0,0,0,.45)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(dir > 0 ? x : x - 16, 0, 16, H);
+  }
+
+  // lane markings
+  ctx.fillStyle = 'rgba(255,255,255,.92)';
+  ctx.fillRect(ROAD_L + 6, 0, 4, H);
+  ctx.fillRect(ROAD_L + ROAD_W - 10, 0, 4, H);
+  ctx.fillStyle = '#f2b81c';
+  ctx.fillRect(ROAD_L + ROAD_W / 2 - 5, 0, 3, H);
+  ctx.fillRect(ROAD_L + ROAD_W / 2 + 2, 0, 3, H);
+  ctx.fillStyle = 'rgba(255,255,255,.85)';
+  const period = 100, dash = 42, off = scroll % period;
+  for (let y = -period + off; y < H; y += period) {
+    ctx.fillRect(ROAD_L + LANE_W - 2, y, 4, dash);
+    ctx.fillRect(ROAD_L + LANE_W * 3 - 2, y, 4, dash);
+  }
+}
+
+function drawCar(c) {
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.55)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetX = 4;
+  ctx.shadowOffsetY = 6;
+  drawSprite(c.kind, c.x, c.y, c.onc ? 0 : Math.PI);
+  ctx.restore();
+}
+
+function drawPlayer() {
+  const tilt = clamp(player.vx / 430, -1, 1) * 0.14;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.6)';
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetX = 4;
+  ctx.shadowOffsetY = 7;
+  if (state === 'crashed' || state === 'gameover') {
+    ctx.globalAlpha = 0.9;
+    drawSprite('player', player.x, player.y, 0.5, 1);
+  } else {
+    drawSprite('player', player.x, player.y, tilt);
+  }
+  ctx.restore();
+}
+
+function drawBooms() {
+  for (const b of booms) {
+    const k = Math.min(1, b.age / 0.9);
+    const scale = 0.35 + k * 1.15;
+    ctx.save();
+    ctx.globalAlpha = 1 - Math.pow(k, 2.2);
+    ctx.globalCompositeOperation = 'lighter';
+    drawSprite('boom', b.x, b.y, b.age * 1.2, scale);
+    ctx.restore();
+  }
+}
+
+function drawPickups() {
+  for (const p of pickups) {
+    ctx.save();
+    ctx.shadowColor = 'rgba(255,220,60,.9)';
+    ctx.shadowBlur = 16;
+    drawSprite('coin', p.x, p.y, 0, 1, Math.max(0.2, Math.abs(Math.cos(p.spin))));
+    ctx.restore();
+  }
+}
+
+function drawStreaks(dt) {
+  const a = clamp((S - 250) / 400, 0, 0.5);
+  ctx.strokeStyle = `rgba(255,255,255,${a})`;
+  ctx.lineWidth = 2;
+  for (const s of streaks) {
+    s.y += S * 1.6 * dt;
+    if (s.y - s.len > H) { s.y = -10; s.x = rand(ROAD_L, ROAD_L + ROAD_W); s.len = rand(40, 110); }
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y);
+    ctx.lineTo(s.x, s.y - s.len);
+    ctx.stroke();
+  }
+}
+
+function drawTint() {
+  // dusk tint + vignette so the purchased art sits in the same mood as the title
+  ctx.fillStyle = 'rgba(70,20,90,.16)';
+  ctx.fillRect(0, 0, W, H);
+  const g = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.75);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(10,0,25,.55)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  if (nearFlash > 0) {
+    ctx.fillStyle = `rgba(255,225,77,${nearFlash * 0.12})`;
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
+function text(str, x, y, size, color = '#fff', align = 'center', stroke = '#12041f') {
+  ctx.font = `900 ${size}px "Arial Black", Impact, system-ui, sans-serif`;
+  ctx.textAlign = align;
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(3, size / 6);
+  ctx.strokeStyle = stroke;
+  ctx.strokeText(str, x, y);
+  ctx.fillStyle = color;
+  ctx.fillText(str, x, y);
+}
+
+function drawHUD() {
+  text('SCORE', 18, 24, 14, '#ff9bd0', 'left');
+  text(String(Math.floor(score)).padStart(6, '0'), 18, 52, 32, '#fff', 'left');
+  text('BEST', W - 18, 24, 14, '#9be7ff', 'right');
+  text(String(Math.floor(best)).padStart(6, '0'), W - 18, 52, 32, '#fff', 'right');
+  text(Math.round(S * 0.28) + ' km/h', 18, H - 24, 22, '#ffe14d', 'left');
+  text('● ' + coins, W - 18, H - 24, 22, '#ffe14d', 'right');
+  if (combo > 1) text('COMBO x' + combo, W / 2, 92, 26, '#ffe14d');
+  for (const f of floaters) {
+    ctx.globalAlpha = 1 - f.age / 1.1;
+    text(f.text, f.x, f.y - f.age * 50, 22, f.color);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawTitleBackdrop() {
+  const img = IMG.title;
+  const s = Math.max(W / img.width, H / img.height);
+  ctx.drawImage(img, (W - img.width * s) / 2, (H - img.height * s) / 2, img.width * s, img.height * s);
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, 'rgba(10,0,25,.85)');
+  g.addColorStop(0.45, 'rgba(10,0,25,.1)');
+  g.addColorStop(1, 'rgba(10,0,25,.9)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function blink(period = 0.9) { return (performance.now() / 1000 % period) < period * 0.65; }
+
+function drawOverlay() {
+  if (state === 'title') {
+    drawTitleBackdrop();
+    text('RUSH HOUR', W / 2, 120, 76, '#ffcf3a');
+    text('RIALTO', W / 2, 192, 62, '#ff4fa3');
+    text('Dodge the traffic. Grab the coins.', W / 2, 262, 20, '#ffffff');
+    if (blink()) text('PRESS SPACE OR TAP TO START', W / 2, H - 150, 24, '#ffffff');
+    text('← → / A D steer   ↑ ↓ / W S speed position', W / 2, H - 100, 15, '#cfc3ff');
+    text('M mute · P pause · BEST ' + Math.floor(best), W / 2, H - 74, 15, '#cfc3ff');
+    text('Art, music, SFX & voices bought on Rialto', W / 2, H - 30, 13, '#9a8fc9');
+  } else if (state === 'countdown') {
+    const n = Math.ceil(countdown);
+    text(n > 0 ? String(n) : 'GO!', W / 2, H * 0.4, 130, '#ffcf3a');
+  } else if (state === 'paused') {
+    ctx.fillStyle = 'rgba(10,0,25,.6)';
+    ctx.fillRect(0, 0, W, H);
+    text('PAUSED', W / 2, H * 0.42, 70, '#fff');
+    text('press P to resume', W / 2, H * 0.42 + 60, 20, '#cfc3ff');
+  } else if (state === 'gameover') {
+    ctx.fillStyle = 'rgba(10,0,25,.68)';
+    ctx.fillRect(0, 0, W, H);
+    text('WRECKED!', W / 2, 250, 78, '#ff4fa3');
+    text('SCORE', W / 2, 340, 18, '#ff9bd0');
+    text(String(Math.floor(score)), W / 2, 390, 64, '#ffffff');
+    text(newBest ? 'NEW BEST!' : 'BEST ' + Math.floor(best), W / 2, 455, 28, newBest ? '#ffe14d' : '#9be7ff');
+    text('● ' + coins + ' coins', W / 2, 500, 22, '#ffe14d');
+    if (stateTime > 0.6 && blink()) text('SPACE / TAP TO RETRY', W / 2, 600, 26, '#ffffff');
+  }
+}
+
+function render(dt) {
+  ctx.save();
+  if (shake > 0) ctx.translate(rand(-1, 1) * shake * 10, rand(-1, 1) * shake * 10);
+
+  if (state === 'title' || state === 'loading') {
+    ctx.fillStyle = '#0b0614';
+    ctx.fillRect(0, 0, W, H);
+  } else {
+    drawRoad();
+    drawPickups();
+    for (const c of cars) drawCar(c);
+    drawPlayer();
+    drawBooms();
+    drawStreaks(state === 'paused' ? 0 : dt);
+    drawTint();
+    drawHUD();
+  }
+  ctx.restore();
+
+  if (state === 'loading') {
+    text('LOADING…', W / 2, H / 2, 32, '#fff');
+  } else {
+    drawOverlay();
+  }
+}
+
+// ---------------------------------------------------------------- input
+function primary() {
+  if (state === 'title') startRun();
+  else if (state === 'gameover' && stateTime > 0.6) startRun();
+}
+function togglePause() {
+  if (state === 'playing' || state === 'countdown') {
+    prevState = state; state = 'paused';
+    AUDIO.music.pause();
+  } else if (state === 'paused') {
+    state = prevState;
+    if (!muted) AUDIO.music.play().catch(() => {});
+  }
+}
+addEventListener('keydown', e => {
+  if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].includes(e.key)) e.preventDefault();
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  keys[k] = true;
+  if (k === ' ' || k === 'Enter') primary();
+  if (k === 'p' || k === 'Escape') togglePause();
+  if (k === 'm') toggleMute();
+});
+addEventListener('keyup', e => {
+  keys[e.key.length === 1 ? e.key.toLowerCase() : e.key] = false;
+});
+function toCanvas(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height };
+}
+canvas.addEventListener('pointerdown', e => {
+  canvas.setPointerCapture(e.pointerId);
+  pointer = toCanvas(e);
+  primary();
+});
+canvas.addEventListener('pointermove', e => { if (pointer) pointer = toCanvas(e); });
+const release = () => { pointer = null; };
+canvas.addEventListener('pointerup', release);
+canvas.addEventListener('pointercancel', release);
+document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'playing') togglePause(); });
+
+// ---------------------------------------------------------------- main loop
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  if (state !== 'paused' && state !== 'loading' && state !== 'title') update(dt);
+  render(dt);
+  requestAnimationFrame(frame);
+}
+
+Promise.all([
+  ...Object.entries(SPR).map(([k, s]) => loadImg('assets/' + s.file).then(i => { IMG[k] = i; })),
+  loadImg('assets/asphalt.png').then(i => { IMG.asphalt = i; }),
+  loadImg('assets/grass.png').then(i => { IMG.grass = i; }),
+  loadImg('assets/title.jpg').then(i => { IMG.title = i; }),
+]).then(() => {
+  resetGame();
+  state = 'title';
+}).catch(err => {
+  console.error(err);
+  state = 'loading';
+});
+requestAnimationFrame(frame);
+
+// exposed for quick debugging from the console
+window.__game = { get state() { return state; }, startRun };
+})();
+</script>
+</body>
+</html>

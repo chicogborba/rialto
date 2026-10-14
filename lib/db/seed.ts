@@ -2,10 +2,12 @@ import type { PrismaClient } from "@prisma/client";
 import { createHarness, collectRun } from "@/lib/agent/harness";
 import { feeConfigFromEnv, splitFromSellerPrice } from "@/lib/billing/fees";
 import { generateKey } from "@/lib/security/keys";
+import { encryptSecret } from "@/lib/security/secrets";
 import { isSolanaAddress } from "@/lib/x402/solana";
 import { GOAL_CHIPS } from "@/lib/agent/scenarios";
 import { PRESET_WEIGHTS } from "@/lib/routing/weights";
 import { defaultPolicy } from "@/lib/wallet/policy";
+import { BUILT_IN_INTEGRATIONS } from "@/lib/gateway/integrations";
 import {
   DEFAULT_AGENT_BALANCE_MICRO,
   SCHEMAS,
@@ -77,6 +79,107 @@ export async function ensurePokedex(prisma: PrismaClient): Promise<{ created: bo
   return { created: true, payTo };
 }
 
+/** Add or refresh real integrations when their operator credentials are configured. */
+export async function ensureBuiltInIntegrations(prisma: PrismaClient): Promise<string[]> {
+  const wantedPayTo = process.env.SOLANA_PAY_TO?.trim() ?? "";
+  const payTo = isSolanaAddress(wantedPayTo) ? wantedPayTo : "TEST_SELLER_NO_WALLET";
+  const available = BUILT_IN_INTEGRATIONS.filter((integration) => Boolean(process.env[integration.envKey]?.trim()));
+
+  for (const integration of available) {
+    const apiKey = process.env[integration.envKey]?.trim();
+    if (!apiKey) continue;
+    const encryptedHeaders = encryptSecret(JSON.stringify({ [integration.headerName]: `${integration.authScheme}${apiKey}` }));
+    const split = splitFromSellerPrice(integration.sellerPriceMicro, feeConfigFromEnv());
+    const existing = await prisma.provider.findUnique({ where: { slug: integration.slug }, select: { id: true, sellerId: true } });
+
+    if (existing) {
+      await prisma.provider.update({
+        where: { id: existing.id },
+        data: {
+          name: integration.name,
+          description: integration.description,
+          status: "online",
+          qualityScore: integration.quality,
+          latencyMs: integration.latencyMs,
+          payTo,
+          seller: existing.sellerId ? { update: { payoutAddress: payTo } } : undefined,
+          services: {
+            upsert: {
+              where: { providerId_capability: { providerId: existing.id, capability: integration.capability } },
+              update: {
+                endpoint: `/api/gw/${integration.slug}/${integration.capability}`,
+                priceMicro: split.buyerMicro,
+                sellerPriceMicro: split.sellerMicro,
+                upstreamUrl: integration.upstreamUrl,
+                upstreamMethod: integration.upstreamMethod,
+                upstreamBody: integration.upstreamBody,
+                upstreamHeaders: encryptedHeaders,
+                resultPick: integration.resultPick,
+                inputSchema: SCHEMAS[integration.capability].input,
+                outputSchema: SCHEMAS[integration.capability].output,
+              },
+              create: {
+                capability: integration.capability,
+                endpoint: `/api/gw/${integration.slug}/${integration.capability}`,
+                priceMicro: split.buyerMicro,
+                sellerPriceMicro: split.sellerMicro,
+                capabilityMatch: 1,
+                upstreamUrl: integration.upstreamUrl,
+                upstreamMethod: integration.upstreamMethod,
+                upstreamBody: integration.upstreamBody,
+                upstreamHeaders: encryptedHeaders,
+                resultPick: integration.resultPick,
+                inputSchema: SCHEMAS[integration.capability].input,
+                outputSchema: SCHEMAS[integration.capability].output,
+              },
+            },
+          },
+        },
+      });
+      continue;
+    }
+
+    const sellerKey = generateKey("seller");
+    const seller = await prisma.seller.create({ data: { name: integration.seller, payoutAddress: payTo, keyHash: sellerKey.hash, keyPrefix: sellerKey.prefix } });
+    await prisma.provider.create({
+      data: {
+        slug: integration.slug,
+        name: integration.name,
+        description: integration.description,
+        network: "solana-devnet",
+        x402Enabled: true,
+        status: "online",
+        qualityScore: integration.quality,
+        reputationScore: 80,
+        successRate: 100,
+        latencyMs: integration.latencyMs,
+        requestCount: 0,
+        isDemo: false,
+        payTo,
+        sellerId: seller.id,
+        services: {
+          create: {
+            capability: integration.capability,
+            endpoint: `/api/gw/${integration.slug}/${integration.capability}`,
+            priceMicro: split.buyerMicro,
+            sellerPriceMicro: split.sellerMicro,
+            capabilityMatch: 1,
+            upstreamUrl: integration.upstreamUrl,
+            upstreamMethod: integration.upstreamMethod,
+            upstreamBody: integration.upstreamBody,
+            upstreamHeaders: encryptedHeaders,
+            resultPick: integration.resultPick,
+            inputSchema: SCHEMAS[integration.capability].input,
+            outputSchema: SCHEMAS[integration.capability].output,
+          },
+        },
+      },
+    });
+  }
+
+  return available.map((integration) => integration.slug);
+}
+
 /** Wipes and reseeds everything. Safe to call from the reset route. */
 export async function seedDatabase(prisma: PrismaClient, now: Date = new Date()): Promise<void> {
   await prisma.ledgerEntry.deleteMany();
@@ -112,6 +215,7 @@ export async function seedDatabase(prisma: PrismaClient, now: Date = new Date())
     });
   }
   await ensurePokedex(prisma);
+  await ensureBuiltInIntegrations(prisma);
   await prisma.agent.create({
     data: {
       id: "agent_default",

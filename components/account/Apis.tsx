@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { HardButton, Label, Panel, SegTabs } from "@/components/primitives";
-import { ALL_CAPABILITIES, CAPABILITY_LABELS } from "@/lib/agent/capabilities";
+import { ALL_CAPABILITIES, CAPABILITY_LABELS, isCapabilityId } from "@/lib/agent/capabilities";
+import { SAMPLE_GOALS } from "@/lib/agent/scenarios";
 import { api } from "@/lib/client/api";
 import { useAccount } from "@/lib/client/account";
 import { formatUsd } from "@/lib/money";
@@ -128,7 +129,7 @@ export function Apis() {
 
   const test = async (id: string, capability: string) => {
     setTests((t) => ({ ...t, [id]: "running" }));
-    const goal = capability === "model.3d" ? "Generate a 3D model of a low-poly orange delivery van with rounded edges." : capability === "audio.speech" ? 'Say "Welcome to Rialto" in a natural voice.' : "Look up the Pokémon pikachu.";
+    const goal = isCapabilityId(capability) ? SAMPLE_GOALS[capability] : SAMPLE_GOALS["data.lookup"];
     const r = await api<TestResult>(`/api/sellers/me/apis/${id}/test`, { json: { goal } });
     setTests((t) => ({ ...t, [id]: r.data ?? { ok: false, latencyMs: 0, error: r.error ?? "failed" } }));
   };
@@ -243,7 +244,7 @@ export function Apis() {
               <Field label="Short description" className="md:col-span-2">
                 <input className={inputCls} value={f.description} onChange={(e) => set("description", e.target.value)} maxLength={200} />
               </Field>
-              <Field label="Your endpoint (https)" hint="Use {query} for the main thing the agent asks about, or {goal} for the whole request. Placeholders go in the path or query, never the host." className="md:col-span-2">
+              <Field label="Your endpoint (https)" hint="Use {query} for the main thing the agent asks about (or the text in quotes), {goal} for the whole request, {url} for the link of a file in it and {text} for the request without links. Placeholders go in the path or query, never the host." className="md:col-span-2">
                 <input className={inputCls} value={f.upstreamUrl} onChange={(e) => set("upstreamUrl", e.target.value)} placeholder="https://api.example.com/v1/lookup/{query}" spellCheck={false} />
               </Field>
               <div>
@@ -253,7 +254,7 @@ export function Apis() {
                 </div>
               </div>
               {f.method === "POST" && (
-                <Field label="Body template (JSON)" hint={f.capability === "audio.speech" ? "Use {query}; ask the agent to say a short quoted phrase (up to 80 characters)." : f.capability === "model.3d" ? "Tripo uses {goal} as the full 3D-model prompt and Rialto waits for its task to finish." : 'Default: {"query":"{query}"}'}>
+                <Field label="Body template (JSON)" hint={f.capability === "audio.speech" ? "Use {query}: the text the agent puts in double quotes." : f.capability === "model.3d" ? "Tripo uses {goal} as the full 3D-model prompt and Rialto waits for its task to finish." : 'Default: {"query":"{query}"}. For an API that works on a file: {"image_url":"{url}","prompt":"{text}"}'}>
                   <textarea className={`${inputCls} min-h-24`} value={f.bodyTemplate} onChange={(e) => set("bodyTemplate", e.target.value)} placeholder='{"q":"{query}"}' />
                 </Field>
               )}

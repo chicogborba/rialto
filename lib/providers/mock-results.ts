@@ -99,6 +99,25 @@ export function buildMockResult(capability: CapabilityId, provider: string, body
           "A notificação às partes envolvidas deve ocorrer em até 24 horas.",
         ],
       };
+    case "image.generate":
+    case "image.edit":
+    case "image.upscale":
+    case "image.background_removal":
+      return { ...base, image: "https://assets.example.com/images/sample.png", note: "Demo image provider: connect a live API to receive an image." };
+    case "image.vector":
+      return { ...base, image: "https://assets.example.com/images/sample.svg", note: "Demo vector provider: connect a live API to receive an SVG." };
+    case "vision.describe":
+      return { ...base, description: "A red hatchback seen from above on a two-lane road.", note: "Demo vision provider: connect a live API to describe your own image." };
+    case "audio.transcribe":
+      return { ...base, text: "Welcome to Rialto.", language: "en", note: "Demo transcription provider: connect a live API to transcribe your own audio." };
+    case "video.generate":
+      return { ...base, video: "https://assets.example.com/video/sample.mp4", note: "Demo video provider: connect a live API to receive a clip." };
+    case "model.image_to_3d":
+      return { ...base, model: "https://assets.example.com/models/from-image.glb", note: "Demo 3D provider: connect a live API to receive a downloadable GLB model." };
+    case "audio.sfx":
+      return { ...base, audio: "https://assets.example.com/audio/car-horn.mp3", note: "Demo sound-effect provider: connect a live API to receive audio." };
+    case "audio.music":
+      return { ...base, audio: "https://assets.example.com/audio/racing-loop.mp3", note: "Demo music provider: connect a live API to receive audio." };
     case "audio.speech":
       return {
         ...base,

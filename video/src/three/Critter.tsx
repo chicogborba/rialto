@@ -32,6 +32,10 @@ export interface CritterProps {
   /** the artist's kit */
   beret?: boolean;
   moustache?: boolean;
+  /** the team's avatars: a haircut, and for two of them a pair of glasses */
+  glasses?: "round" | "square";
+  hair?: "quiff" | "long" | "tied";
+  hairColor?: string;
   /** something held in a hand; it swings with the arm (x points out along the arm) */
   handL?: React.ReactNode;
   handR?: React.ReactNode;
@@ -64,6 +68,9 @@ export const Critter: React.FC<CritterProps> = ({
   steady = false,
   beret = false,
   moustache = false,
+  glasses,
+  hair,
+  hairColor = "#3b2a22",
   handL,
   handR,
   children,
@@ -158,6 +165,70 @@ export const Critter: React.FC<CritterProps> = ({
               <boxGeometry args={[0.07, 0.12, 0.07]} />
               <Mat color="#1d1b22" />
             </mesh>
+          </group>
+        ) : null}
+        {glasses ? (
+          <group position={[0, 0.13, FACE_Z + 0.03]}>
+            {[-1, 1].map((side) =>
+              glasses === "round" ? (
+                <mesh key={side} position={[side * 0.47, 0, 0]}>
+                  <torusGeometry args={[0.3, 0.04, 6, 20]} />
+                  <meshBasicMaterial color={C.ink} />
+                </mesh>
+              ) : (
+                <group key={side} position={[side * 0.47, 0, 0]}>
+                  {[
+                    [0, 0.26, 0.5, 0.07],
+                    [0, -0.26, 0.5, 0.045],
+                    [-0.23, 0, 0.045, 0.52],
+                    [0.23, 0, 0.045, 0.52],
+                  ].map(([x, y, w, h], i) => (
+                    <mesh key={i} position={[x, y, 0]}>
+                      <boxGeometry args={[w, h, 0.05]} />
+                      <meshBasicMaterial color={C.ink} />
+                    </mesh>
+                  ))}
+                </group>
+              ),
+            )}
+            <mesh position={[0, glasses === "round" ? 0.02 : 0.24, 0]}>
+              <boxGeometry args={[glasses === "round" ? 0.36 : 0.46, 0.05, 0.05]} />
+              <meshBasicMaterial color={C.ink} />
+            </mesh>
+          </group>
+        ) : null}
+        {hair ? (
+          <group>
+            <mesh position={[0, BODY.h / 2 + 0.08, -0.02]} castShadow>
+              <boxGeometry args={[BODY.w + 0.08, 0.2, BODY.d + 0.1]} />
+              <Mat color={hairColor} />
+            </mesh>
+            {hair === "quiff" ? (
+              <mesh position={[0.12, BODY.h / 2 + 0.26, 0.2]} rotation={[-0.38, 0, -0.06]} castShadow>
+                <boxGeometry args={[BODY.w * 0.74, 0.3, 0.5]} />
+                <Mat color={hairColor} />
+              </mesh>
+            ) : null}
+            {hair === "long" ? (
+              <>
+                <mesh position={[0, -0.3, -BODY.d / 2 - 0.04]} castShadow>
+                  <boxGeometry args={[BODY.w + 0.5, 1.45, 0.26]} />
+                  <Mat color={hairColor} />
+                </mesh>
+                {[-1, 1].map((side) => (
+                  <mesh key={side} position={[side * (BODY.w / 2 - 0.07), 0.18, FACE_Z]}>
+                    <boxGeometry args={[0.2, 0.86, 0.08]} />
+                    <Mat color={hairColor} />
+                  </mesh>
+                ))}
+              </>
+            ) : null}
+            {hair === "tied" ? (
+              <mesh position={[0, BODY.h / 2 + 0.3, -0.2]} rotation={[0.3, 0.5, 0]} castShadow>
+                <boxGeometry args={[0.38, 0.38, 0.38]} />
+                <Mat color={hairColor} />
+              </mesh>
+            ) : null}
           </group>
         ) : null}
         {children}

@@ -18,6 +18,7 @@ const MODEL_ID = "eleven_multilingual_v2";
 
 /** id = scene number + letter. The same text is shown as the caption. */
 export const LINES = [
+  ["0a", "One pitch, coming right up."],
   ["1a", "Your AI agent is smart."],
   ["1b", "But it builds everything from scratch."],
   ["1c", "Slow. And expensive."],
@@ -37,6 +38,25 @@ export const LINES = [
   ["7a", "Got an API? Publish it."],
   ["7b", "And get paid on every call."],
   ["8a", "Rialto. Agents that hire."],
+  // the second half of the three-minute pitch: demo, Solana, what is live, market, team, vision
+  ["9a", "Same game. Same agent. Same prompt."],
+  ["9b", "From scratch, you get this."],
+  ["9c", "With Rialto, you get this."],
+  ["10a", "Why Solana? One API call costs a third of a cent."],
+  ["10b", "A card fee alone is a hundred times that."],
+  ["10c", "On Solana it settles in about a second, for a fraction of a cent."],
+  ["11a", "And this is not a slide. It is live."],
+  ["11b", "Real APIs. Real payments on Solana devnet. Working today with Claude Code and Codex."],
+  ["12a", "Agents are becoming the internet's new customers."],
+  ["12b", "Every call is a sale, and Rialto takes five percent."],
+  ["12c", "More APIs bring more agents. More agents bring more APIs."],
+  ["13a", "Who is building it? Three computer science students from PUCRS, in Brazil."],
+  ["13b", "Francisco. Risk operations and computer vision."],
+  ["13c", "Rodrigo. Apple Developer Academy."],
+  ["13d", "Isadora. Apple Developer Academy, and HP's LIS project."],
+  ["13e", "From idea to live payments in one week."],
+  ["14a", "Today, agents hire APIs. Tomorrow, agents hire agents."],
+  ["14b", "A whole economy at machine speed. On Solana."],
 ];
 
 const key = process.env.ELEVENLABS_API_KEY;
@@ -99,6 +119,7 @@ for (const [i, [id, text]] of LINES.entries()) {
   console.log(`${id}  ${manifest[id].seconds.toFixed(2)}s  ${text}`);
 }
 
-const ordered = Object.fromEntries(LINES.map(([id]) => [id, manifest[id]]).filter(([, v]) => v));
+// lines recorded elsewhere (the demo's, and ones tightened by hand) stay in the manifest
+const ordered = { ...Object.fromEntries(LINES.map(([id]) => [id, manifest[id]]).filter(([, v]) => v)), ...Object.fromEntries(Object.entries(manifest).filter(([id]) => !LINES.some(([known]) => known === id))) };
 writeFileSync(manifestPath, `${JSON.stringify(ordered, null, 2)}\n`);
 console.log(spent ? `Done. About ${spent} credits used.` : "Nothing to do: every line is already recorded.");

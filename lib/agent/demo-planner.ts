@@ -15,7 +15,7 @@ import {
   type ScoredCandidate,
 } from "@/lib/types";
 import { CAPABILITY_LABELS, CORROBORABLE } from "./capabilities";
-import { matchScenario } from "./scenarios";
+import { directScenario, matchScenario, type Route } from "./scenarios";
 
 function criticalPathMs(dag: DagNode[], latencyOf: Map<string, number>): number {
   const memo = new Map<string, number>();
@@ -34,6 +34,9 @@ function criticalPathMs(dag: DagNode[], latencyOf: Map<string, number>): number 
 
 /** Deterministic rule-based planner: decompose → qualify → score → explain. No LLM. */
 export class DemoAgentPlanner implements AgentPlanner {
+  /** `route` pins the capability and/or the provider; without it the goal's wording decides. */
+  constructor(private readonly route: Route = {}) {}
+
   plan(
     goal: string,
     constraints: Constraints,
@@ -46,10 +49,12 @@ export class DemoAgentPlanner implements AgentPlanner {
   planSync(
     goal: string,
     constraints: Constraints,
-    available: Candidate[],
+    everyone: Candidate[],
     history: ProviderHistory,
   ): ExecutionPlan {
-    const scenario = matchScenario(goal);
+    const { capability, providerId } = this.route;
+    const available = providerId ? everyone.filter((c) => c.provider.id === providerId) : everyone;
+    const scenario = capability ? directScenario(capability) : matchScenario(goal);
     const { dag } = scenario;
     const { policy, weights, budgetMicro } = constraints;
     const steps: PlanStep[] = [];
@@ -57,7 +62,9 @@ export class DemoAgentPlanner implements AgentPlanner {
 
     // Cheapest policy-qualified price per capability (ignoring budget) — reserved for later steps.
     const cheapest = (capability: DagNode["capability"]): MicroUsdc => {
-      const { qualified } = qualify(available, capability, policy, Number.POSITIVE_INFINITY);
+      const offered = available.filter((c) => c.service.capability === capability);
+      const real = offered.filter((c) => !c.provider.isDemo);
+      const { qualified } = qualify(real.length > 0 ? real : offered, capability, policy, Number.POSITIVE_INFINITY);
       return qualified.length ? Math.min(...qualified.map((c) => c.service.priceMicro)) : 0;
     };
 
@@ -66,7 +73,9 @@ export class DemoAgentPlanner implements AgentPlanner {
       const remaining = budgetMicro - committed - reserveLater;
 
       const discovered = available.filter((c) => c.service.capability === node.capability);
-      const { qualified, rejected } = qualify(available, node.capability, policy, remaining);
+      // the fictional demo providers stand in only where nobody with a real API offers the capability
+      const real = discovered.filter((c) => !c.provider.isDemo);
+      const { qualified, rejected } = qualify(real.length > 0 ? real : discovered, node.capability, policy, remaining);
       if (qualified.length === 0) throw new NoQualifiedProviderError(node.capability, rejected);
 
       const scored = scoreCandidates(qualified, weights, history);
@@ -131,7 +140,9 @@ export class DemoAgentPlanner implements AgentPlanner {
     const reasoning =
       scenario.id === "generic"
         ? `No specialised plan matched; using generic research plan. Capabilities: ${caps}. ${picks}.`
-        : `Goal matched "${scenario.id}" scenario. Capabilities: ${caps}. ${picks}.`;
+        : scenario.id === "direct"
+          ? `Capability chosen by the caller${providerId ? ", and the provider too" : ""}. ${picks}.`
+          : `Goal matched "${scenario.id}" scenario. Capabilities: ${caps}. ${picks}.`;
 
     return {
       goal,

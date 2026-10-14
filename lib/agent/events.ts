@@ -118,7 +118,6 @@ export interface RunEventBase {
 }
 
 export type RunEvent = RunEventBase & RunEventBody;
-export type RunEventType = RunEvent["type"];
 
 /** One-line human string for the event stream / timeline. */
 export function describeEvent(e: RunEvent, nameOf: (providerId: string) => string = (id) => id): string {

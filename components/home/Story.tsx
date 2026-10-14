@@ -107,7 +107,7 @@ export function Story() {
   };
 
   return (
-    <div ref={wrapRef} className="relative h-[580vh]">
+    <div ref={wrapRef} className="relative h-[430vh] md:h-[580vh]">
       <div className="sticky top-0 flex h-[100svh] flex-col justify-center overflow-hidden">
         {/* phones: a shorter stage so the scene stays big, caption right under it */}
         <div className="relative h-[56svh] shrink-0 md:h-auto md:min-h-0 md:flex-1 md:shrink">

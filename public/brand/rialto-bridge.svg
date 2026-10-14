@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Rialto bridge mark</title>
+  <desc id="desc">A lime bridge connects a buyer and a service through an orange payment tile.</desc>
+  <path fill="#17120f" d="M56 48h400v416H56z"/>
+  <path fill="#f6efe0" d="M80 72h352v176H80z"/>
+  <path fill="#c6ff3d" d="M80 272h352v168H80z"/>
+  <path fill="#17120f" d="M112 112h96v96h-96zm192 0h96v96h-96zM112 344h96v56h-96zm192 0h96v56h-96z"/>
+  <path fill="#17120f" d="M184 208h48v48h-48zm96 0h48v48h-48zm-48 32h48v72h-48z"/>
+  <path fill="#ee7a35" d="M208 184h96v96h-96z"/>
+  <path fill="#17120f" d="M232 208h48v12h-48zm0 28h48v12h-48zm0 28h24v12h-24z"/>
+</svg>

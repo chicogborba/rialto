@@ -3,19 +3,10 @@
 /**
  * Tiny synthesized sound effects for the mascot (Web Audio, no assets).
  * Audio only starts from a user gesture (a click on the critter), which satisfies autoplay rules.
- * Mute preference is remembered; every storage access is guarded.
  */
 
 type Ctx = AudioContext;
 let ctx: Ctx | null = null;
-let muted = false;
-const KEY = "sy-muted";
-
-try {
-  muted = window.localStorage.getItem(KEY) === "1";
-} catch {
-  /* storage blocked: default to sound on */
-}
 
 function context(): Ctx | null {
   if (typeof window === "undefined") return null;
@@ -24,19 +15,6 @@ function context(): Ctx | null {
   ctx ??= new AC();
   if (ctx.state === "suspended") void ctx.resume();
   return ctx;
-}
-
-export function isMuted(): boolean {
-  return muted;
-}
-
-export function setMuted(next: boolean): void {
-  muted = next;
-  try {
-    window.localStorage.setItem(KEY, next ? "1" : "0");
-  } catch {
-    /* ignore */
-  }
 }
 
 interface Tone {
@@ -80,7 +58,6 @@ function play(c: Ctx, tones: Tone[]): void {
 
 /** variant matches Mascot.poke(): 0 boing, 1 giggle, 2 squish-pop, 3 dizzy */
 export function pokeSound(variant: number): void {
-  if (muted) return;
   const c = context();
   if (!c) return;
   switch (variant) {

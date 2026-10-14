@@ -6,6 +6,8 @@ import { Buddy } from "./Buddy";
 
 /** Longest we keep the page covered: a slow connection should still get in. */
 const MAX_WAIT_MS = 8000;
+/** Phones get less patience: the page is usable underneath long before the third scene has downloaded. */
+const MAX_WAIT_MOBILE_MS = 4000;
 const TASKS = 3;
 
 /**
@@ -31,7 +33,7 @@ export function Preloader() {
     document.documentElement.style.overflow = "hidden";
     tasks.forEach((task) => task.then(() => setDone((n) => Math.min(TASKS, n + 1))));
     Promise.all(tasks).then(finish);
-    const timer = setTimeout(finish, MAX_WAIT_MS);
+    const timer = setTimeout(finish, window.innerWidth < 768 ? MAX_WAIT_MOBILE_MS : MAX_WAIT_MS);
     return () => {
       clearTimeout(timer);
       document.documentElement.style.overflow = "";

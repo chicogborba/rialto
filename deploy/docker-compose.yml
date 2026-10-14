@@ -46,6 +46,15 @@ services:
       - traefik.http.routers.rialto.tls.certresolver=le
       - traefik.http.routers.rialto.middlewares=rialto-headers
       - traefik.http.services.rialto.loadbalancer.server.port=3000
+      # www.<domain> -> <domain>; needs its own cert, so it gets the resolver too
+      - traefik.http.routers.rialto-www.rule=Host(`www.${DOMAIN}`)
+      - traefik.http.routers.rialto-www.entrypoints=websecure
+      - traefik.http.routers.rialto-www.tls.certresolver=le
+      - traefik.http.routers.rialto-www.middlewares=rialto-www-redirect
+      - traefik.http.routers.rialto-www.service=rialto
+      - traefik.http.middlewares.rialto-www-redirect.redirectregex.regex=^https://www\.(.*)
+      - traefik.http.middlewares.rialto-www-redirect.redirectregex.replacement=https://$${1}
+      - traefik.http.middlewares.rialto-www-redirect.redirectregex.permanent=true
       - traefik.http.middlewares.rialto-headers.headers.stsSeconds=31536000
       - traefik.http.middlewares.rialto-headers.headers.stsIncludeSubdomains=true
       - traefik.http.middlewares.rialto-headers.headers.contentTypeNosniff=true

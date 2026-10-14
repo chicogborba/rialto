@@ -4,7 +4,7 @@ Rialto ships in two shapes.
 
 ## 1. Landing page on GitHub Pages (static)
 
-GitHub Pages can only host static files, so the Pages build is an **export of the landing page only**: the 3D story, comparisons and a *recorded* demo run. Links that need the backend (`/signup`, `/login`) point to the repository's quickstart, and a small banner says so.
+The platform itself runs at https://galleriarialto.com (section 2). GitHub Pages can only host static files, so the Pages build is an **export of the pages that need no server**: the landing page, the demo page and an empty catalog. Links that need the backend (`/signup`, `/login`) point to the repository's quickstart, and a small banner says so.
 
 It deploys automatically on every push to `main` via `.github/workflows/pages.yml`.
 
@@ -45,7 +45,7 @@ push to main ─▶ GitHub Actions ─▶ ghcr.io/<owner>/rialto:sha-…  ─ssh
 
 ### First time
 
-1. **A server and a name.** Any Ubuntu/Debian VPS with ports 22, 80 and 443 open. Point a DNS A record at it. Without a domain, `<server-ip>.sslip.io` works and still gets a certificate.
+1. **A server and a name.** Any Ubuntu/Debian VPS with ports 22, 80 and 443 open. Point a DNS A record at it. Without a domain, `<server-ip>.sslip.io` works and still gets a certificate. With a real domain, also point `www` at the server (a CNAME to the domain): Traefik gets a certificate for it and redirects `www.DOMAIN` to `DOMAIN`.
 2. **Set the server up** (as root). The script also creates a `deploy` user for the workflow; give it a key made for that purpose:
 
    ```bash
@@ -87,6 +87,7 @@ All from `/opt/rialto` on the server.
 |---|---|
 | See logs | `docker compose logs -f app` |
 | Restart after editing `.env` | `docker compose up -d` |
+| Change the domain | set `DOMAIN` in `.env`, then `docker compose up -d`; the new certificate is issued on the first request |
 | Back the database up now | `docker compose exec app npm run -s db:backup` (kept in the `data` volume, last 14) |
 | Back up nightly | already scheduled by the setup script (`/etc/cron.d/rialto-backup`, 04:00) |
 | Reset the demo data | `curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" https://DOMAIN/api/reset` |

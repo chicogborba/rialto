@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 357.88 100" role="img" aria-label="Rialto">
+  <path d="M3 3H72L93 21V42L80 54L97 71V97H65L39 71V38L29 48V97H3Z" fill="#f6efe0" stroke="#f6efe0" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M16 16H40L48 24V50" fill="none" stroke="#17120f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M48 50L84 86" fill="none" stroke="#17120f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M30.5 10.5L36 16L30.5 21.5" fill="none" stroke="#17120f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M64.5 74.5H72.5V66.5" fill="none" stroke="#17120f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="8.5" y="8.5" width="15" height="15" rx="2.6" fill="#c6ff3d"/>
+  <rect x="40.5" y="42.5" width="15" height="15" rx="2.6" fill="#ee7a35"/>
+  <rect x="76.5" y="78.5" width="15" height="15" rx="2.6" fill="#ee7a35"/>
+  <g transform="translate(126 20) scale(0.62)" fill="#f6efe0" fill-rule="evenodd"><path transform="translate(0)" d="M0 3a3 3 0 0 1 3-3H54A24 24 0 0 1 78 24V38A24 24 0 0 1 61 61L84 100H56L37 64H24V97a3 3 0 0 1-3 3H3a3 3 0 0 1-3-3ZM24 20H48A6 6 0 0 1 54 26V36A6 6 0 0 1 48 42H24Z"/><path transform="translate(93)" d="M3 0H21a3 3 0 0 1 3 3V17a3 3 0 0 1-3 3H3a3 3 0 0 1-3-3V3a3 3 0 0 1 3-3ZM3 30H21a3 3 0 0 1 3 3V97a3 3 0 0 1-3 3H3a3 3 0 0 1-3-3V33a3 3 0 0 1 3-3Z"/><path transform="translate(126)" d="M7 30H54A18 18 0 0 1 72 48V97a3 3 0 0 1-3 3H18A18 18 0 0 1 0 82V75A17 17 0 0 1 17 58H48V48H7a3 3 0 0 1-3-3V33a3 3 0 0 1 3-3ZM29 72H48V86H29a5 5 0 0 1-5-5V77a5 5 0 0 1 5-5Z"/><path transform="translate(207)" d="M3 0H21a3 3 0 0 1 3 3V97a3 3 0 0 1-3 3H3a3 3 0 0 1-3-3V3a3 3 0 0 1 3-3Z"/><path transform="translate(240)" d="M13 8H31a3 3 0 0 1 3 3V30H47a3 3 0 0 1 3 3V45a3 3 0 0 1-3 3H34V77a5 5 0 0 0 5 5H47a3 3 0 0 1 3 3V97a3 3 0 0 1-3 3H30A20 20 0 0 1 10 80V48H3a3 3 0 0 1-3-3V33a3 3 0 0 1 3-3H10V11a3 3 0 0 1 3-3Z"/><path transform="translate(298)" d="M24 30H52A24 24 0 0 1 76 54V76A24 24 0 0 1 52 100H24A24 24 0 0 1 0 76V54A24 24 0 0 1 24 30ZM32 50H44a8 8 0 0 1 8 8V72a8 8 0 0 1-8 8H32a8 8 0 0 1-8-8V58a8 8 0 0 1 8-8Z"/></g>
+</svg>

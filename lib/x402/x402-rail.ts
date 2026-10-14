@@ -20,6 +20,17 @@ const MAX_TIMEOUT_SECONDS = 60;
  * Provider side: the facilitator verifies that transaction against the requirements, and submits
  * it only after the seller's API has answered. The settlement reference is the on-chain signature.
  */
+/** True once the network has confirmed `signature` without an error; false if it has not within `ms`. */
+async function transactionLanded(rpcUrl: string, signature: string, ms = 25_000): Promise<boolean> {
+  for (const end = Date.now() + ms; Date.now() < end; await new Promise((r) => setTimeout(r, 1500))) {
+    const res = await fetch(rpcUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getSignatureStatuses", params: [[signature], { searchTransactionHistory: true }] }) });
+    const status = ((await res.json()) as { result?: { value?: ({ err: unknown; confirmationStatus?: string } | null)[] } }).result?.value?.[0];
+    if (status?.err) return false;
+    if (status && (status.confirmationStatus === "confirmed" || status.confirmationStatus === "finalized")) return true;
+  }
+  return false;
+}
+
 export class X402PaymentRail implements PaymentRail {
   readonly mode = "live" as const;
   private readonly facilitator: HTTPFacilitatorClient;
@@ -119,7 +130,16 @@ export class X402PaymentRail implements PaymentRail {
     const payload = this.decode(auth);
     if (!payload) throw new Error("bad_payload");
     const res = await this.facilitator.settle(payload, await this.toX402(req));
-    if (!res.success || !res.transaction) throw new Error(res.errorReason ?? "settlement_failed");
+    if (!res.success || !res.transaction) {
+      // "Pending" is not a refusal: the facilitator sent the transaction and stopped waiting for
+      // the network. When it told us which one, watch it land ourselves before calling it a failure.
+      const landed = res.transaction && /pending/i.test(res.errorReason ?? "") ? await transactionLanded(this.cfg.rpcUrl, res.transaction).catch(() => false) : false;
+      if (!landed) {
+        console.warn("[rialto-pay] not settled:", JSON.stringify(res).slice(0, 300));
+        throw new Error(res.errorReason ?? "settlement_failed");
+      }
+      res.success = true;
+    }
     this.settled.set(auth.payload, res);
     if (this.settled.size > 200) for (const k of this.settled.keys()) { this.settled.delete(k); break; }
     return { mode: "live", txRef: res.transaction, explorerUrl: explorerTx(res.transaction), settledAt: this.clock.now() };

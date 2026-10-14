@@ -1,6 +1,12 @@
-# Rialto pitch video
+# Rialto videos
 
-A 66-second animated pitch, built with [Remotion](https://www.remotion.dev) and Three.js: eight low-poly scenes, a narrator, captions that light up word by word, music that ducks under the voice. Every frame is a pure function of the frame number, so it renders deterministically.
+The pitch and the product demo, built with [Remotion](https://www.remotion.dev) and Three.js: low-poly scenes, a narrator, captions that light up word by word, music that ducks under the voice. Every frame is a pure function of the frame number, so they render deterministically.
+
+| Composition | What | Render |
+|---|---|---|
+| `RialtoPitch` | The animated pitch (`src/Video.tsx`, scenes in `src/scenes/`) | `npm run render` |
+| `RialtoDemo` | The product demo (`src/demo/`): recordings of the real site and of a real Claude Code session, with the two games side by side | `npm run render:demo` |
+| `Thumbs`, `HeroCard` | Thumbnails and the asset the agent buys in the pitch | `npx remotion still …`, `npm run hero` |
 
 ```bash
 cd video
@@ -20,6 +26,8 @@ npx remotion render RialtoPitch out/raw.mp4 --props='{"narration":false,"music":
 ```
 
 ## Script
+
+This is the 66-second cut that plays on the landing page. The timeline in `src/timeline.ts` has since grown into a two-minute cut with a cold open and scenes on Solana, the market, the team and what comes next.
 
 | # | Scene | On screen | Narration |
 |---|---|---|---|
@@ -52,6 +60,10 @@ VOICE_ID=nPczCjzI2devNBz1zQrb npm run voiceover -- --all   # another voice (this
 ```
 
 One character costs one credit; the whole script is about 630. If a line gets longer, check that the next line in `CUES` (and the scene length in `DURATIONS`) still leaves room for it.
+
+## Demo footage
+
+`npm run record:demo` (`scripts/record-demo.mjs`) drives headless Chrome over the DevTools protocol and records the running site into `public/demo/takes/` as video plus a cursor track and timing marks. The videos themselves are git-ignored; the marks are kept. Start the app on a clean database first, and use `http://localhost:<port>`, not `127.0.0.1`: Next's dev server refuses dev assets to other origins and the page never hydrates. `scripts/record-terminal.py` and `scripts/terminal-player.html` do the same for a terminal session.
 
 ## Credits and licences
 

@@ -4,20 +4,42 @@ export interface GatewayInput {
   goal: string;
   /** the main noun of the request: quoted text, the word after "of/about/for/named", else the last word */
   query: string;
+  /** the first link in the request: the image or audio file an API should work on; "" when there is none */
+  url: string;
+  /** the request without its links: the instruction that goes with `url` */
+  text: string;
 }
+
+/** Text between quotation marks can be long (a line to speak, a paragraph to translate). */
+const MAX_QUOTED = 2000;
+const LINK = /https?:\/\/[^\s"'<>]+/gi;
+/** punctuation that ends the sentence a link sits in, not the link */
+const trimLink = (link: string) => link.replace(/[.,;:!?)\]]+$/, "");
 
 /**
  * Heuristic extraction. A real LLM planner would build typed input from the service's input schema;
- * until then sellers can use {query} or {goal} in their templates.
+ * until then sellers can use {query}, {goal}, {url} or {text} in their templates.
  */
 export function deriveInput(goal: string): GatewayInput {
   const g = goal.trim();
-  const quoted = g.match(/["“'‘]([^"”'’]{1,80})["”'’]/);
-  if (quoted) return { goal: g, query: quoted[1].trim() };
-  const after = g.match(/(?:pok[eé]mon|about|of|for|named|called|on|is)\s+([\p{L}\p{N}][\p{L}\p{N}\-_.]*)/iu);
-  if (after) return { goal: g, query: after[1].replace(/[.\-_]+$/, "").toLowerCase() };
-  const words = g.replace(/[.?!]+$/, "").split(/\s+/);
-  return { goal: g, query: (words[words.length - 1] ?? "").toLowerCase() };
+  const url = trimLink(g.match(LINK)?.[0] ?? "");
+  const text = g.replace(LINK, (link) => ` ${link.slice(trimLink(link).length)}`).replace(/\(\s*\)/g, " ").replace(/\s+/g, " ").replace(/\s+([.,;:!?])/g, "$1").trim();
+  const rest = { goal: g, url, text };
+  // double quotes first, so an apostrophe inside them ("don't stop") does not end the phrase
+  const quoted =
+    g.match(new RegExp(`"([^"]{1,${MAX_QUOTED}})"`)) ??
+    g.match(new RegExp(`“([^”]{1,${MAX_QUOTED}})”`)) ??
+    g.match(new RegExp(`(?<![\\p{L}\\p{N}])['‘]([^'’]{1,${MAX_QUOTED}})['’](?![\\p{L}\\p{N}])`, "u"));
+  if (quoted) return { ...rest, query: quoted[1].trim() };
+  const after = text.match(/(?:pok[eé]mon|about|of|for|named|called|on|is)\s+([\p{L}\p{N}][\p{L}\p{N}\-_.]*)/iu);
+  if (after) return { ...rest, query: after[1].replace(/[.\-_]+$/, "").toLowerCase() };
+  const words = text.replace(/[.?!]+$/, "").split(/\s+/);
+  return { ...rest, query: (words[words.length - 1] ?? "").toLowerCase() };
+}
+
+/** The placeholders a template uses, e.g. `{"image_url":"{url}"}` → ["url"]. */
+export function placeholders(template: string | null | undefined): string[] {
+  return [...(template ?? "").matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
 }
 
 /** Replace {name} placeholders. URL mode percent-encodes; JSON mode JSON-escapes (without the quotes). */

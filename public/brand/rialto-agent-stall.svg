@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Rialto agent stall mark</title>
+  <desc id="desc">A friendly orange agent at a black-and-lime market stall.</desc>
+  <path fill="#17120f" d="M48 112h416v80H48z"/>
+  <path fill="#c6ff3d" d="M48 192h416v48H48z"/>
+  <path fill="#17120f" d="M80 240h352v224H80z"/>
+  <path fill="#f6efe0" d="M112 264h288v168H112z"/>
+  <path fill="#ee7a35" d="M160 288h192v96H160z"/>
+  <path fill="#f59a5f" d="M160 288h192v16H160z"/>
+  <path fill="#17120f" d="M192 312h32v40h-32zm96 0h32v40h-32zM144 400h224v16H144z"/>
+  <path fill="#17120f" d="M80 80h64v32H80zm144 0h64v32h-64zm144 0h64v32h-64z"/>
+  <path fill="#c6ff3d" d="M184 408h144v24H184z"/>
+</svg>

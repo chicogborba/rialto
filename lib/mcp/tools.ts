@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { ALL_CAPABILITIES, isCapabilityId } from "@/lib/agent/capabilities";
+import { ALL_CAPABILITIES, CAPABILITY_LABELS, isCapabilityId } from "@/lib/agent/capabilities";
+import type { Route } from "@/lib/agent/scenarios";
 import { realClock } from "@/lib/agent/clock";
 import { resolveConstraints } from "@/lib/agent/constraints";
 import { DemoAgentPlanner } from "@/lib/agent/demo-planner";
@@ -10,7 +11,7 @@ import { scoreCandidates } from "@/lib/routing/score";
 import { weightsFor } from "@/lib/routing/weights";
 import { createHttpExecutor } from "@/lib/providers/http-executor";
 import { toDollars, toMicro } from "@/lib/money";
-import { NoQualifiedProviderError, type CapabilityId, type ExecutionPlan, type ScoredCandidate } from "@/lib/types";
+import { NoQualifiedProviderError, type Candidate, type CapabilityId, type ExecutionPlan, type ScoredCandidate } from "@/lib/types";
 import { currentMode, getRail } from "@/lib/x402";
 
 const PresetSchema = z.enum(["balanced", "accuracy", "cost", "speed"]);
@@ -72,10 +73,24 @@ export function summarizePlan(plan: ExecutionPlan) {
 
 // ---------- tool handlers ----------
 
-export const discoverInput = { capability: CapabilitySchema, maxPriceUsd: z.number().min(0).optional() };
-export async function discoverServices(args: { capability: CapabilityId; maxPriceUsd?: number }) {
+export const discoverInput = {
+  capability: CapabilitySchema.optional().describe("Leave out to list every capability on Rialto with how many providers offer it."),
+  maxPriceUsd: z.number().min(0).optional(),
+};
+export async function discoverServices(args: { capability?: CapabilityId; maxPriceUsd?: number }) {
   const all = await listCandidates();
   const max = args.maxPriceUsd === undefined ? Infinity : toMicro(args.maxPriceUsd);
+  if (!args.capability) {
+    const live = all.filter((c) => c.provider.status !== "offline" && c.service.priceMicro <= max);
+    const capabilities = ALL_CAPABILITIES.map((capability) => {
+      const offered = live.filter((c) => c.service.capability === capability);
+      // demo providers return canned answers; they are counted only where nothing real exists
+      const real = offered.filter((c) => !c.provider.isDemo);
+      const prices = (real.length > 0 ? real : offered).map((c) => c.service.priceMicro);
+      return { capability, what: CAPABILITY_LABELS[capability], providers: prices.length, demoOnly: real.length === 0, fromUsd: prices.length ? usd(Math.min(...prices)) : null, toUsd: prices.length ? usd(Math.max(...prices)) : null };
+    }).filter((c) => c.providers > 0);
+    return { count: capabilities.length, capabilities, next: "Call discover_services with one capability to see its providers, then execute_service with that capability (and a provider, if you want a particular one)." };
+  }
   const services = all
     .filter((c) => c.service.capability === args.capability && c.service.priceMicro <= max)
     .map((c) => ({
@@ -138,25 +153,55 @@ export async function getProviderReputation(args: { provider: string }) {
 }
 
 export const planInput = {
-  goal: z.string().min(3),
-  budgetUsd: z.number().min(0).optional(),
+  goal: z.string().min(3).describe("What you need, in words. This text is what the provider receives: put the prompt here, text to speak or translate in double quotes, and the https link of any file the provider should work on (an image to edit, audio to transcribe)."),
+  budgetUsd: z.number().min(0).optional().describe("The most this run may spend. Default $0.10; raise it for video, music or 3D."),
   preset: PresetSchema.optional(),
+  capability: CapabilitySchema.optional().describe("Name the capability instead of letting Rialto read it from the goal's wording. See discover_services."),
+  provider: z.string().optional().describe("Use this provider only (slug, id or name from discover_services). Without it Rialto picks the best one for your preset."),
 };
-export async function planExecution(args: { goal: string; budgetUsd?: number; preset?: z.infer<typeof PresetSchema> }, ctx: ToolCtx = localCtx()) {
+type GoalArgs = { goal: string; budgetUsd?: number; preset?: z.infer<typeof PresetSchema>; capability?: CapabilityId; provider?: string };
+
+/** What the caller pinned down: a capability, a provider, or both. A provider alone brings its capability. */
+export function resolveRoute(args: { capability?: CapabilityId; provider?: string }, candidates: Candidate[]): Route {
+  if (!args.provider) return { capability: args.capability };
+  const needle = args.provider.trim().toLowerCase();
+  const offered = candidates.filter((c) => c.provider.id === args.provider || c.provider.slug === needle || c.provider.name.toLowerCase() === needle);
+  if (offered.length === 0) throw new ToolError(`Unknown provider "${args.provider}". Use discover_services to see the providers of a capability.`);
+  const hit = offered.find((c) => c.service.capability === args.capability) ?? (args.capability ? null : offered[0]);
+  if (!hit) throw new ToolError(`${offered[0].provider.name} does not offer ${args.capability}; it offers ${offered.map((c) => c.service.capability).join(", ")}.`);
+  return { capability: hit.service.capability, providerId: hit.provider.id };
+}
+
+/**
+ * Why nobody qualified, and what to do about it. The usual reason is money: video, music and 3D cost
+ * more than the default budget of a run or the wallet's limit per call.
+ */
+function noProviderMessage(capability: CapabilityId, rejected: { candidate: Candidate; reason: string }[], maxPerRequestMicro: number): string {
+  if (rejected.length === 0) return `Nobody on Rialto offers ${capability} yet. Call discover_services without arguments to see what is available.`;
+  const reasons = rejected.map((r) => `${r.candidate.provider.name}=${r.reason}`).join(", ");
+  const cheapest = Math.min(...rejected.map((r) => r.candidate.service.priceMicro));
+  const hints: string[] = [];
+  if (rejected.some((r) => r.reason === "over_budget")) hints.push(`pass budgetUsd of at least ${usd(cheapest)}`);
+  if (rejected.every((r) => r.reason === "over_max_per_request")) hints.push(`the wallet allows ${usd(maxPerRequestMicro)} per call and the cheapest costs ${usd(cheapest)}: the owner must raise "may spend per call" in the agent's spending limits`);
+  return `No qualified provider for ${capability}: ${reasons}.${hints.length ? ` To fix: ${hints.join("; ")}.` : ""}`;
+}
+
+export async function planExecution(args: GoalArgs, ctx: ToolCtx = localCtx()) {
   const wallet = await getWallet(ctx.agentId);
   const constraints = resolveConstraints({ goal: args.goal, policy: wallet.policy, budgetMicro: args.budgetUsd === undefined ? undefined : toMicro(args.budgetUsd), preset: args.preset });
   try {
-    const plan = await new DemoAgentPlanner().plan(args.goal, constraints, await listCandidates(), await getHistory());
+    const candidates = await listCandidates();
+    const plan = await new DemoAgentPlanner(resolveRoute(args, candidates)).plan(args.goal, constraints, candidates, await getHistory());
     return summarizePlan(plan);
   } catch (e) {
     if (e instanceof NoQualifiedProviderError) {
-      throw new ToolError(`No qualified provider for ${e.capability}: ${e.rejected.map((r) => `${r.candidate.provider.name}=${r.reason}`).join(", ")}`);
+      throw new ToolError(noProviderMessage(e.capability, e.rejected, wallet.policy.maxPerRequestMicro));
     }
     throw e;
   }
 }
 
-export async function executeService(args: { goal: string; budgetUsd?: number; preset?: z.infer<typeof PresetSchema> }, ctx: ToolCtx = localCtx()) {
+export async function executeService(args: GoalArgs, ctx: ToolCtx = localCtx()) {
   const base = ctx.baseUrl;
   if (ctx.checkReachable) {
     try {
@@ -171,9 +216,10 @@ export async function executeService(args: { goal: string; budgetUsd?: number; p
   const rail = getRail(clock);
   const runId = clock.id("run");
   await createRun({ runId, goal: args.goal, constraints, mode: rail.mode, agentId: ctx.agentId });
-  const deps = { planner: new DemoAgentPlanner(), rail, clock, executor: createHttpExecutor(base), ...persistentDepsFor(ctx.agentId) };
+  const deps = { planner: new DemoAgentPlanner(resolveRoute(args, await listCandidates())), rail, clock, executor: createHttpExecutor(base), ...persistentDepsFor(ctx.agentId) };
   let last;
   for await (const e of runAgent({ goal: args.goal, constraints, runId }, deps)) last = e;
+  if (last?.type === "run.failed" && last.capability && last.rejected && last.stepId === null) throw new ToolError(noProviderMessage(last.capability, last.rejected, wallet.policy.maxPerRequestMicro));
   if (!last || last.type === "run.failed") throw new ToolError(last?.type === "run.failed" ? last.error : "Run produced no events");
   if (last.type !== "run.completed") throw new ToolError("Run ended unexpectedly");
   const txs = (await listTransactions(50, undefined, ctx.agentId)).rows.filter((t) => t.runId === runId);

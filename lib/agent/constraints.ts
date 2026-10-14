@@ -18,7 +18,8 @@ export function resolveConstraints(input: ConstraintInput): Constraints {
   const scenario = matchScenario(input.goal);
   const preset: PriorityPreset = input.preset ?? presetFromGoal(input.goal) ?? scenario.defaultPreset;
   const phraseBudget = budgetFromGoal(input.goal);
-  const explicit = input.budgetMicro ?? DEFAULT_RUN_BUDGET_MICRO;
+  // without a budget from the caller, a run may spend at least one call at the owner's own limit per call
+  const explicit = input.budgetMicro ?? Math.max(DEFAULT_RUN_BUDGET_MICRO, input.policy.maxPerRequestMicro);
   const budgetMicro = phraseBudget !== null ? Math.min(explicit, phraseBudget) : explicit;
   return {
     budgetMicro,

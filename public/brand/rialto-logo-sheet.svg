@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1020" role="img" aria-labelledby="title desc">
+  <title id="title">Four proposed Rialto logo directions</title>
+  <desc id="desc">A presentation sheet of the Bridge, Route, Exchange and Agent Stall marks.</desc>
+  <rect width="1600" height="1020" fill="#f6efe0"/>
+  <g fill="#17120f" font-family="Arial, sans-serif">
+    <text x="80" y="92" font-size="36" font-weight="700" letter-spacing="-1">RIALTO / LOGO EXPLORATIONS</text>
+    <text x="80" y="132" font-size="18" letter-spacing="3">AGENTS THAT HIRE</text>
+  </g>
+  <g transform="translate(80 200)">
+    <rect width="320" height="560" fill="#edebe3" stroke="#17120f" stroke-width="4"/>
+    <image href="rialto-bridge.svg" x="32" y="32" width="256" height="256"/>
+    <path fill="#17120f" d="M32 328h256v4H32z"/>
+    <g fill="#17120f" font-family="Arial, sans-serif"><text x="32" y="382" font-size="28" font-weight="700">01 / BRIDGE</text><text x="32" y="422" font-size="18">a payment rail between</text><text x="32" y="448" font-size="18">agent and service</text></g>
+  </g>
+  <g transform="translate(440 200)">
+    <rect width="320" height="560" fill="#edebe3" stroke="#17120f" stroke-width="4"/>
+    <image href="rialto-route.svg" x="32" y="32" width="256" height="256"/>
+    <path fill="#17120f" d="M32 328h256v4H32z"/>
+    <g fill="#17120f" font-family="Arial, sans-serif"><text x="32" y="382" font-size="28" font-weight="700">02 / ROUTE</text><text x="32" y="422" font-size="18">a compact R that acts</text><text x="32" y="448" font-size="18">like an execution path</text></g>
+  </g>
+  <g transform="translate(800 200)">
+    <rect width="320" height="560" fill="#edebe3" stroke="#17120f" stroke-width="4"/>
+    <image href="rialto-exchange.svg" x="32" y="32" width="256" height="256"/>
+    <path fill="#17120f" d="M32 328h256v4H32z"/>
+    <g fill="#17120f" font-family="Arial, sans-serif"><text x="32" y="382" font-size="28" font-weight="700">03 / EXCHANGE</text><text x="32" y="422" font-size="18">two-sided marketplace</text><text x="32" y="448" font-size="18">with a token in motion</text></g>
+  </g>
+  <g transform="translate(1160 200)">
+    <rect width="320" height="560" fill="#edebe3" stroke="#17120f" stroke-width="4"/>
+    <image href="rialto-agent-stall.svg" x="32" y="32" width="256" height="256"/>
+    <path fill="#17120f" d="M32 328h256v4H32z"/>
+    <g fill="#17120f" font-family="Arial, sans-serif"><text x="32" y="382" font-size="28" font-weight="700">04 / STALL</text><text x="32" y="422" font-size="18">the agent as a friendly</text><text x="32" y="448" font-size="18">market participant</text></g>
+  </g>
+  <path fill="#c6ff3d" d="M80 856h1440v80H80z"/>
+  <text x="104" y="906" fill="#17120f" font-family="Arial, sans-serif" font-size="27" font-weight="700">THICK OUTLINES · SQUARE PIXELS · ACID LIME SIGNAL · ORANGE PAYMENT MOMENT</text>
+</svg>

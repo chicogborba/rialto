@@ -14,6 +14,13 @@ export const bounce = (t: number) => {
   if (t < 2.5 / d) return n * (t -= 2.25 / d) * t + 0.9375;
   return n * (t -= 2.625 / d) * t + 0.984375;
 };
+/** closed-form underdamped spring from 0 to 1, `frames` after it was released (30 fps): a little overshoot, settles in ~12 frames */
+export const spring = (frames: number, stiffness = 21, damping = 0.56) => {
+  if (frames <= 0) return 0;
+  const t = frames / 30;
+  const wd = stiffness * Math.sqrt(1 - damping * damping);
+  return 1 - Math.exp(-damping * stiffness * t) * (Math.cos(wd * t) + ((damping * stiffness) / wd) * Math.sin(wd * t));
+};
 /** scale-in with overshoot starting at frame `at` */
 export const pop = (f: number, at: number, dur = 14) => back(prog(f, at, at + dur));
 /** a single parabolic hop of height h */

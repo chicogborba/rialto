@@ -86,7 +86,7 @@ export async function listProviders(capability?: CapabilityId): Promise<Provider
 }
 
 export async function getProviderBySlug(slug: string) {
-  return prisma.provider.findUnique({ where: { slug }, include: { services: true } });
+  return prisma.provider.findUnique({ where: { slug }, include: { services: true, seller: { select: { name: true } } } });
 }
 
 export async function setProviderStatus(id: string, status: ProviderStatus): Promise<boolean> {
@@ -200,6 +200,12 @@ export async function liveSettledSinceMicro(since: Date): Promise<number> {
   return sum._sum.sellerMicro ?? 0;
 }
 
+/** What the sellers of this name sold since `since`, at seller price, in either payment mode. */
+export async function soldBySellerSinceMicro(sellerName: string, since: Date): Promise<number> {
+  const sum = await prisma.transaction.aggregate({ where: { status: "settled", createdAt: { gte: since }, provider: { seller: { name: sellerName } } }, _sum: { sellerMicro: true } });
+  return sum._sum.sellerMicro ?? 0;
+}
+
 /**
  * Records an attempt. For a settled purchase it also splits the money in the same DB transaction:
  * the seller is credited exactly their price, Rialto keeps the difference, and the append-only
@@ -271,9 +277,6 @@ export function persistentDepsFor(agentId: string): Pick<RunDeps, "registry" | "
     sink: { onEvent: persistEvent },
   };
 }
-
-/** The built-in local demo agent (the console without an API key). */
-export const persistentDeps = persistentDepsFor(AGENT_ID);
 
 // ---------- transactions ----------
 

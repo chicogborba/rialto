@@ -677,5 +677,2561 @@
         "end": 2.415
       }
     ]
+  },
+  "0a": {
+    "text": "One pitch, coming right up.",
+    "seconds": 1.95,
+    "words": [
+      {
+        "word": "One",
+        "start": 0,
+        "end": 0.197
+      },
+      {
+        "word": "pitch,",
+        "start": 0.232,
+        "end": 0.627
+      },
+      {
+        "word": "coming",
+        "start": 0.801,
+        "end": 1.057
+      },
+      {
+        "word": "right",
+        "start": 1.115,
+        "end": 1.289
+      },
+      {
+        "word": "up.",
+        "start": 1.324,
+        "end": 1.95
+      }
+    ]
+  },
+  "9a": {
+    "text": "Same game. Same agent. Same prompt.",
+    "seconds": 3.344,
+    "words": [
+      {
+        "word": "Same",
+        "start": 0,
+        "end": 0.29
+      },
+      {
+        "word": "game.",
+        "start": 0.348,
+        "end": 0.72
+      },
+      {
+        "word": "Same",
+        "start": 0.848,
+        "end": 1.115
+      },
+      {
+        "word": "agent.",
+        "start": 1.161,
+        "end": 1.579
+      },
+      {
+        "word": "Same",
+        "start": 1.788,
+        "end": 2.055
+      },
+      {
+        "word": "prompt.",
+        "start": 2.09,
+        "end": 3.344
+      }
+    ]
+  },
+  "9b": {
+    "text": "From scratch, you get this.",
+    "seconds": 2.415,
+    "words": [
+      {
+        "word": "From",
+        "start": 0,
+        "end": 0.221
+      },
+      {
+        "word": "scratch,",
+        "start": 0.29,
+        "end": 0.824
+      },
+      {
+        "word": "you",
+        "start": 0.998,
+        "end": 1.103
+      },
+      {
+        "word": "get",
+        "start": 1.173,
+        "end": 1.3
+      },
+      {
+        "word": "this.",
+        "start": 1.347,
+        "end": 2.415
+      }
+    ]
+  },
+  "9c": {
+    "text": "With Rialto, you get this.",
+    "seconds": 2.229,
+    "words": [
+      {
+        "word": "With",
+        "start": 0,
+        "end": 0.209
+      },
+      {
+        "word": "Rialto,",
+        "start": 0.267,
+        "end": 0.755
+      },
+      {
+        "word": "you",
+        "start": 0.789,
+        "end": 0.871
+      },
+      {
+        "word": "get",
+        "start": 0.94,
+        "end": 1.08
+      },
+      {
+        "word": "this.",
+        "start": 1.126,
+        "end": 2.229
+      }
+    ]
+  },
+  "10a": {
+    "text": "Why Solana? One API call costs a third of a cent.",
+    "seconds": 4.087,
+    "words": [
+      {
+        "word": "Why",
+        "start": 0,
+        "end": 0.244
+      },
+      {
+        "word": "Solana?",
+        "start": 0.325,
+        "end": 0.859
+      },
+      {
+        "word": "One",
+        "start": 1.556,
+        "end": 1.776
+      },
+      {
+        "word": "API",
+        "start": 1.811,
+        "end": 2.159
+      },
+      {
+        "word": "call",
+        "start": 2.241,
+        "end": 2.45
+      },
+      {
+        "word": "costs",
+        "start": 2.519,
+        "end": 2.798
+      },
+      {
+        "word": "a",
+        "start": 2.844,
+        "end": 2.868
+      },
+      {
+        "word": "third",
+        "start": 2.926,
+        "end": 3.1
+      },
+      {
+        "word": "of",
+        "start": 3.135,
+        "end": 3.181
+      },
+      {
+        "word": "a",
+        "start": 3.228,
+        "end": 3.251
+      },
+      {
+        "word": "cent.",
+        "start": 3.297,
+        "end": 4.087
+      }
+    ]
+  },
+  "10b": {
+    "text": "A card fee alone is a hundred times that.",
+    "seconds": 3.111,
+    "words": [
+      {
+        "word": "A",
+        "start": 0,
+        "end": 0.128
+      },
+      {
+        "word": "card",
+        "start": 0.209,
+        "end": 0.476
+      },
+      {
+        "word": "fee",
+        "start": 0.534,
+        "end": 0.697
+      },
+      {
+        "word": "alone",
+        "start": 0.755,
+        "end": 1.08
+      },
+      {
+        "word": "is",
+        "start": 1.126,
+        "end": 1.219
+      },
+      {
+        "word": "a",
+        "start": 1.277,
+        "end": 1.3
+      },
+      {
+        "word": "hundred",
+        "start": 1.393,
+        "end": 1.718
+      },
+      {
+        "word": "times",
+        "start": 1.753,
+        "end": 2.032
+      },
+      {
+        "word": "that.",
+        "start": 2.078,
+        "end": 3.111
+      }
+    ]
+  },
+  "10c": {
+    "text": "On Solana it settles in about a second, for a fraction of a cent.",
+    "seconds": 4.319,
+    "words": [
+      {
+        "word": "On",
+        "start": 0,
+        "end": 0.197
+      },
+      {
+        "word": "Solana",
+        "start": 0.255,
+        "end": 0.731
+      },
+      {
+        "word": "it",
+        "start": 0.906,
+        "end": 1.045
+      },
+      {
+        "word": "settles",
+        "start": 1.103,
+        "end": 1.393
+      },
+      {
+        "word": "in",
+        "start": 1.428,
+        "end": 1.486
+      },
+      {
+        "word": "about",
+        "start": 1.521,
+        "end": 1.707
+      },
+      {
+        "word": "a",
+        "start": 1.741,
+        "end": 1.765
+      },
+      {
+        "word": "second,",
+        "start": 1.834,
+        "end": 2.287
+      },
+      {
+        "word": "for",
+        "start": 2.334,
+        "end": 2.473
+      },
+      {
+        "word": "a",
+        "start": 2.519,
+        "end": 2.543
+      },
+      {
+        "word": "fraction",
+        "start": 2.601,
+        "end": 2.984
+      },
+      {
+        "word": "of",
+        "start": 3.019,
+        "end": 3.065
+      },
+      {
+        "word": "a",
+        "start": 3.1,
+        "end": 3.135
+      },
+      {
+        "word": "cent.",
+        "start": 3.17,
+        "end": 4.319
+      }
+    ]
+  },
+  "11a": {
+    "text": "And this is not a slide. It is live.",
+    "seconds": 2.694,
+    "words": [
+      {
+        "word": "And",
+        "start": 0,
+        "end": 0.197
+      },
+      {
+        "word": "this",
+        "start": 0.267,
+        "end": 0.418
+      },
+      {
+        "word": "is",
+        "start": 0.488,
+        "end": 0.569
+      },
+      {
+        "word": "not",
+        "start": 0.65,
+        "end": 0.824
+      },
+      {
+        "word": "a",
+        "start": 0.871,
+        "end": 0.894
+      },
+      {
+        "word": "slide.",
+        "start": 0.929,
+        "end": 1.463
+      },
+      {
+        "word": "It",
+        "start": 1.637,
+        "end": 1.765
+      },
+      {
+        "word": "is",
+        "start": 1.811,
+        "end": 1.892
+      },
+      {
+        "word": "live.",
+        "start": 1.985,
+        "end": 2.694
+      }
+    ]
+  },
+  "11b": {
+    "text": "Real APIs. Real payments on Solana. Working today with Claude Code and Codex.",
+    "seconds": 6.92,
+    "words": [
+      {
+        "word": "Real",
+        "start": 0,
+        "end": 0.313
+      },
+      {
+        "word": "APIs.",
+        "start": 0.395,
+        "end": 1.149
+      },
+      {
+        "word": "Real",
+        "start": 1.66,
+        "end": 1.916
+      },
+      {
+        "word": "payments",
+        "start": 1.985,
+        "end": 2.368
+      },
+      {
+        "word": "on",
+        "start": 2.438,
+        "end": 2.554
+      },
+      {
+        "word": "Solana.",
+        "start": 2.647,
+        "end": 3.262
+      },
+      {
+        "word": "Working",
+        "start": 3.587,
+        "end": 3.947
+      },
+      {
+        "word": "today",
+        "start": 3.994,
+        "end": 4.249
+      },
+      {
+        "word": "with",
+        "start": 4.307,
+        "end": 4.447
+      },
+      {
+        "word": "Claude",
+        "start": 4.505,
+        "end": 4.83
+      },
+      {
+        "word": "Code",
+        "start": 4.865,
+        "end": 5.259
+      },
+      {
+        "word": "and",
+        "start": 5.306,
+        "end": 5.48
+      },
+      {
+        "word": "Codex.",
+        "start": 5.561,
+        "end": 6.92
+      }
+    ]
+  },
+  "12a": {
+    "text": "Agents are becoming the internet's new customers.",
+    "seconds": 3.158,
+    "words": [
+      {
+        "word": "Agents",
+        "start": 0,
+        "end": 0.418
+      },
+      {
+        "word": "are",
+        "start": 0.453,
+        "end": 0.546
+      },
+      {
+        "word": "becoming",
+        "start": 0.58,
+        "end": 0.906
+      },
+      {
+        "word": "the",
+        "start": 0.94,
+        "end": 1.022
+      },
+      {
+        "word": "internet's",
+        "start": 1.091,
+        "end": 1.486
+      },
+      {
+        "word": "new",
+        "start": 1.556,
+        "end": 1.695
+      },
+      {
+        "word": "customers.",
+        "start": 1.753,
+        "end": 3.158
+      }
+    ]
+  },
+  "12b": {
+    "text": "Every call is a sale, and Rialto takes five percent.",
+    "seconds": 3.529,
+    "words": [
+      {
+        "word": "Every",
+        "start": 0,
+        "end": 0.325
+      },
+      {
+        "word": "call",
+        "start": 0.383,
+        "end": 0.592
+      },
+      {
+        "word": "is",
+        "start": 0.65,
+        "end": 0.72
+      },
+      {
+        "word": "a",
+        "start": 0.766,
+        "end": 0.801
+      },
+      {
+        "word": "sale,",
+        "start": 0.848,
+        "end": 1.196
+      },
+      {
+        "word": "and",
+        "start": 1.219,
+        "end": 1.312
+      },
+      {
+        "word": "Rialto",
+        "start": 1.358,
+        "end": 1.695
+      },
+      {
+        "word": "takes",
+        "start": 1.765,
+        "end": 1.974
+      },
+      {
+        "word": "five",
+        "start": 2.02,
+        "end": 2.264
+      },
+      {
+        "word": "percent.",
+        "start": 2.299,
+        "end": 3.529
+      }
+    ]
+  },
+  "12c": {
+    "text": "More APIs bring more agents. More agents bring more APIs.",
+    "seconds": 4.737,
+    "words": [
+      {
+        "word": "More",
+        "start": 0,
+        "end": 0.267
+      },
+      {
+        "word": "APIs",
+        "start": 0.313,
+        "end": 0.836
+      },
+      {
+        "word": "bring",
+        "start": 0.906,
+        "end": 1.103
+      },
+      {
+        "word": "more",
+        "start": 1.184,
+        "end": 1.393
+      },
+      {
+        "word": "agents.",
+        "start": 1.428,
+        "end": 1.997
+      },
+      {
+        "word": "More",
+        "start": 2.694,
+        "end": 2.914
+      },
+      {
+        "word": "agents",
+        "start": 2.961,
+        "end": 3.274
+      },
+      {
+        "word": "bring",
+        "start": 3.309,
+        "end": 3.495
+      },
+      {
+        "word": "more",
+        "start": 3.564,
+        "end": 3.762
+      },
+      {
+        "word": "APIs.",
+        "start": 3.808,
+        "end": 4.737
+      }
+    ]
+  },
+  "13a": {
+    "text": "Who is building it? Three computer science students from PUCRS, in Brazil.",
+    "seconds": 5.898,
+    "words": [
+      {
+        "word": "Who",
+        "start": 0,
+        "end": 0.197
+      },
+      {
+        "word": "is",
+        "start": 0.255,
+        "end": 0.325
+      },
+      {
+        "word": "building",
+        "start": 0.383,
+        "end": 0.708
+      },
+      {
+        "word": "it?",
+        "start": 0.766,
+        "end": 1.022
+      },
+      {
+        "word": "Three",
+        "start": 1.625,
+        "end": 1.916
+      },
+      {
+        "word": "computer",
+        "start": 1.962,
+        "end": 2.345
+      },
+      {
+        "word": "science",
+        "start": 2.403,
+        "end": 2.728
+      },
+      {
+        "word": "students",
+        "start": 2.752,
+        "end": 3.065
+      },
+      {
+        "word": "from",
+        "start": 3.088,
+        "end": 3.216
+      },
+      {
+        "word": "PUCRS,",
+        "start": 3.297,
+        "end": 4.377
+      },
+      {
+        "word": "in",
+        "start": 4.621,
+        "end": 4.772
+      },
+      {
+        "word": "Brazil.",
+        "start": 4.83,
+        "end": 5.898
+      }
+    ]
+  },
+  "13b": {
+    "text": "Francisco. Risk operations and computer vision.",
+    "seconds": 4.505,
+    "words": [
+      {
+        "word": "Francisco.",
+        "start": 0,
+        "end": 0.975
+      },
+      {
+        "word": "Risk",
+        "start": 1.672,
+        "end": 1.927
+      },
+      {
+        "word": "operations",
+        "start": 1.997,
+        "end": 2.612
+      },
+      {
+        "word": "and",
+        "start": 2.682,
+        "end": 2.868
+      },
+      {
+        "word": "computer",
+        "start": 2.937,
+        "end": 3.32
+      },
+      {
+        "word": "vision.",
+        "start": 3.379,
+        "end": 4.505
+      }
+    ]
+  },
+  "13c": {
+    "text": "Rodrigo. Apple Developer Academy.",
+    "seconds": 3.483,
+    "words": [
+      {
+        "word": "Rodrigo.",
+        "start": 0,
+        "end": 0.766
+      },
+      {
+        "word": "Apple",
+        "start": 1.277,
+        "end": 1.602
+      },
+      {
+        "word": "Developer",
+        "start": 1.625,
+        "end": 2.078
+      },
+      {
+        "word": "Academy.",
+        "start": 2.148,
+        "end": 3.483
+      }
+    ]
+  },
+  "13d": {
+    "text": "Isadora. Apple Developer Academy, and HP's LIS project.",
+    "seconds": 6.269,
+    "words": [
+      {
+        "word": "Isadora.",
+        "start": 0,
+        "end": 0.848
+      },
+      {
+        "word": "Apple",
+        "start": 1.544,
+        "end": 1.858
+      },
+      {
+        "word": "Developer",
+        "start": 1.892,
+        "end": 2.368
+      },
+      {
+        "word": "Academy,",
+        "start": 2.438,
+        "end": 3.042
+      },
+      {
+        "word": "and",
+        "start": 3.251,
+        "end": 3.413
+      },
+      {
+        "word": "HP's",
+        "start": 3.506,
+        "end": 4.005
+      },
+      {
+        "word": "LIS",
+        "start": 4.122,
+        "end": 4.621
+      },
+      {
+        "word": "project.",
+        "start": 4.69,
+        "end": 6.269
+      }
+    ]
+  },
+  "13e": {
+    "text": "From idea to live payments in one week.",
+    "seconds": 2.786,
+    "words": [
+      {
+        "word": "From",
+        "start": 0,
+        "end": 0.244
+      },
+      {
+        "word": "idea",
+        "start": 0.313,
+        "end": 0.627
+      },
+      {
+        "word": "to",
+        "start": 0.697,
+        "end": 0.766
+      },
+      {
+        "word": "live",
+        "start": 0.859,
+        "end": 1.126
+      },
+      {
+        "word": "payments",
+        "start": 1.161,
+        "end": 1.533
+      },
+      {
+        "word": "in",
+        "start": 1.591,
+        "end": 1.672
+      },
+      {
+        "word": "one",
+        "start": 1.765,
+        "end": 1.962
+      },
+      {
+        "word": "week.",
+        "start": 1.997,
+        "end": 2.786
+      }
+    ]
+  },
+  "14a": {
+    "text": "The goal: every API on the internet, one call away from every agent.",
+    "seconds": 5.294,
+    "words": [
+      {
+        "word": "The",
+        "start": 0,
+        "end": 0.174
+      },
+      {
+        "word": "goal:",
+        "start": 0.232,
+        "end": 0.685
+      },
+      {
+        "word": "every",
+        "start": 1.126,
+        "end": 1.44
+      },
+      {
+        "word": "API",
+        "start": 1.509,
+        "end": 1.916
+      },
+      {
+        "word": "on",
+        "start": 1.985,
+        "end": 2.067
+      },
+      {
+        "word": "the",
+        "start": 2.09,
+        "end": 2.159
+      },
+      {
+        "word": "internet,",
+        "start": 2.194,
+        "end": 2.682
+      },
+      {
+        "word": "one",
+        "start": 3.007,
+        "end": 3.204
+      },
+      {
+        "word": "call",
+        "start": 3.251,
+        "end": 3.425
+      },
+      {
+        "word": "away",
+        "start": 3.483,
+        "end": 3.669
+      },
+      {
+        "word": "from",
+        "start": 3.715,
+        "end": 3.843
+      },
+      {
+        "word": "every",
+        "start": 3.936,
+        "end": 4.18
+      },
+      {
+        "word": "agent.",
+        "start": 4.238,
+        "end": 5.294
+      }
+    ]
+  },
+  "14b": {
+    "text": "A whole economy at machine speed. On Solana.",
+    "seconds": 3.762,
+    "words": [
+      {
+        "word": "A",
+        "start": 0,
+        "end": 0.139
+      },
+      {
+        "word": "whole",
+        "start": 0.209,
+        "end": 0.476
+      },
+      {
+        "word": "economy",
+        "start": 0.522,
+        "end": 0.975
+      },
+      {
+        "word": "at",
+        "start": 1.033,
+        "end": 1.126
+      },
+      {
+        "word": "machine",
+        "start": 1.173,
+        "end": 1.533
+      },
+      {
+        "word": "speed.",
+        "start": 1.567,
+        "end": 2.009
+      },
+      {
+        "word": "On",
+        "start": 2.705,
+        "end": 2.879
+      },
+      {
+        "word": "Solana.",
+        "start": 2.949,
+        "end": 3.762
+      }
+    ]
+  },
+  "13f": {
+    "text": "Three very different sets of skills.",
+    "seconds": 2.415,
+    "words": [
+      {
+        "word": "Three",
+        "start": 0,
+        "end": 0.313
+      },
+      {
+        "word": "very",
+        "start": 0.383,
+        "end": 0.627
+      },
+      {
+        "word": "different",
+        "start": 0.685,
+        "end": 0.952
+      },
+      {
+        "word": "sets",
+        "start": 0.987,
+        "end": 1.173
+      },
+      {
+        "word": "of",
+        "start": 1.207,
+        "end": 1.265
+      },
+      {
+        "word": "skills.",
+        "start": 1.312,
+        "end": 2.415
+      }
+    ]
+  },
+  "13g": {
+    "text": "Mix them all together, and you get Rialto.",
+    "seconds": 2.508,
+    "words": [
+      {
+        "word": "Mix",
+        "start": 0,
+        "end": 0.209
+      },
+      {
+        "word": "them",
+        "start": 0.279,
+        "end": 0.395
+      },
+      {
+        "word": "all",
+        "start": 0.441,
+        "end": 0.557
+      },
+      {
+        "word": "together,",
+        "start": 0.615,
+        "end": 1.115
+      },
+      {
+        "word": "and",
+        "start": 1.207,
+        "end": 1.347
+      },
+      {
+        "word": "you",
+        "start": 1.405,
+        "end": 1.474
+      },
+      {
+        "word": "get",
+        "start": 1.544,
+        "end": 1.66
+      },
+      {
+        "word": "Rialto.",
+        "start": 1.707,
+        "end": 2.508
+      }
+    ]
+  },
+  "6c": {
+    "text": "Setup takes a minute. Paste one command. Add a few dollars. Then just ask.",
+    "seconds": 4.83,
+    "words": [
+      {
+        "word": "Setup",
+        "start": 0,
+        "end": 0.325
+      },
+      {
+        "word": "takes",
+        "start": 0.372,
+        "end": 0.592
+      },
+      {
+        "word": "a",
+        "start": 0.627,
+        "end": 0.662
+      },
+      {
+        "word": "minute.",
+        "start": 0.697,
+        "end": 1.068
+      },
+      {
+        "word": "Paste",
+        "start": 1.242,
+        "end": 1.533
+      },
+      {
+        "word": "one",
+        "start": 1.579,
+        "end": 1.741
+      },
+      {
+        "word": "command.",
+        "start": 1.788,
+        "end": 2.31
+      },
+      {
+        "word": "Add",
+        "start": 2.426,
+        "end": 2.624
+      },
+      {
+        "word": "a",
+        "start": 2.647,
+        "end": 2.67
+      },
+      {
+        "word": "few",
+        "start": 2.717,
+        "end": 2.833
+      },
+      {
+        "word": "dollars.",
+        "start": 2.879,
+        "end": 3.413
+      },
+      {
+        "word": "Then",
+        "start": 3.622,
+        "end": 3.773
+      },
+      {
+        "word": "just",
+        "start": 3.831,
+        "end": 3.994
+      },
+      {
+        "word": "ask.",
+        "start": 4.063,
+        "end": 4.83
+      }
+    ]
+  },
+  "14d": {
+    "text": "Our first users? Developers already running Claude Code and Codex.",
+    "seconds": 4.354,
+    "words": [
+      {
+        "word": "Our",
+        "start": 0,
+        "end": 0.197
+      },
+      {
+        "word": "first",
+        "start": 0.255,
+        "end": 0.511
+      },
+      {
+        "word": "users?",
+        "start": 0.58,
+        "end": 1.115
+      },
+      {
+        "word": "Developers",
+        "start": 1.556,
+        "end": 2.159
+      },
+      {
+        "word": "already",
+        "start": 2.241,
+        "end": 2.601
+      },
+      {
+        "word": "running",
+        "start": 2.67,
+        "end": 2.902
+      },
+      {
+        "word": "Claude",
+        "start": 2.949,
+        "end": 3.239
+      },
+      {
+        "word": "Code",
+        "start": 3.274,
+        "end": 3.518
+      },
+      {
+        "word": "and",
+        "start": 3.564,
+        "end": 3.646
+      },
+      {
+        "word": "Codex.",
+        "start": 3.715,
+        "end": 4.354
+      }
+    ]
+  },
+  "12d": {
+    "text": "Nine hundred million people use ChatGPT every week. Five million use Codex. And agents already make seventy-five million x402 payments a month, most of them on Solana.",
+    "seconds": 11.994,
+    "words": [
+      {
+        "word": "Nine",
+        "start": 0.05,
+        "end": 0.317
+      },
+      {
+        "word": "hundred",
+        "start": 0.352,
+        "end": 0.596
+      },
+      {
+        "word": "million",
+        "start": 0.642,
+        "end": 0.91
+      },
+      {
+        "word": "people",
+        "start": 0.956,
+        "end": 1.235
+      },
+      {
+        "word": "use",
+        "start": 1.293,
+        "end": 1.467
+      },
+      {
+        "word": "ChatGPT",
+        "start": 1.502,
+        "end": 2.21
+      },
+      {
+        "word": "every",
+        "start": 2.361,
+        "end": 2.674
+      },
+      {
+        "word": "week.",
+        "start": 2.721,
+        "end": 3.057
+      },
+      {
+        "word": "Five",
+        "start": 3.277,
+        "end": 3.567
+      },
+      {
+        "word": "million",
+        "start": 3.602,
+        "end": 3.869
+      },
+      {
+        "word": "use",
+        "start": 3.939,
+        "end": 4.101
+      },
+      {
+        "word": "Codex.",
+        "start": 4.136,
+        "end": 4.775
+      },
+      {
+        "word": "And",
+        "start": 4.995,
+        "end": 5.158
+      },
+      {
+        "word": "agents",
+        "start": 5.239,
+        "end": 5.622
+      },
+      {
+        "word": "already",
+        "start": 5.703,
+        "end": 6.063
+      },
+      {
+        "word": "make",
+        "start": 6.121,
+        "end": 6.296
+      },
+      {
+        "word": "seventy-five",
+        "start": 6.354,
+        "end": 7.039
+      },
+      {
+        "word": "million",
+        "start": 7.085,
+        "end": 7.364
+      },
+      {
+        "word": "x402",
+        "start": 7.491,
+        "end": 8.281
+      },
+      {
+        "word": "payments",
+        "start": 8.351,
+        "end": 8.71
+      },
+      {
+        "word": "a",
+        "start": 8.78,
+        "end": 8.827
+      },
+      {
+        "word": "month,",
+        "start": 8.943,
+        "end": 9.361
+      },
+      {
+        "word": "most",
+        "start": 9.686,
+        "end": 9.906
+      },
+      {
+        "word": "of",
+        "start": 9.941,
+        "end": 9.999
+      },
+      {
+        "word": "them",
+        "start": 10.046,
+        "end": 10.173
+      },
+      {
+        "word": "on",
+        "start": 10.255,
+        "end": 10.382
+      },
+      {
+        "word": "Solana.",
+        "start": 10.475,
+        "end": 11.834
+      }
+    ]
+  },
+  "10e": {
+    "text": "Why Solana? A card fee is a hundred times the price of one call. Solana settles it in a second, almost free.",
+    "seconds": 7.682,
+    "words": [
+      {
+        "word": "Why",
+        "start": 0.0,
+        "end": 0.255
+      },
+      {
+        "word": "Solana?",
+        "start": 0.348,
+        "end": 0.917
+      },
+      {
+        "word": "A",
+        "start": 1.087,
+        "end": 1.169
+      },
+      {
+        "word": "card",
+        "start": 1.262,
+        "end": 1.517
+      },
+      {
+        "word": "fee",
+        "start": 1.575,
+        "end": 1.888
+      },
+      {
+        "word": "is",
+        "start": 2.097,
+        "end": 2.248
+      },
+      {
+        "word": "a",
+        "start": 2.295,
+        "end": 2.318
+      },
+      {
+        "word": "hundred",
+        "start": 2.399,
+        "end": 2.69
+      },
+      {
+        "word": "times",
+        "start": 2.724,
+        "end": 3.003
+      },
+      {
+        "word": "the",
+        "start": 3.038,
+        "end": 3.108
+      },
+      {
+        "word": "price",
+        "start": 3.142,
+        "end": 3.398
+      },
+      {
+        "word": "of",
+        "start": 3.433,
+        "end": 3.479
+      },
+      {
+        "word": "one",
+        "start": 3.56,
+        "end": 3.734
+      },
+      {
+        "word": "call.",
+        "start": 3.781,
+        "end": 4.199
+      },
+      {
+        "word": "Solana",
+        "start": 4.369,
+        "end": 4.753
+      },
+      {
+        "word": "settles",
+        "start": 4.811,
+        "end": 5.101
+      },
+      {
+        "word": "it",
+        "start": 5.147,
+        "end": 5.217
+      },
+      {
+        "word": "in",
+        "start": 5.275,
+        "end": 5.345
+      },
+      {
+        "word": "a",
+        "start": 5.391,
+        "end": 5.414
+      },
+      {
+        "word": "second,",
+        "start": 5.496,
+        "end": 6.018
+      },
+      {
+        "word": "almost",
+        "start": 6.099,
+        "end": 6.413
+      },
+      {
+        "word": "free.",
+        "start": 6.459,
+        "end": 7.562
+      }
+    ]
+  },
+  "d1a": {
+    "text": "Let me show you how to turn this,",
+    "seconds": 1.838,
+    "words": [
+      {
+        "word": "Let",
+        "start": 0.0,
+        "end": 0.174
+      },
+      {
+        "word": "me",
+        "start": 0.197,
+        "end": 0.267
+      },
+      {
+        "word": "show",
+        "start": 0.313,
+        "end": 0.488
+      },
+      {
+        "word": "you",
+        "start": 0.546,
+        "end": 0.627
+      },
+      {
+        "word": "how",
+        "start": 0.685,
+        "end": 0.778
+      },
+      {
+        "word": "to",
+        "start": 0.813,
+        "end": 0.859
+      },
+      {
+        "word": "turn",
+        "start": 0.906,
+        "end": 1.103
+      },
+      {
+        "word": "this,",
+        "start": 1.149,
+        "end": 1.718
+      }
+    ]
+  },
+  "d1b": {
+    "text": "into this.",
+    "seconds": 1.095,
+    "words": [
+      {
+        "word": "into",
+        "start": 0.0,
+        "end": 0.244
+      },
+      {
+        "word": "this.",
+        "start": 0.302,
+        "end": 0.975
+      }
+    ]
+  },
+  "d1c": {
+    "text": "Same agent. Same prompt. The difference is Rialto.",
+    "seconds": 3.75,
+    "words": [
+      {
+        "word": "Same",
+        "start": 0.0,
+        "end": 0.302
+      },
+      {
+        "word": "agent.",
+        "start": 0.337,
+        "end": 0.72
+      },
+      {
+        "word": "Same",
+        "start": 0.836,
+        "end": 1.091
+      },
+      {
+        "word": "prompt.",
+        "start": 1.126,
+        "end": 1.591
+      },
+      {
+        "word": "The",
+        "start": 1.761,
+        "end": 1.877
+      },
+      {
+        "word": "difference",
+        "start": 1.924,
+        "end": 2.284
+      },
+      {
+        "word": "is",
+        "start": 2.342,
+        "end": 2.435
+      },
+      {
+        "word": "Rialto.",
+        "start": 2.516,
+        "end": 3.63
+      }
+    ]
+  },
+  "d2a": {
+    "text": "Rialto is a marketplace where AI agents find, compare and pay for APIs.",
+    "seconds": 6.111,
+    "words": [
+      {
+        "word": "Rialto",
+        "start": 0.0,
+        "end": 0.522
+      },
+      {
+        "word": "is",
+        "start": 0.615,
+        "end": 0.697
+      },
+      {
+        "word": "a",
+        "start": 0.755,
+        "end": 0.789
+      },
+      {
+        "word": "marketplace",
+        "start": 0.906,
+        "end": 1.521
+      },
+      {
+        "word": "where",
+        "start": 1.544,
+        "end": 1.765
+      },
+      {
+        "word": "AI",
+        "start": 1.834,
+        "end": 2.125
+      },
+      {
+        "word": "agents",
+        "start": 2.194,
+        "end": 2.508
+      },
+      {
+        "word": "find,",
+        "start": 2.577,
+        "end": 3.077
+      },
+      {
+        "word": "compare",
+        "start": 3.251,
+        "end": 3.843
+      },
+      {
+        "word": "and",
+        "start": 3.959,
+        "end": 4.133
+      },
+      {
+        "word": "pay",
+        "start": 4.203,
+        "end": 4.377
+      },
+      {
+        "word": "for",
+        "start": 4.447,
+        "end": 4.551
+      },
+      {
+        "word": "APIs.",
+        "start": 4.621,
+        "end": 5.991
+      }
+    ]
+  },
+  "d2b": {
+    "text": "You plug in your agent, or you sell your API to everyone else's.",
+    "seconds": 4.857,
+    "words": [
+      {
+        "word": "You",
+        "start": 0.0,
+        "end": 0.151
+      },
+      {
+        "word": "plug",
+        "start": 0.221,
+        "end": 0.441
+      },
+      {
+        "word": "in",
+        "start": 0.488,
+        "end": 0.534
+      },
+      {
+        "word": "your",
+        "start": 0.58,
+        "end": 0.708
+      },
+      {
+        "word": "agent,",
+        "start": 0.766,
+        "end": 1.173
+      },
+      {
+        "word": "or",
+        "start": 1.382,
+        "end": 1.509
+      },
+      {
+        "word": "you",
+        "start": 1.567,
+        "end": 1.649
+      },
+      {
+        "word": "sell",
+        "start": 1.718,
+        "end": 1.892
+      },
+      {
+        "word": "your",
+        "start": 1.95,
+        "end": 2.043
+      },
+      {
+        "word": "API",
+        "start": 2.101,
+        "end": 2.45
+      },
+      {
+        "word": "to",
+        "start": 2.508,
+        "end": 2.554
+      },
+      {
+        "word": "everyone",
+        "start": 2.635,
+        "end": 2.984
+      },
+      {
+        "word": "else's.",
+        "start": 3.019,
+        "end": 4.737
+      }
+    ]
+  },
+  "d2c": {
+    "text": "Let's connect an agent.",
+    "seconds": 2.024,
+    "words": [
+      {
+        "word": "Let's",
+        "start": 0.0,
+        "end": 0.267
+      },
+      {
+        "word": "connect",
+        "start": 0.313,
+        "end": 0.615
+      },
+      {
+        "word": "an",
+        "start": 0.662,
+        "end": 0.72
+      },
+      {
+        "word": "agent.",
+        "start": 0.789,
+        "end": 1.904
+      }
+    ]
+  },
+  "d3a": {
+    "text": "Create an account: a name, an email and a password.",
+    "seconds": 4.903,
+    "words": [
+      {
+        "word": "Create",
+        "start": 0.0,
+        "end": 0.36
+      },
+      {
+        "word": "an",
+        "start": 0.383,
+        "end": 0.441
+      },
+      {
+        "word": "account:",
+        "start": 0.464,
+        "end": 1.045
+      },
+      {
+        "word": "a",
+        "start": 1.37,
+        "end": 1.451
+      },
+      {
+        "word": "name,",
+        "start": 1.544,
+        "end": 2.009
+      },
+      {
+        "word": "an",
+        "start": 2.287,
+        "end": 2.426
+      },
+      {
+        "word": "email",
+        "start": 2.508,
+        "end": 2.926
+      },
+      {
+        "word": "and",
+        "start": 3.042,
+        "end": 3.216
+      },
+      {
+        "word": "a",
+        "start": 3.274,
+        "end": 3.297
+      },
+      {
+        "word": "password.",
+        "start": 3.344,
+        "end": 4.783
+      }
+    ]
+  },
+  "d4a": {
+    "text": "Now create an agent. It gets its own key,",
+    "seconds": 2.449,
+    "words": [
+      {
+        "word": "Now",
+        "start": 0.0,
+        "end": 0.221
+      },
+      {
+        "word": "create",
+        "start": 0.302,
+        "end": 0.615
+      },
+      {
+        "word": "an",
+        "start": 0.639,
+        "end": 0.697
+      },
+      {
+        "word": "agent.",
+        "start": 0.743,
+        "end": 1.207
+      },
+      {
+        "word": "It",
+        "start": 1.377,
+        "end": 1.504
+      },
+      {
+        "word": "gets",
+        "start": 1.551,
+        "end": 1.725
+      },
+      {
+        "word": "its",
+        "start": 1.771,
+        "end": 1.887
+      },
+      {
+        "word": "own",
+        "start": 1.922,
+        "end": 2.05
+      },
+      {
+        "word": "key,",
+        "start": 2.108,
+        "end": 2.329
+      }
+    ]
+  },
+  "d4b": {
+    "text": "and one command to connect it.",
+    "seconds": 1.838,
+    "words": [
+      {
+        "word": "and",
+        "start": 0.0,
+        "end": 0.139
+      },
+      {
+        "word": "one",
+        "start": 0.232,
+        "end": 0.441
+      },
+      {
+        "word": "command",
+        "start": 0.488,
+        "end": 0.778
+      },
+      {
+        "word": "to",
+        "start": 0.824,
+        "end": 0.871
+      },
+      {
+        "word": "connect",
+        "start": 0.929,
+        "end": 1.231
+      },
+      {
+        "word": "it.",
+        "start": 1.277,
+        "end": 1.718
+      }
+    ]
+  },
+  "d4c": {
+    "text": "Then give it a budget. It can never spend more than that.",
+    "seconds": 3.588,
+    "words": [
+      {
+        "word": "Then",
+        "start": 0.0,
+        "end": 0.244
+      },
+      {
+        "word": "give",
+        "start": 0.313,
+        "end": 0.441
+      },
+      {
+        "word": "it",
+        "start": 0.476,
+        "end": 0.522
+      },
+      {
+        "word": "a",
+        "start": 0.557,
+        "end": 0.58
+      },
+      {
+        "word": "budget.",
+        "start": 0.627,
+        "end": 1.115
+      },
+      {
+        "word": "It",
+        "start": 1.285,
+        "end": 1.413
+      },
+      {
+        "word": "can",
+        "start": 1.448,
+        "end": 1.552
+      },
+      {
+        "word": "never",
+        "start": 1.61,
+        "end": 1.796
+      },
+      {
+        "word": "spend",
+        "start": 1.854,
+        "end": 2.063
+      },
+      {
+        "word": "more",
+        "start": 2.11,
+        "end": 2.237
+      },
+      {
+        "word": "than",
+        "start": 2.272,
+        "end": 2.388
+      },
+      {
+        "word": "that.",
+        "start": 2.423,
+        "end": 3.468
+      }
+    ]
+  },
+  "d5a": {
+    "text": "Paste the command into Claude Code. That is the whole setup.",
+    "seconds": 4.346,
+    "words": [
+      {
+        "word": "Paste",
+        "start": 0.0,
+        "end": 0.395
+      },
+      {
+        "word": "the",
+        "start": 0.43,
+        "end": 0.499
+      },
+      {
+        "word": "command",
+        "start": 0.546,
+        "end": 0.871
+      },
+      {
+        "word": "into",
+        "start": 0.917,
+        "end": 1.068
+      },
+      {
+        "word": "Claude",
+        "start": 1.138,
+        "end": 1.428
+      },
+      {
+        "word": "Code.",
+        "start": 1.463,
+        "end": 1.962
+      },
+      {
+        "word": "That",
+        "start": 2.241,
+        "end": 2.403
+      },
+      {
+        "word": "is",
+        "start": 2.45,
+        "end": 2.519
+      },
+      {
+        "word": "the",
+        "start": 2.554,
+        "end": 2.624
+      },
+      {
+        "word": "whole",
+        "start": 2.67,
+        "end": 2.868
+      },
+      {
+        "word": "setup.",
+        "start": 2.902,
+        "end": 4.226
+      }
+    ]
+  },
+  "d5b": {
+    "text": "Now ask for a game. And add two words: use Rialto.",
+    "seconds": 4.551,
+    "words": [
+      {
+        "word": "Now",
+        "start": 0,
+        "end": 0.209
+      },
+      {
+        "word": "ask",
+        "start": 0.279,
+        "end": 0.522
+      },
+      {
+        "word": "for",
+        "start": 0.58,
+        "end": 0.708
+      },
+      {
+        "word": "a",
+        "start": 0.766,
+        "end": 0.801
+      },
+      {
+        "word": "game.",
+        "start": 0.859,
+        "end": 1.3
+      },
+      {
+        "word": "And",
+        "start": 1.474,
+        "end": 1.637
+      },
+      {
+        "word": "add",
+        "start": 1.707,
+        "end": 1.904
+      },
+      {
+        "word": "two",
+        "start": 1.939,
+        "end": 2.101
+      },
+      {
+        "word": "words:",
+        "start": 2.159,
+        "end": 2.728
+      },
+      {
+        "word": "use",
+        "start": 2.937,
+        "end": 3.146
+      },
+      {
+        "word": "Rialto.",
+        "start": 3.193,
+        "end": 4.551
+      }
+    ]
+  },
+  "d5c": {
+    "text": "Claude shops for what the game needs: car sprites, a road, a soundtrack, sound effects. Each call is paid on its own, in USDC on Solana.",
+    "seconds": 11.146,
+    "words": [
+      {
+        "word": "Claude",
+        "start": 0,
+        "end": 0.383
+      },
+      {
+        "word": "shops",
+        "start": 0.406,
+        "end": 0.708
+      },
+      {
+        "word": "for",
+        "start": 0.743,
+        "end": 0.836
+      },
+      {
+        "word": "what",
+        "start": 0.871,
+        "end": 0.987
+      },
+      {
+        "word": "the",
+        "start": 1.022,
+        "end": 1.091
+      },
+      {
+        "word": "game",
+        "start": 1.126,
+        "end": 1.347
+      },
+      {
+        "word": "needs:",
+        "start": 1.382,
+        "end": 1.892
+      },
+      {
+        "word": "car",
+        "start": 2.136,
+        "end": 2.322
+      },
+      {
+        "word": "sprites,",
+        "start": 2.368,
+        "end": 3.007
+      },
+      {
+        "word": "a",
+        "start": 3.181,
+        "end": 3.251
+      },
+      {
+        "word": "road,",
+        "start": 3.344,
+        "end": 3.762
+      },
+      {
+        "word": "a",
+        "start": 3.878,
+        "end": 3.947
+      },
+      {
+        "word": "soundtrack,",
+        "start": 4.017,
+        "end": 4.714
+      },
+      {
+        "word": "sound",
+        "start": 4.865,
+        "end": 5.108
+      },
+      {
+        "word": "effects.",
+        "start": 5.143,
+        "end": 5.689
+      },
+      {
+        "word": "Each",
+        "start": 6.385,
+        "end": 6.606
+      },
+      {
+        "word": "call",
+        "start": 6.664,
+        "end": 6.896
+      },
+      {
+        "word": "is",
+        "start": 6.966,
+        "end": 7.036
+      },
+      {
+        "word": "paid",
+        "start": 7.082,
+        "end": 7.314
+      },
+      {
+        "word": "on",
+        "start": 7.396,
+        "end": 7.535
+      },
+      {
+        "word": "its",
+        "start": 7.593,
+        "end": 7.732
+      },
+      {
+        "word": "own,",
+        "start": 7.802,
+        "end": 8.301
+      },
+      {
+        "word": "in",
+        "start": 8.51,
+        "end": 8.649
+      },
+      {
+        "word": "USDC",
+        "start": 8.731,
+        "end": 9.334
+      },
+      {
+        "word": "on",
+        "start": 9.543,
+        "end": 9.706
+      },
+      {
+        "word": "Solana.",
+        "start": 9.799,
+        "end": 11.146
+      }
+    ]
+  },
+  "d5d": {
+    "text": "No sign-up with the provider. No API key. No card.",
+    "seconds": 4.493,
+    "words": [
+      {
+        "word": "No",
+        "start": 0.0,
+        "end": 0.221
+      },
+      {
+        "word": "sign-up",
+        "start": 0.302,
+        "end": 0.639
+      },
+      {
+        "word": "with",
+        "start": 0.673,
+        "end": 0.778
+      },
+      {
+        "word": "the",
+        "start": 0.801,
+        "end": 0.871
+      },
+      {
+        "word": "provider.",
+        "start": 0.894,
+        "end": 1.474
+      },
+      {
+        "word": "No",
+        "start": 1.8,
+        "end": 1.95
+      },
+      {
+        "word": "API",
+        "start": 2.032,
+        "end": 2.415
+      },
+      {
+        "word": "key.",
+        "start": 2.473,
+        "end": 2.821
+      },
+      {
+        "word": "No",
+        "start": 2.991,
+        "end": 3.142
+      },
+      {
+        "word": "card.",
+        "start": 3.212,
+        "end": 4.373
+      }
+    ]
+  },
+  "d6a": {
+    "text": "Every call shows up in your dashboard, with its price and its transaction on Solana.",
+    "seconds": 5.182,
+    "words": [
+      {
+        "word": "Every",
+        "start": 0.0,
+        "end": 0.325
+      },
+      {
+        "word": "call",
+        "start": 0.383,
+        "end": 0.592
+      },
+      {
+        "word": "shows",
+        "start": 0.662,
+        "end": 0.894
+      },
+      {
+        "word": "up",
+        "start": 0.94,
+        "end": 1.033
+      },
+      {
+        "word": "in",
+        "start": 1.08,
+        "end": 1.126
+      },
+      {
+        "word": "your",
+        "start": 1.161,
+        "end": 1.254
+      },
+      {
+        "word": "dashboard,",
+        "start": 1.3,
+        "end": 1.904
+      },
+      {
+        "word": "with",
+        "start": 2.148,
+        "end": 2.31
+      },
+      {
+        "word": "its",
+        "start": 2.345,
+        "end": 2.45
+      },
+      {
+        "word": "price",
+        "start": 2.508,
+        "end": 2.821
+      },
+      {
+        "word": "and",
+        "start": 2.856,
+        "end": 2.926
+      },
+      {
+        "word": "its",
+        "start": 2.972,
+        "end": 3.088
+      },
+      {
+        "word": "transaction",
+        "start": 3.123,
+        "end": 3.762
+      },
+      {
+        "word": "on",
+        "start": 3.82,
+        "end": 3.889
+      },
+      {
+        "word": "Solana.",
+        "start": 3.936,
+        "end": 5.062
+      }
+    ]
+  },
+  "d7a": {
+    "text": "Selling works the same way. Paste your endpoint, set your price,",
+    "seconds": 3.622,
+    "words": [
+      {
+        "word": "Selling",
+        "start": 0.0,
+        "end": 0.395
+      },
+      {
+        "word": "works",
+        "start": 0.453,
+        "end": 0.685
+      },
+      {
+        "word": "the",
+        "start": 0.731,
+        "end": 0.801
+      },
+      {
+        "word": "same",
+        "start": 0.848,
+        "end": 1.08
+      },
+      {
+        "word": "way.",
+        "start": 1.138,
+        "end": 1.533
+      },
+      {
+        "word": "Paste",
+        "start": 1.703,
+        "end": 1.981
+      },
+      {
+        "word": "your",
+        "start": 2.005,
+        "end": 2.109
+      },
+      {
+        "word": "endpoint,",
+        "start": 2.155,
+        "end": 2.608
+      },
+      {
+        "word": "set",
+        "start": 2.759,
+        "end": 2.945
+      },
+      {
+        "word": "your",
+        "start": 2.98,
+        "end": 3.084
+      },
+      {
+        "word": "price,",
+        "start": 3.119,
+        "end": 3.502
+      }
+    ]
+  },
+  "d7b": {
+    "text": "and publish.",
+    "seconds": 1.513,
+    "words": [
+      {
+        "word": "and",
+        "start": 0.0,
+        "end": 0.174
+      },
+      {
+        "word": "publish.",
+        "start": 0.244,
+        "end": 1.393
+      }
+    ]
+  },
+  "d8a": {
+    "text": "It is in the catalog right away, and you earn on every call an agent makes.",
+    "seconds": 4.718,
+    "words": [
+      {
+        "word": "It",
+        "start": 0.0,
+        "end": 0.163
+      },
+      {
+        "word": "is",
+        "start": 0.197,
+        "end": 0.279
+      },
+      {
+        "word": "in",
+        "start": 0.325,
+        "end": 0.372
+      },
+      {
+        "word": "the",
+        "start": 0.406,
+        "end": 0.476
+      },
+      {
+        "word": "catalog",
+        "start": 0.511,
+        "end": 0.952
+      },
+      {
+        "word": "right",
+        "start": 1.022,
+        "end": 1.231
+      },
+      {
+        "word": "away,",
+        "start": 1.254,
+        "end": 1.718
+      },
+      {
+        "word": "and",
+        "start": 1.927,
+        "end": 2.067
+      },
+      {
+        "word": "you",
+        "start": 2.136,
+        "end": 2.229
+      },
+      {
+        "word": "earn",
+        "start": 2.345,
+        "end": 2.589
+      },
+      {
+        "word": "on",
+        "start": 2.659,
+        "end": 2.775
+      },
+      {
+        "word": "every",
+        "start": 2.868,
+        "end": 3.111
+      },
+      {
+        "word": "call",
+        "start": 3.17,
+        "end": 3.367
+      },
+      {
+        "word": "an",
+        "start": 3.413,
+        "end": 3.471
+      },
+      {
+        "word": "agent",
+        "start": 3.529,
+        "end": 3.773
+      },
+      {
+        "word": "makes.",
+        "start": 3.808,
+        "end": 4.598
+      }
+    ]
+  },
+  "d9a": {
+    "text": "That is Rialto. Agents that hire.",
+    "seconds": 2.721,
+    "words": [
+      {
+        "word": "That",
+        "start": 0.0,
+        "end": 0.186
+      },
+      {
+        "word": "is",
+        "start": 0.232,
+        "end": 0.302
+      },
+      {
+        "word": "Rialto.",
+        "start": 0.372,
+        "end": 1.057
+      },
+      {
+        "word": "Agents",
+        "start": 1.382,
+        "end": 1.753
+      },
+      {
+        "word": "that",
+        "start": 1.788,
+        "end": 1.916
+      },
+      {
+        "word": "hire.",
+        "start": 1.974,
+        "end": 2.601
+      }
+    ]
+  },
+  "d5e": {
+    "text": "Here is what it built. Listen.",
+    "seconds": 2.694,
+    "words": [
+      {
+        "word": "Here",
+        "start": 0,
+        "end": 0.232
+      },
+      {
+        "word": "is",
+        "start": 0.267,
+        "end": 0.348
+      },
+      {
+        "word": "what",
+        "start": 0.395,
+        "end": 0.534
+      },
+      {
+        "word": "it",
+        "start": 0.58,
+        "end": 0.65
+      },
+      {
+        "word": "built.",
+        "start": 0.697,
+        "end": 1.138
+      },
+      {
+        "word": "Listen.",
+        "start": 1.95,
+        "end": 2.694
+      }
+    ]
+  },
+  "d5f": {
+    "text": "Twenty-four purchases. One dollar and eight cents.",
+    "seconds": 2.926,
+    "words": [
+      {
+        "word": "Twenty-four",
+        "start": 0,
+        "end": 0.488
+      },
+      {
+        "word": "purchases.",
+        "start": 0.534,
+        "end": 1.184
+      },
+      {
+        "word": "One",
+        "start": 1.393,
+        "end": 1.591
+      },
+      {
+        "word": "dollar",
+        "start": 1.625,
+        "end": 1.869
+      },
+      {
+        "word": "and",
+        "start": 1.927,
+        "end": 1.997
+      },
+      {
+        "word": "eight",
+        "start": 2.055,
+        "end": 2.218
+      },
+      {
+        "word": "cents.",
+        "start": 2.252,
+        "end": 2.926
+      }
+    ]
   }
 }
