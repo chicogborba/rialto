@@ -24,6 +24,7 @@
     "db:backup": "tsx scripts/backup-db.ts",
     "e2e:accounts": "tsx scripts/e2e-accounts.ts",
     "e2e:live": "tsx scripts/e2e-live.ts",
+    "buy": "tsx scripts/buy.ts",
     "user:admin": "tsx scripts/user-admin.ts"
   },
   "dependencies": {

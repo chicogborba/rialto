@@ -2,6 +2,8 @@
 //
 //   npm run user:admin -- list                       who has signed up
 //   npm run user:admin -- reset-password <email>     set a new random password (printed once), sign the user out everywhere
+//   npm run user:admin -- create-agent <email> <name> [maxPerCallUsd] [sessionBudgetUsd]
+//                                                    a new agent for that account, with its limits; the key is printed once
 //   npm run user:admin -- purge <@domain>            delete the accounts whose email ends with this, with their agents and APIs
 //                                                    (e.g. @example.com: what the e2e script leaves behind)
 //
@@ -10,10 +12,13 @@ import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
 import { hashPassword, normalizeEmail } from "../lib/auth/password";
+import { createAgentFor, updateAgent } from "../lib/db/users";
+import { toMicro } from "../lib/money";
+import { defaultPolicy } from "../lib/wallet/policy";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
 const prisma = new PrismaClient();
-const [command, arg] = process.argv.slice(2);
+const [command, arg, name, perCallUsd, sessionUsd] = process.argv.slice(2);
 
 async function main(): Promise<void> {
   if (command === "list") {
@@ -30,6 +35,13 @@ async function main(): Promise<void> {
     const next = randomBytes(9).toString("base64url").replace(/[-_]/g, "x");
     await prisma.$transaction([prisma.user.update({ where: { id: user.id }, data: { passwordHash: await hashPassword(next) } }), prisma.session.deleteMany({ where: { userId: user.id } })]);
     console.log(`New password for ${email}: ${next}\nThey are signed out everywhere. Ask them to change it after signing in.`);
+  } else if (command === "create-agent" && arg && name) {
+    const user = await prisma.user.findUnique({ where: { email: normalizeEmail(arg) } });
+    if (!user) throw new Error(`No account with ${arg}`);
+    const { agentId, apiKey } = await createAgentFor(user.id, name);
+    const policy = { ...defaultPolicy(), maxPerRequestMicro: toMicro(Number(perCallUsd ?? 0.5)), sessionBudgetMicro: toMicro(Number(sessionUsd ?? 10)) };
+    await updateAgent(user.id, agentId, { policy });
+    console.log(`Agent "${name}" (${agentId}) for ${user.email}: up to $${Number(perCallUsd ?? 0.5)} per call, $${Number(sessionUsd ?? 10)} in total.\nKey, shown once: ${apiKey}`);
   } else if (command === "purge" && arg?.startsWith("@")) {
     const users = await prisma.user.findMany({ where: { email: { endsWith: arg.toLowerCase() } }, select: { id: true, seller: { select: { id: true } } } });
     const ids = users.map((u) => u.id);
@@ -49,7 +61,7 @@ async function main(): Promise<void> {
     ]);
     console.log(`Deleted ${ids.length} account(s) ending in ${arg}.`);
   } else {
-    console.log("Usage: user:admin list | reset-password <email> | purge <@domain>");
+    console.log("Usage: user:admin list | reset-password <email> | create-agent <email> <name> [perCallUsd] [sessionUsd] | purge <@domain>");
     process.exitCode = 1;
   }
 }
