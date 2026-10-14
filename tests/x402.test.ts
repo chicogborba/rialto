@@ -211,6 +211,21 @@ describe("a real seller's gateway call on the live rail", () => {
     expect(JSON.stringify(out.json)).not.toContain("pikachu");
     expect(gw.settled).toEqual([]);
   });
+  it("keeps a finished result when the payment expired meanwhile, and hands it over for the next payment", async () => {
+    const gw = new FakeGateway();
+    let calls = 0;
+    const slow = () => ((calls += 1), Promise.resolve({ video: "https://f.example/v.mp4" }));
+    const run = { "x-run-id": `run_${++nonce}` };
+    gw.failSeller = true;
+    const first = await call(gw, { ...pay(), ...run }, slow);
+    expect(first.status).toBe(402);
+    expect(JSON.stringify(first.json)).not.toContain("v.mp4");
+    gw.failSeller = false;
+    const second = await call(gw, { ...pay(), ...run }, slow);
+    expect(second.status).toBe(200);
+    expect(second.json).toMatchObject({ result: { video: "https://f.example/v.mp4" } });
+    expect(calls).toBe(1);
+  });
   it("still delivers when only the commission does not land: that loss is Rialto's", async () => {
     const gw = new FakeGateway();
     gw.failFee = true;

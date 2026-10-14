@@ -137,7 +137,9 @@ export async function createBuyer(opts: BuyerOptions): Promise<Buyer> {
       const constraints = resolveConstraints({ goal: args.goal, policy: limits, budgetMicro: args.budgetUsd === undefined ? undefined : toMicro(args.budgetUsd), preset: args.preset });
 
       const clock = realClock(0);
-      let balance = (await usdcBalance(rpc(net), signer.address, net.usdc).catch(() => null)) ?? 0;
+      // a public RPC that answers 429 must not read as an empty wallet: when the balance cannot be read, the facilitator decides
+      const read = await usdcBalance(rpc(net), signer.address, net.usdc).then((v) => v ?? 0, () => null);
+      let balance = read ?? Number.MAX_SAFE_INTEGER;
       const wallet = (): WalletState => ({ balanceMicro: balance, sessionSpendMicro: ledger.spent(), policy: limits });
       const http = createHttpExecutor(base);
       const executor: Executor = { call: (service, body, headers) => http.call(service, body, { ...headers, authorization: `Bearer ${opts.rialtoKey}` }) };
