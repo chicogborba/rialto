@@ -9,7 +9,7 @@ An **autonomous service procurement layer for AI agents**. Give it a goal and a 
 **Honesty first**
 
 - There are two kinds of provider. **Real sellers** are APIs somebody published through the gateway: the first-party integrations (fal.ai, ElevenLabs, Tripo, when the operator's keys are set), the PokéDex test seller, and whatever users publish. **Demo providers** are 25 fictional ones from the seed, labelled `DEMO PROVIDER`, there so the decision engine has a market to choose from.
-- With `PAYMENT_MODE=live`, real sellers are paid with a real x402 v2 exchange settled in USDC on **Solana devnet** (`X402PaymentRail`): real signed transactions, test money. Devnet is pinned in code.
+- With `PAYMENT_MODE=live`, real sellers are paid with a real x402 v2 exchange settled in USDC on Solana, **by the buyer's own wallet, directly**: Rialto's server holds no key and no funds. The network (devnet, test money, or mainnet) is `SOLANA_NETWORK`; the public demo runs on devnet.
 - Demo providers are always paid on the **simulation**: a real HTTP 402 exchange against local routes, with `X-Sim-*` headers (deliberately not the x402 header names), `sim_…` references and no explorer link. The UI shows `SIMULATED` on each of them. With `PAYMENT_MODE=simulated` (the default) everything runs this way.
 - We did not invent x402 and we are not the first x402 marketplace. x402 is the payment rail; Rialto is the decision layer on top.
 
@@ -78,23 +78,36 @@ Scenarios are DAGs. *Research* = `market.quotes ∥ news.search ∥ filings.sec 
 
 ## How x402 fits
 
-`PaymentRail` is the seam: `requestPayment` (agent signs), `verifyPayment`, `settlePayment` (provider side).
+x402 moves money from a payer to one payee. Rialto needs it to move money to two, the seller and Rialto itself, without ever being the payer. So a purchase is **two x402 payments from the buyer's wallet, in one request**:
+
+| Payment | From → to | Amount | Header |
+|---|---|---|---|
+| Seller's | buyer → seller's payout address | the seller's price | `PAYMENT-SIGNATURE` (standard x402) |
+| Commission | buyer → `PLATFORM_FEE_PAYTO` | buyer price − seller price | `X-Rialto-Fee-Payment` (same encoding) |
 
 | | Status |
 |---|---|
-| `DemoPaymentRail` | Implemented. Simulated, no network, `sim_…` refs. |
-| Mock provider routes `/api/x/[provider]/[capability]` | Real HTTP 402, `X-Sim-Payment` / `X-Sim-Settlement` headers (deliberately not x402 header names). |
-| `X402PaymentRail` | Implemented, devnet only. `@x402/svm` builds and signs the USDC transfer; the facilitator verifies and settles it. |
-| `HybridPaymentRail` | What runs when live is on: requirements marked `live` go to x402, the rest to the simulation. A payment from one rail is never accepted on the other. |
-| Seller gateway `/api/gw/[slug]/[capability]` | On the live rail: `PAYMENT-REQUIRED` on the 402, `PAYMENT-SIGNATURE` on the retry, `PAYMENT-RESPONSE` on success. |
+| `DemoPaymentRail` | Simulated, no network, `sim_…` refs. Used by Rialto's own orchestrator, for the demo providers and the test credit. |
+| Mock provider routes `/api/x/[provider]/[capability]` | Real HTTP 402 with `X-Sim-Payment` / `X-Sim-Settlement` headers (deliberately not x402 header names). |
+| `LiveGateway` (`lib/x402/live-server.ts`) | The provider side of x402: states each leg's requirement, has the facilitator verify the transactions the buyer signed, submits them after the seller's API answered. Holds no key. |
+| `handleLiveCall` (`lib/gateway/live-call.ts`) | The two-payment sequence, with the rules below. |
+| `BuyerPaymentRail` (`lib/x402/live-client.ts`) | The buyer's side: signs both legs with `@x402/svm`. Runs where the key is. |
+| Local signer (`mcp/server.ts`) | An MCP server on the buyer's machine: discovery and plans go to the hosted endpoint, `execute_service` runs `runAgent` locally with a `BuyerPaymentRail`. |
 
-The agent and the UI do not know which rail ran: both produce the same `RunEvent`s, and each transaction carries its own `mode`. On the live rail:
+The 402 body carries both legs' exact x402 requirements (`accepts[0].x402 = { seller, fee }`), so the buyer signs precisely what the gateway will check. The standard `PAYMENT-REQUIRED` header carries the seller's leg; `X-Rialto-Fee-Required` carries the commission's.
 
-- **Who pays.** The platform wallet (`SOLANA_PAYER_SECRET_KEY`) signs a transfer of the *seller's price* to the seller's payout address. The buyer's prepaid balance is debited the *buyer price* in the ledger; the commission stays in the wallet.
-- **Fees.** The facilitator is the transaction's fee payer, so neither wallet needs SOL. The seller's USDC token account must already exist.
-- **Order.** Verify → call the seller's API → settle. A failed call is never settled. If settlement fails the result is withheld and the buyer is not charged.
-- **Ledger.** The seller's share is recorded as paid out, with the transaction signature, instead of accruing as a balance.
-- **Scope.** Network, mint and explorer links are constants for devnet (`lib/x402/solana.ts`). The gateway is still called only by the Rialto orchestrator; opening it to outside x402 clients needs a decision on how the commission is collected.
+**Rules of the gateway** (all in `handleLiveCall`, all tested):
+
+- **Order.** Verify both → call the seller's API → settle the seller's payment → settle the commission. A failed call is never settled, and a payment that does not land returns no result.
+- **One payer.** Both payments must come from the same wallet, or the call is refused.
+- **Single use.** A signed payment is accepted once (a 3-minute window of seen payments, on top of the chain's own replay protection), so a captured header cannot buy again.
+- **A commission that fails to land** never costs the buyer a result: the seller is already paid, and the loss is Rialto's.
+- **Fees.** The facilitator is the transactions' fee payer, so no wallet needs SOL. Both payees must already hold a USDC account (it exists once they have received USDC).
+- **Who is asked.** The live path of the gateway is open to anyone who pays; an optional `Authorization: Bearer rl_buyer_…` only puts the call in that agent's activity. Calls to a seller paid on the simulation are still only accepted from Rialto's own orchestrator.
+
+**Network.** `lib/x402/solana.ts` is the one place that knows which chain this is: `SOLANA_NETWORK=devnet|mainnet` selects the CAIP-2 id, the USDC mint, the explorer links and the default facilitator and RPC. Pages say which network via `NEXT_PUBLIC_SOLANA_NETWORK` (a build-time value; the Dockerfile and the deploy workflow pass it).
+
+**Why not a hosted wallet that pays for you?** Because that is custody: signing needs the buyer's key, and a key on Rialto's server is Rialto holding the money. The signer keeps it where it belongs. The hosted endpoint can discover, compare and plan everything, and buys from the simulated providers with test credit; when the best provider is paid on-chain it says so and points at the signer.
 
 ## How MCP fits
 
@@ -135,34 +148,46 @@ Design tokens live in `app/globals.css`. Motion maps to run state; everything ho
 
 ## Limitations
 
-- Live payments are devnet only. Demo providers are fictional and paid on the simulation; their reputation and quality figures are seed data.
+- Real payments need the buyer's own wallet through the local signer; the hosted endpoint cannot make them. Demo providers are fictional and paid on the simulation; their reputation and quality figures are seed data.
+- The public demo runs on devnet. The mainnet path is the same code with `SOLANA_NETWORK=mainnet`, and has not been exercised with real funds by this project.
 - The planner is rule-based. Goals outside its scenarios use a generic search → analysis plan with capped confidence, and the input for a seller's API is derived from the goal heuristically (`{goal}`, `{query}`, `{url}`, `{text}` in `lib/gateway/template.ts`). An LLM planner would build typed input from each service's schema.
-- The gateway is called only by the Rialto orchestrator. Opening it to outside x402 clients needs a decision on how the commission is collected.
+- Generic x402 clients that know only the standard header cannot buy: the commission needs the second payment, which only Rialto-aware clients (the signer, or anything that reads `accepts[0].x402`) make.
 - One instance: SQLite, an in-memory rate limiter and the internal gateway token assume it. Balances are Prisma `Int`, capping at about $2,147 per account.
 - Quality is self-reported by sellers; reputation starts at 50 and is earned.
 
 ## Future extensions
 
-LLM planner (propose the DAG, keep scoring deterministic) · mainnet · a public x402 endpoint for outside clients · x402 service discovery ingestion · benchmark verification at onboarding · on-chain reputation attestations · result-quality verification and refunds · withdrawals of account balances on-chain.
+LLM planner (propose the DAG, keep scoring deterministic) · a published signer package · delegated spending (SPL token approvals) so the hosted endpoint could pay within a limit without holding funds · x402 service discovery ingestion · benchmark verification at onboarding · on-chain reputation attestations · result-quality verification and refunds.
 
 ## The platform: two sides
 
-**Sellers** publish an API; **buyers** connect their Claude Code / Codex and let their agent hire it. Rialto sits in the middle (gateway, wallet, ledger) and takes a small commission.
+**Sellers** publish an API; **buyers** connect their Claude Code / Codex and let their agent hire it. Rialto sits in the middle as the marketplace (registry, decision engine, gateway) and takes a small commission. It is never in the flow of money.
 
 ```
-buyer's Claude ──MCP (Bearer rl_buyer_…)──▶ /api/mcp ──▶ agent: plan → pick → policy check
-                                                     └─▶ /api/gw/{api}/{capability}   (402 → verify → call seller → settle)
-                                                                  └─▶ seller's real HTTPS API
-money: buyer wallet −(seller price + fee) · seller balance +(seller price) · platform +fee · append-only ledger
+buyer's machine                              Rialto                                seller
+Claude ──▶ local signer ──discover/plan──▶  /api/mcp, /api/registry
+                │ ──────── call ─────────▶  /api/gw/{api}/{capability} ── 402 ──▶ (two requirements)
+                │ ── call + two signed ──▶  verify → ─────── call ──────────────▶ seller's real HTTPS API
+                │       payments            settle seller, settle commission
+                ▼
+   buyer's wallet ──── USDC ────────────────────────────────────────────────────▶ seller's wallet
+   buyer's wallet ──── USDC (commission) ───────────────────────────────────────▶ Rialto's fee address
 ```
 
 | Flow | Where | What happens |
 |---|---|---|
-| Publish | `/dashboard/apis` | Signed in, with a registered wallet to be paid at → publish endpoint, price, optional secret header and result fields → test it → watch earnings → withdraw |
-| Connect | `/dashboard/agents` | Create an agent (key), give it money from the account, paste one command → ask your agent for things |
-| Console | `/app` | The visual console (uses the shared demo agent unless you send a key) |
+| Publish | `/dashboard/apis` | Signed in, with a registered payout address → publish endpoint, price, optional secret header and result fields → test it → watch calls come in. You are paid in your wallet, per call. |
+| Connect | `/dashboard/agents` | Create an agent (key; its limits apply to the signer too) → paste the signer command with a wallet that holds USDC → ask your agent for things |
+| Console | `/app` | The visual console: runs the decision engine against the simulated providers with the shared demo agent |
 
-**Install (verified against the Claude Code and Codex docs):**
+**Install, real sellers** (the local signer, run from a checkout of this repo):
+
+```bash
+claude mcp add rialto -e RIALTO_URL=https://YOUR-HOST -e RIALTO_KEY=rl_buyer_… \
+  -e SOLANA_WALLET_KEY=<base58 secret key> -- npx tsx mcp/server.ts
+```
+
+**Install, hosted** (simulated providers, test credit; verified against the Claude Code and Codex docs):
 
 ```bash
 # Claude Code
@@ -175,27 +200,24 @@ url = "https://YOUR-HOST/api/mcp"
 bearer_token_env_var = "RIALTO_KEY"
 ```
 
-**Commission.** Buyer pays `sellerPrice + max(PLATFORM_MIN_FEE_MICRO, ceil(sellerPrice × PLATFORM_FEE_BPS / 10000))`; the seller always receives exactly their price. Defaults: 5%, floor $0.001. The publish page previews it live. All money is integer micro-USDC.
+**Commission.** On the live rail the buyer's wallet pays `sellerPrice + max(PLATFORM_MIN_FEE_MICRO, ceil(sellerPrice × PLATFORM_FEE_BPS / 10000))`; the seller always receives exactly their price, and the commission goes to Rialto's fee address as its own transaction. Defaults: 5%, floor $0.001. The publish page previews it live. All money is integer micro-USDC.
 
 **Security model.** API keys are random, shown once, stored as sha256. Seller upstream secrets are encrypted at rest (AES-256-GCM, `SECRETS_KEY` required in production). Seller URLs are fetched by *our* servers, so they are https-only, resolved and rejected if non-public (SSRF guard, re-checked after placeholder substitution), no redirects, 8 s timeout, 1 MB upstream / 64 KB result caps. The gateway only accepts calls carrying an internal token, so a forged simulated payment can't hit a seller's API. Wallet debits are atomic (no overdraw). Per-key rate limits (in-memory: use Redis when running several instances).
 
-**Verify everything end to end** (needs a running server): `npm run e2e:accounts` signs up two accounts, proves a wallet, publishes the PokéAPI as one, hires it as the other through the hosted MCP endpoint and checks the money to the micro-USDC, a failed call not being charged, pausing, key rotation and revocation, and sessions. `npm run e2e` is the older check with keys that have no account: SSRF rejection, payouts, isolation between buyers.
+**Verify everything end to end** (needs a running server): `npm run e2e:accounts` signs up two accounts, publishes the PokéAPI as one, hires it as the other through the hosted MCP endpoint with test credit and checks the money to the micro-USDC, a failed call not being charged, pausing, key rotation and revocation, and sessions. `npm run e2e:live` is the real rail: it checks the 402's two requirements, pays both from a buyer wallet, checks all three wallets' balances on-chain, replay refusal, a free failed call, that the hosted endpoint refuses on-chain sellers, and that the local signer buys through the gateway. `npm run e2e` is the older check with keys that have no account.
 
 **First-party integrations.** The operator can sell third-party models itself: `lib/gateway/integrations.ts` declares each one (endpoint, request template, where the result is in the response, price) and `ensureBuiltInIntegrations` publishes those whose key is set, under the seller "Rialto integrations", with the key encrypted in the database. They are ordinary gateway APIs. Because every call spends the operator's own upstream balance, what they sell per day is capped (`OPERATOR_DAILY_CAP_USD`), whatever the payment mode.
 
 ## Accounts
 
-People sign up with an email and a password (`/signup`) and then work in the dashboard (`/dashboard`). Agents keep using API keys: the account is how you get, fund and revoke them.
+People sign up with an email and a password (`/signup`) and then work in the dashboard (`/dashboard`). Agents keep using API keys: the account is how you get, limit and revoke them.
 
 | Piece | How it works |
 |---|---|
 | Sign-in | scrypt password hashes (parameters stored in the hash). A random token in an HttpOnly, SameSite=Lax cookie; the server keeps only its sha256. Logout, password change and "sign out other devices" delete the session rows. Mutating requests that started on another site are refused (`Origin`, `Sec-Fetch-Site`). |
-| Money | An account holds a balance. It gives money to its agents (`allocate`) and takes it back (`reclaim`); an agent can only spend what it was given, within its policy. Every move is a pair of ledger entries and an atomic conditional update. New accounts get a welcome test credit. |
-| Agents | Owned by the account. A key is shown once; rotating replaces it, revoking kills it and returns the balance. |
-| Sellers | An account becomes a seller the first time it publishes, paid at the wallet it registered. The same `/api/sellers/me/*` routes serve a seller key (scripts) and a signed-in account (dashboard). |
-| Wallet | Registering an address is enough to be paid. To **deposit**, the user proves they hold the wallet: it signs a message naming the account and the address, checked as an ed25519 signature against the address itself (`lib/auth/wallet-proof.ts`). |
-| Deposits (live rail) | USDC sent from a verified wallet to the platform wallet is found on-chain by reading the platform wallet's token account (`lib/x402/deposits.ts`): only a transaction that moved USDC in from exactly one wallet counts, and a unique signature makes sure it is credited once. The browser never says how much. |
+| Agents | Owned by the account. A key is shown once; rotating replaces it, revoking kills it. An agent's spending policy (per call, per session, allowed providers, minimum quality) is stored here and enforced by the signer before it signs. |
+| Money | There is none held for real payments. The account has a **test credit** that agents spend on the simulated providers: `allocate` and `reclaim` move it between the account and its agents as paired ledger entries and atomic conditional updates. |
+| Sellers | An account becomes a seller the first time it publishes, paid at the payout address it registered. The same `/api/sellers/me/*` routes serve a seller key (scripts) and a signed-in account (dashboard). A seller on the live rail is paid per call, on-chain; nothing accrues. |
+| Wallet | A payout address is only an address: Rialto pays *into* it and never asks for a signature from it. It must hold a USDC account, which exists once it has received USDC. |
 
-A wallet is verified for one account at a time (proving it again elsewhere, which takes its key, moves it). Use one platform wallet per deployment: two servers reading the same wallet would each credit the same transfer.
-
-Not built: email verification, password recovery, 2FA, deposits signed in the browser (the user sends the transfer from their wallet app), withdrawing an account balance back on-chain.
+Not built: email verification, password recovery, 2FA, a hosted wallet that pays for you (that would be custody).

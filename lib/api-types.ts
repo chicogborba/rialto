@@ -86,5 +86,5 @@ export interface CatalogEntry {
   demo: boolean;
   /** published, but nobody has called it yet */
   unproven: boolean;
-  settlement: "solana-devnet" | "simulated";
+  settlement: "solana-devnet" | "solana-mainnet" | "simulated";
 }

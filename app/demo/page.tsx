@@ -6,7 +6,7 @@ import { Footer, Header } from "@/components/home/Home";
 import { GAME_BUILDS, GAME_PROMPT, GAME_PROMPT_SUFFIX, GAME_PURCHASES } from "@/lib/demo/game-demo";
 import { formatUsd } from "@/lib/money";
 import { flowHref } from "@/lib/site";
-import { explorerTx } from "@/lib/x402/solana";
+import { explorerTx, solanaNetwork } from "@/lib/x402/solana";
 
 export const metadata: Metadata = {
   title: "Demo · Rialto",
@@ -86,7 +86,7 @@ export default function DemoPage() {
                   <span className="min-w-0 flex-1">
                     <span className="font-bold">{p.what}</span> <span className="text-coal/55">· {p.provider}</span>
                   </span>
-                  <a href={explorerTx(p.tx)} target="_blank" rel="noreferrer" className="hidden font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-coal/55 underline decoration-coal/30 underline-offset-4 hover:text-coal sm:block">
+                  <a href={explorerTx(p.tx, solanaNetwork({ SOLANA_NETWORK: "devnet" }))} target="_blank" rel="noreferrer" className="hidden font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-coal/55 underline decoration-coal/30 underline-offset-4 hover:text-coal sm:block">
                     on Solana ↗
                   </a>
                   <span className="tnum font-mono font-bold">{formatUsd(p.micro)}</span>

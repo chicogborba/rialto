@@ -16,6 +16,9 @@ COPY --chown=node:node package.json package-lock.json ./
 COPY --chown=node:node prisma/schema.prisma prisma/schema.prisma
 RUN npm ci
 COPY --chown=node:node . .
+# what the pages say about the network (test money or real USDC) is fixed at build time
+ARG NEXT_PUBLIC_SOLANA_NETWORK=devnet
+ENV NEXT_PUBLIC_SOLANA_NETWORK=$NEXT_PUBLIC_SOLANA_NETWORK
 RUN DATABASE_URL=file:/tmp/build.db npm run build && rm -rf .next/cache
 
 # ---- run: production dependencies (these include prisma and tsx, which the entrypoint uses)

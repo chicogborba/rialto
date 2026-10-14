@@ -180,7 +180,7 @@ export function Catalog({ fallback }: { fallback: CatalogEntry[] }) {
                       ) : (
                         <>
                           <span className={cn(TAG, "bg-lime")}>Live</span>
-                          <span className={cn(TAG, "bg-transparent")}>{item.settlement === "solana-devnet" ? "Pays on Solana devnet" : "Simulated payment"}</span>
+                          <span className={cn(TAG, "bg-transparent")}>{item.settlement === "solana-mainnet" ? "Pays on Solana mainnet" : item.settlement === "solana-devnet" ? "Pays on Solana devnet" : "Simulated payment"}</span>
                           {item.unproven && <span className={cn(TAG, "bg-[#ffd23f]")}>New · no calls yet</span>}
                         </>
                       )}

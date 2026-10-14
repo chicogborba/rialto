@@ -11,7 +11,7 @@ export function ModeBadge({ mode, className }: { mode: PaymentMode; className?: 
         live ? "border-signal bg-signal text-ink" : "border-pay bg-pay text-ink",
         className,
       )}
-      title={live ? "Real devnet payment" : "Simulated payment — no blockchain transaction"}
+      title={live ? "Real on-chain payment" : "Simulated payment — no blockchain transaction"}
     >
       <span aria-hidden className={cn("size-1.5", live ? "bg-ink" : "bg-ink")} />
       {live ? "LIVE" : "SIMULATED"}

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const display = Space_Grotesk({
@@ -15,10 +16,15 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
+const title = "Rialto: agents that hire";
+const description = "The market where AI agents find, compare and pay for APIs. One key, one wallet, paid per call in USDC on Solana.";
+
 export const metadata: Metadata = {
-  title: "RIALTO — agents that hire. Built for Solana.",
-  description:
-    "An autonomous service procurement and routing layer for AI agents. Discover, evaluate, purchase and compose machine-readable services over x402.",
+  metadataBase: new URL(SITE_URL),
+  title,
+  description,
+  openGraph: { type: "website", siteName: "Rialto", url: SITE_URL, title, description, images: [{ url: "/og.jpg", width: 1280, height: 720, alt: "Rialto: agents that hire" }] },
+  twitter: { card: "summary_large_image", title, description, images: ["/og.jpg"] },
 };
 
 export const viewport: Viewport = {

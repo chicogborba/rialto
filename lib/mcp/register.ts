@@ -1,7 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { ToolError } from "./route";
+import { compareInput, discoverInput, planInput, reputationInput, transactionsInput } from "./schemas";
 import {
-  compareInput, compareServices, discoverInput, discoverServices, executeService, getProviderReputation, getTransactions,
-  getWalletStatus, planExecution, planInput, reputationInput, ToolError, transactionsInput, type ToolCtx,
+  compareServices, discoverServices, executeService, getProviderReputation, getTransactions,
+  getWalletStatus, planExecution, type ToolCtx,
 } from "./tools";
 
 type ToolResult = { content: { type: "text"; text: string }[]; isError?: boolean };

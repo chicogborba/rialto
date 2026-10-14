@@ -1,45 +1,57 @@
 import { describe, expect, it } from "vitest";
+import { handleLiveCall, type LiveCallArgs } from "@/lib/gateway/live-call";
 import { handleSimCall } from "@/lib/providers/sim-provider";
 import { DemoPaymentRail } from "@/lib/x402/demo-rail";
-import { HybridPaymentRail } from "@/lib/x402/hybrid-rail";
-import type { PaymentAuthorization, PaymentRail, PaymentRequirements, Settlement, VerifyResult } from "@/lib/x402/rail";
-import { parsePaymentRequired, paymentHeader, SIM_PAYMENT_HEADER, X402_PAYMENT_HEADER } from "@/lib/x402/sim-protocol";
-import { explainRefusal, explorerTx, isSolanaAddress, liveConfig } from "@/lib/x402/solana";
-import type { Clock, Provider, Service, WalletState } from "@/lib/types";
+import type { LiveGateway } from "@/lib/x402/live-server";
+import { BuyerPaymentRail, secretBytes } from "@/lib/x402/live-client";
+import type { PaymentRequirements, Settlement, X402Leg } from "@/lib/x402/rail";
+import { FEE_PAYMENT_HEADER, FEE_REQUIRED_HEADER, parsePaymentRequired, paymentHeader, SIM_PAYMENT_HEADER, X402_PAYMENT_HEADER } from "@/lib/x402/sim-protocol";
+import { explainRefusal, explorerAddress, explorerTx, isSolanaAddress, liveConfig, solanaNetwork } from "@/lib/x402/solana";
+import type { Clock, Provider, Service } from "@/lib/types";
 
 const clock: Clock = { now: () => 1_000, id: (p) => `${p}_1`, sleep: () => Promise.resolve() };
-const wallet = {} as WalletState;
 const SELLER = "AavcvScqne4DsEUd2m3MHhtEHFrQUwVYppocc1xKzbgR";
+const FEE = "CsyMmfi7kqkEwbeVZYn6fVMVH4KMm62D1eDZxnTCeX6t";
+const BUYER = "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU";
 
-/** Stands in for the facilitator: accepts one known payload, counts what it settled. */
-class FakeLiveRail implements PaymentRail {
-  readonly mode = "live" as const;
-  settledMicro: number[] = [];
-  failSettle = false;
-  requestPayment(_req: PaymentRequirements): Promise<PaymentAuthorization> {
-    return Promise.resolve({ mode: "live", payload: "signed-tx", payer: "PAYER" });
-  }
-  verifyPayment(auth: PaymentAuthorization): Promise<VerifyResult> {
-    return Promise.resolve(auth.payload === "signed-tx" ? { ok: true } : { ok: false, reason: "invalid_payment" });
-  }
-  settlePayment(_auth: PaymentAuthorization, req: PaymentRequirements): Promise<Settlement> {
-    if (this.failSettle) return Promise.reject(new Error("blockhash_expired"));
-    this.settledMicro.push(req.settleMicro ?? req.amountMicro);
-    return Promise.resolve({ mode: "live", txRef: "5igSig", explorerUrl: explorerTx("5igSig"), settledAt: 1_000 });
-  }
-}
-
-const provider: Provider = { id: "p1", slug: "pokedex", name: "PokéDex", description: "", network: "solana-devnet", x402Enabled: true, status: "online", qualityScore: 95, reputationScore: 80, successRate: 100, latencyMs: 300, requestCount: 0, isDemo: false };
-const service: Service = { id: "s1", providerId: "p1", capability: "data.lookup", endpoint: "/api/gw/pokedex/data.lookup", priceMicro: 3_000, capabilityMatch: 1, inputSchema: "{}", outputSchema: "{}" };
-const call = (rail: PaymentRail, headers: Record<string, string>, produce: () => Promise<unknown> = () => Promise.resolve({ name: "pikachu" })) =>
-  handleSimCall({ provider, service, payTo: SELLER, demoFailFirstCall: false, headers, body: {}, rail, failedOnce: new Set(), produce, live: { settleMicro: 2_000 } });
+describe("which network payments settle on", () => {
+  it("is devnet unless the server says mainnet", () => {
+    expect(solanaNetwork({}).id).toBe("devnet");
+    expect(solanaNetwork({ SOLANA_NETWORK: "devnet" }).id).toBe("devnet");
+    expect(solanaNetwork({ SOLANA_NETWORK: "mainnet" }).id).toBe("mainnet");
+    expect(solanaNetwork({ SOLANA_NETWORK: "Mainnet-Beta" }).id).toBe("mainnet");
+    expect(solanaNetwork({ SOLANA_NETWORK: "nonsense" }).id).toBe("devnet");
+    expect(solanaNetwork({ NEXT_PUBLIC_SOLANA_NETWORK: "mainnet" }).id).toBe("mainnet");
+  });
+  it("carries the chain id, the USDC mint and the money kind of each network", () => {
+    const dev = solanaNetwork({});
+    const main = solanaNetwork({ SOLANA_NETWORK: "mainnet" });
+    expect(dev).toMatchObject({ name: "solana-devnet", caip2: "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1", usdc: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU", testMoney: true });
+    expect(main).toMatchObject({ name: "solana-mainnet", caip2: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", usdc: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", testMoney: false });
+  });
+  it("links the explorer with the cluster only where there is one", () => {
+    const main = solanaNetwork({ SOLANA_NETWORK: "mainnet" });
+    expect(explorerTx("abc", solanaNetwork({}))).toBe("https://explorer.solana.com/tx/abc?cluster=devnet");
+    expect(explorerTx("abc", main)).toBe("https://explorer.solana.com/tx/abc");
+    expect(explorerAddress("addr", main)).toBe("https://explorer.solana.com/address/addr");
+  });
+});
 
 describe("live rail configuration", () => {
-  it("is off unless PAYMENT_MODE is live and a payer key is set", () => {
+  it("needs PAYMENT_MODE=live and an address for the fee, and nothing secret", () => {
     expect(liveConfig({})).toBeNull();
     expect(liveConfig({ PAYMENT_MODE: "live" })).toBeNull();
-    expect(liveConfig({ PAYMENT_MODE: "simulated", SOLANA_PAYER_SECRET_KEY: "k" })).toBeNull();
-    expect(liveConfig({ PAYMENT_MODE: "live", SOLANA_PAYER_SECRET_KEY: "k" })).toEqual({ facilitatorUrl: "https://x402.org/facilitator", rpcUrl: "https://api.devnet.solana.com", payerSecret: "k" });
+    expect(liveConfig({ PAYMENT_MODE: "live", PLATFORM_FEE_PAYTO: "not an address" })).toBeNull();
+    expect(liveConfig({ PAYMENT_MODE: "simulated", PLATFORM_FEE_PAYTO: FEE })).toBeNull();
+    expect(liveConfig({ PAYMENT_MODE: "live", PLATFORM_FEE_PAYTO: FEE })).toMatchObject({ feePayTo: FEE, facilitatorUrl: "https://x402.org/facilitator", rpcUrl: "https://api.devnet.solana.com" });
+  });
+  it("picks a facilitator and an RPC that serve the network, and lets either be overridden", () => {
+    const main = liveConfig({ PAYMENT_MODE: "live", PLATFORM_FEE_PAYTO: FEE, SOLANA_NETWORK: "mainnet" });
+    expect(main?.network.id).toBe("mainnet");
+    expect(main?.facilitatorUrl).toBe("https://facilitator.payai.network");
+    expect(main?.rpcUrl).toBe("https://api.mainnet-beta.solana.com");
+    const custom = liveConfig({ PAYMENT_MODE: "live", PLATFORM_FEE_PAYTO: FEE, SOLANA_NETWORK: "mainnet", X402_FACILITATOR_URL: "https://f.example", SOLANA_RPC_URL: "https://rpc.example" });
+    expect(custom).toMatchObject({ facilitatorUrl: "https://f.example", rpcUrl: "https://rpc.example" });
   });
   it("tells real addresses from the demo providers' placeholders", () => {
     expect(isSolanaAddress(SELLER)).toBe(true);
@@ -50,11 +62,20 @@ describe("live rail configuration", () => {
     const refused = "invalid_exact_svm_transaction_simulation_failed";
     expect(explainRefusal(refused, null, 5, 2_000)).toBe("payer_insufficient_usdc");
     expect(explainRefusal(refused, 1_999, 5, 2_000)).toBe("payer_insufficient_usdc");
-    expect(explainRefusal(refused, 2_000, null, 2_000)).toBe("seller_has_no_usdc_account");
+    expect(explainRefusal(refused, 2_000, null, 2_000)).toBe("payee_has_no_usdc_account");
     expect(explainRefusal(refused, 2_000, 0, 2_000)).toBe(refused);
   });
-  it("links settlements to the devnet explorer", () => {
-    expect(explorerTx("abc")).toBe("https://explorer.solana.com/tx/abc?cluster=devnet");
+});
+
+describe("the buyer's key", () => {
+  it("reads a base58 secret and the JSON array solana-keygen writes", () => {
+    const bytes = Array.from({ length: 64 }, (_, i) => i + 1);
+    expect(Array.from(secretBytes(JSON.stringify(bytes)))).toEqual(bytes);
+    expect(secretBytes("  3yZe7d  ").length).toBeGreaterThan(0);
+  });
+  it("refuses to pay for a seller that sent no x402 requirements", async () => {
+    const rail = new BuyerPaymentRail({ address: BUYER } as never, "https://rpc.example");
+    await expect(rail.requestPayment({ scheme: "exact", network: "solana-devnet", asset: "USDC", amountMicro: 3_000, payTo: SELLER, resource: "/r", description: "d" })).rejects.toThrow("no x402 requirements");
   });
 });
 
@@ -63,60 +84,139 @@ describe("wire protocol", () => {
     expect(paymentHeader("live")).toBe(X402_PAYMENT_HEADER);
     expect(paymentHeader("simulated")).toBe(SIM_PAYMENT_HEADER);
   });
-  it("keeps `live` and the on-chain amount when a 402 is parsed", () => {
-    const base = { scheme: "exact", network: "solana-devnet", asset: "USDC", amountMicro: 3_000, payTo: SELLER, resource: "/r", description: "d" };
-    expect(parsePaymentRequired({ accepts: [{ ...base, live: true, settleMicro: 2_000 }] })).toEqual({ ...base, live: true, settleMicro: 2_000 });
+  const leg = (amount: string, payTo: string): X402Leg => ({ scheme: "exact", network: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", asset: "mint", amount, payTo, maxTimeoutSeconds: 60, extra: { feePayer: "FP" } });
+  const base = { scheme: "exact", network: "solana-mainnet", asset: "USDC", amountMicro: 3_000, payTo: SELLER, resource: "/r", description: "d" };
+  it("keeps what the buyer has to sign when a 402 is parsed", () => {
+    const x402 = { seller: leg("2000", SELLER), fee: leg("1000", FEE) };
+    expect(parsePaymentRequired({ accepts: [{ ...base, live: true, settleMicro: 2_000, feePayTo: FEE, x402 }] })).toEqual({ ...base, live: true, settleMicro: 2_000, feePayTo: FEE, x402 });
     expect(parsePaymentRequired({ accepts: [base] })).toEqual(base);
-    expect(parsePaymentRequired({ accepts: [{ ...base, live: "yes", settleMicro: -5 }] })).toEqual(base);
+  });
+  it("drops what is malformed, and refuses a network it does not know", () => {
+    expect(parsePaymentRequired({ accepts: [{ ...base, live: "yes", settleMicro: -5, x402: { seller: { scheme: "nope" } } }] })).toEqual(base);
+    expect(parsePaymentRequired({ accepts: [{ ...base, network: "solana-testnet" }] })).toBeNull();
   });
 });
 
-describe("hybrid rail", () => {
-  const live = new FakeLiveRail();
-  const rail = new HybridPaymentRail(new DemoPaymentRail(clock), live);
-  const req: PaymentRequirements = { scheme: "exact", network: "solana-devnet", asset: "USDC", amountMicro: 3_000, payTo: SELLER, resource: "/r", description: "d" };
+const provider: Provider = { id: "p1", slug: "pokedex", name: "PokéDex", description: "", network: "solana-devnet", x402Enabled: true, status: "online", qualityScore: 95, reputationScore: 80, successRate: 100, latencyMs: 300, requestCount: 0, isDemo: false, settlement: "live" };
+const service: Service = { id: "s1", providerId: "p1", capability: "data.lookup", endpoint: "/api/gw/pokedex/data.lookup", priceMicro: 3_000, capabilityMatch: 1, inputSchema: "{}", outputSchema: "{}" };
 
-  it("pays demo providers on the simulation and real sellers on the live rail", async () => {
-    expect((await rail.requestPayment(req, wallet)).mode).toBe("simulated");
-    expect((await rail.requestPayment({ ...req, live: true }, wallet)).mode).toBe("live");
-  });
-  it("never accepts a simulated payment for a live requirement, or the reverse", async () => {
-    const sim = await rail.requestPayment(req, wallet);
-    const real = await rail.requestPayment({ ...req, live: true }, wallet);
-    expect(await rail.verifyPayment(sim, { ...req, live: true })).toEqual({ ok: false, reason: "wrong_rail" });
-    expect(await rail.verifyPayment(real, req)).toEqual({ ok: false, reason: "wrong_rail" });
-    await expect(rail.settlePayment(sim, { ...req, live: true })).rejects.toThrow("wrong_rail");
+describe("a simulated provider's call", () => {
+  it("answers 402 with the simulation's requirements and settles with a sim reference", async () => {
+    const rail = new DemoPaymentRail(clock);
+    const args = { provider, service, payTo: "DEMO_p1", demoFailFirstCall: false, headers: {}, body: {}, rail, failedOnce: new Set<string>() };
+    const unpaid = await handleSimCall(args);
+    expect(unpaid.status).toBe(402);
+    const req = parsePaymentRequired(unpaid.json) as PaymentRequirements;
+    const auth = await rail.requestPayment(req, {} as never);
+    const paid = await handleSimCall({ ...args, headers: { [SIM_PAYMENT_HEADER]: auth.payload } });
+    expect(paid.status).toBe(200);
+    expect(paid.json).toMatchObject({ settlement: { mode: "simulated", explorerUrl: null } });
   });
 });
+
+/** Stands in for the facilitator: accepts payloads that start with "ok", names their payer after the suffix. */
+class FakeGateway {
+  settled: string[] = [];
+  failSeller = false;
+  failFee = false;
+  cfg = { feePayTo: FEE, network: solanaNetwork({}) };
+  legsFor(req: PaymentRequirements): Promise<{ seller: X402Leg; fee?: X402Leg }> {
+    const sellerMicro = req.settleMicro ?? req.amountMicro;
+    const fee = req.amountMicro - sellerMicro;
+    const leg = (amount: number, payTo: string): X402Leg => ({ scheme: "exact", network: "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1", asset: "mint", amount: String(amount), payTo, maxTimeoutSeconds: 60, extra: { feePayer: "FP" } });
+    return Promise.resolve({ seller: leg(sellerMicro, req.payTo), ...(fee > 0 ? { fee: leg(fee, FEE) } : {}) });
+  }
+  requiredHeader(): Record<string, string> {
+    return { "payment-required": "encoded" };
+  }
+  verifyLeg(header: string): Promise<{ ok: true; payer: string } | { ok: false; reason: string }> {
+    return Promise.resolve(header.startsWith("ok") ? { ok: true, payer: header.split(":")[1] ?? "BUYER" } : { ok: false, reason: "invalid_payment" });
+  }
+  settleLeg(header: string, wanted: X402Leg): Promise<Settlement> {
+    const isFee = wanted.payTo === FEE;
+    if (isFee ? this.failFee : this.failSeller) return Promise.reject(new Error("blockhash_expired"));
+    this.settled.push(`${isFee ? "fee" : "seller"}:${wanted.amount}`);
+    return Promise.resolve({ mode: "live", txRef: isFee ? "feeSig" : "sellerSig", explorerUrl: explorerTx(isFee ? "feeSig" : "sellerSig"), settledAt: 1_000 });
+  }
+  responseHeader(): Record<string, string> {
+    return {};
+  }
+}
+
+let nonce = 0;
+const call = (gw: FakeGateway, headers: Record<string, string>, produce: LiveCallArgs["produce"] = () => Promise.resolve({ name: "pikachu" })) =>
+  handleLiveCall({ gateway: gw as unknown as LiveGateway, provider, service, sellerMicro: 2_000, payTo: SELLER, resourceUrl: "https://rialto.test/api/gw/pokedex/data.lookup", headers, body: {}, produce });
+/** Payment headers that have never been seen: the gateway refuses a payment it has already served. */
+const pay = (payer = "BUYER") => ({ [X402_PAYMENT_HEADER]: `ok:${payer}:${++nonce}`, [FEE_PAYMENT_HEADER]: `ok:${payer}:fee${nonce}` });
 
 describe("a real seller's gateway call on the live rail", () => {
-  it("answers 402 with live requirements: the buyer price, and the seller price to move on-chain", async () => {
-    const out = await call(new FakeLiveRail(), {});
+  it("answers 402 with both payments: the seller's price to the seller, the commission to Rialto", async () => {
+    const out = await call(new FakeGateway(), {});
     expect(out.status).toBe(402);
-    expect(out.json).toMatchObject({ simulated: false, accepts: [{ amountMicro: 3_000, settleMicro: 2_000, payTo: SELLER, live: true, description: "PokéDex · data.lookup" }] });
+    expect(out.json).toMatchObject({
+      simulated: false,
+      accepts: [{ amountMicro: 3_000, settleMicro: 2_000, payTo: SELLER, feePayTo: FEE, live: true, description: "PokéDex · data.lookup", x402: { seller: { amount: "2000", payTo: SELLER }, fee: { amount: "1000", payTo: FEE } } }],
+    });
+    expect(out.headers["payment-required"]).toBeDefined();
+    expect(out.headers[FEE_REQUIRED_HEADER]).toBeDefined();
   });
   it("ignores a simulated payment header", async () => {
-    expect((await call(new FakeLiveRail(), { [SIM_PAYMENT_HEADER]: "sim_auth_x" })).status).toBe(402);
+    expect((await call(new FakeGateway(), { [SIM_PAYMENT_HEADER]: "sim_auth_x" })).status).toBe(402);
   });
-  it("verifies, calls the API, then settles the seller price and returns the signature", async () => {
-    const rail = new FakeLiveRail();
-    const out = await call(rail, { [X402_PAYMENT_HEADER]: "signed-tx" });
+  it("asks again when only the seller's payment came, and never calls the API", async () => {
+    let called = false;
+    const out = await call(new FakeGateway(), { [X402_PAYMENT_HEADER]: `ok:BUYER:${++nonce}` }, () => ((called = true), Promise.resolve({})));
+    expect(out.status).toBe(402);
+    expect(called).toBe(false);
+  });
+  it("verifies both, calls the API, then settles the seller first and Rialto second", async () => {
+    const gw = new FakeGateway();
+    const out = await call(gw, pay());
     expect(out.status).toBe(200);
-    expect(out.json).toMatchObject({ result: { name: "pikachu" }, settlement: { mode: "live", txRef: "5igSig", explorerUrl: "https://explorer.solana.com/tx/5igSig?cluster=devnet" } });
-    expect(rail.settledMicro).toEqual([2_000]);
+    expect(out.json).toMatchObject({ result: { name: "pikachu" }, settlement: { txRef: "sellerSig" }, feeSettlement: { txRef: "feeSig" } });
+    expect(gw.settled).toEqual(["seller:2000", "fee:1000"]);
+    expect(out.outcome).toMatchObject({ status: "settled", payer: "BUYER" });
   });
-  it("does not settle when the seller's API fails", async () => {
-    const rail = new FakeLiveRail();
-    const out = await call(rail, { [X402_PAYMENT_HEADER]: "signed-tx" }, () => Promise.reject(new Error("upstream_404")));
+  it("refuses a payment the facilitator would not accept, on either leg", async () => {
+    const bad = await call(new FakeGateway(), { [X402_PAYMENT_HEADER]: `bad:${++nonce}`, [FEE_PAYMENT_HEADER]: `ok:BUYER:${nonce}` });
+    expect(bad.json).toMatchObject({ reason: "invalid_payment" });
+    const badFee = await call(new FakeGateway(), { [X402_PAYMENT_HEADER]: `ok:BUYER:${++nonce}`, [FEE_PAYMENT_HEADER]: `bad:${nonce}` });
+    expect(badFee.json).toMatchObject({ reason: "fee_invalid_payment" });
+  });
+  it("refuses two payments that come from different wallets", async () => {
+    const out = await call(new FakeGateway(), { [X402_PAYMENT_HEADER]: `ok:ALICE:${++nonce}`, [FEE_PAYMENT_HEADER]: `ok:BOB:${nonce}` });
+    expect(out.json).toMatchObject({ reason: "payments_from_different_wallets" });
+  });
+  it("serves a signed payment once", async () => {
+    const gw = new FakeGateway();
+    const headers = pay();
+    expect((await call(gw, headers)).status).toBe(200);
+    const again = await call(gw, headers);
+    expect(again.status).toBe(402);
+    expect(again.json).toMatchObject({ reason: "payment_already_used" });
+  });
+  it("settles nothing when the seller's API fails, and says so in the outcome", async () => {
+    const gw = new FakeGateway();
+    const out = await call(gw, pay(), () => Promise.reject(new Error("upstream_404")));
     expect(out.status).toBe(502);
-    expect(rail.settledMicro).toEqual([]);
+    expect(gw.settled).toEqual([]);
+    expect(out.outcome).toMatchObject({ status: "failed_not_charged", error: "upstream_404" });
   });
-  it("returns no result when the payment does not land", async () => {
-    const rail = new FakeLiveRail();
-    rail.failSettle = true;
-    const out = await call(rail, { [X402_PAYMENT_HEADER]: "signed-tx" });
+  it("returns no result, and takes no commission, when the seller's payment does not land", async () => {
+    const gw = new FakeGateway();
+    gw.failSeller = true;
+    const out = await call(gw, pay());
     expect(out.status).toBe(402);
     expect(out.json).toMatchObject({ reason: "settlement_failed: blockhash_expired" });
     expect(JSON.stringify(out.json)).not.toContain("pikachu");
+    expect(gw.settled).toEqual([]);
+  });
+  it("still delivers when only the commission does not land: that loss is Rialto's", async () => {
+    const gw = new FakeGateway();
+    gw.failFee = true;
+    const out = await call(gw, pay());
+    expect(out.status).toBe(200);
+    expect(out.json).toMatchObject({ settlement: { txRef: "sellerSig" }, feeSettlement: null });
+    expect(out.outcome?.fee).toBeNull();
   });
 });

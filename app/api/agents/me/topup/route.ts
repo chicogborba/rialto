@@ -11,14 +11,10 @@ export const runtime = "nodejs";
 
 const Body = z.object({ amountUsd: z.number().min(0.01).max(10) });
 
-/**
- * Test credit. Buyer balances are prepaid credit on both rails: with the live rail on, the platform
- * wallet pays sellers in devnet USDC and this credit is what the buyer is debited. Real deposits
- * would replace it before anything runs on mainnet.
- */
+/** Play money for the simulated providers (development and scripts). Real payments never touch an account here. */
 export async function POST(req: Request): Promise<Response> {
   return handle(async () => {
-    // with the live rail on, test credit is what pays sellers in real devnet USDC: only where keys are anonymous (development)
+    // on a public server with the live rail, accounts do not hand out free credit through keys
     if (currentMode() === "live" && !anonymousKeysAllowed()) throw new HttpError(403, "use_your_account", "Fund this agent from your account balance in the dashboard.");
     const { agentId } = await buyerFromRequest(req, { requireKey: true });
     const parsed = Body.safeParse(await readJson(req));

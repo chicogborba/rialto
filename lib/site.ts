@@ -6,6 +6,8 @@
 export const STATIC_PREVIEW = process.env.NEXT_PUBLIC_STATIC === "1";
 export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 export const REPO_URL = "https://github.com/chicogborba/rialto";
+/** Where the platform lives; link previews point here from every build. */
+export const SITE_URL = "https://galleriarialto.com";
 
 /** Prefix a /public asset path with the deploy base path (needed on GitHub Pages project sites). */
 export const asset = (path: string): string => `${BASE_PATH}${path}`;

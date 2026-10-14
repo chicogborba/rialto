@@ -7,6 +7,7 @@ import { assertPublicUrl, UnsafeUpstreamError } from "@/lib/security/ssrf";
 import { generateKey } from "@/lib/security/keys";
 import { encryptSecret } from "@/lib/security/secrets";
 import { defaultPolicy } from "@/lib/wallet/policy";
+import { NETWORK } from "@/lib/x402/solana";
 import { randomBytes } from "node:crypto";
 import { SCHEMAS, slugify } from "../../prisma/seed-data";
 import { prisma } from "./client";
@@ -87,7 +88,7 @@ export async function registerSellerApi(sellerId: string, input: SellerApiInput)
       slug,
       name: input.name,
       description: input.description,
-      network: "solana-devnet",
+      network: NETWORK.name,
       x402Enabled: true,
       status: "online",
       qualityScore: input.quality,

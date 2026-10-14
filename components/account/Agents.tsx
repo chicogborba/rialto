@@ -9,8 +9,9 @@ import { formatUsd, toMicro } from "@/lib/money";
 import type { AccountData } from "@/lib/client/account";
 import { Field, inputCls, Notice } from "./ui";
 
-type Client = "claude" | "codex" | "json";
+type Client = "claude" | "codex" | "json" | "signer";
 const TABS: { id: Client; label: string }[] = [
+  { id: "signer", label: "Pay from your wallet" },
   { id: "claude", label: "Claude Code" },
   { id: "codex", label: "Codex" },
   { id: "json", label: "Other (.mcp.json)" },
@@ -24,7 +25,9 @@ const PROMPTS = [
 
 /** The commands that plug an agent's key into a tool. Only ever built from a key shown once on this screen. */
 function InstallTabs({ apiKey }: { apiKey: string }) {
-  const [tab, setTab] = useState<Client>("claude");
+  const { account } = useAccount();
+  const live = account?.mode === "live";
+  const [tab, setTab] = useState<Client>(live ? "signer" : "claude");
   const [origin, setOrigin] = useState("");
   useEffect(() => {
     let alive = true;
@@ -37,14 +40,17 @@ function InstallTabs({ apiKey }: { apiKey: string }) {
   const claude = `claude mcp add --transport http rialto ${url} --header "Authorization: Bearer ${apiKey}"`;
   const codex = `# ~/.codex/config.toml\n[mcp_servers.rialto]\nurl = "${url}"\nbearer_token_env_var = "RIALTO_KEY"\n\n# in your shell profile\nexport RIALTO_KEY="${apiKey}"`;
   const json = `{\n  "mcpServers": {\n    "rialto": {\n      "type": "http",\n      "url": "${url}",\n      "headers": { "Authorization": "Bearer ${apiKey}" }\n    }\n  }\n}`;
+  const signer = `# once: the signer runs on your machine, with your wallet\ngit clone https://github.com/chicogborba/rialto && cd rialto && npm install\n\n# then, from that folder\nclaude mcp add rialto -e RIALTO_URL=${origin} -e RIALTO_KEY=${apiKey} -e SOLANA_WALLET_KEY=<secret key of a wallet that holds USDC> -- npx tsx mcp/server.ts`;
   const mask = (text: string) => text.replaceAll(apiKey, `${apiKey.slice(0, 13)}••••••••••••`);
-  const value = tab === "claude" ? claude : tab === "codex" ? codex : json;
+  const value = tab === "signer" ? signer : tab === "claude" ? claude : tab === "codex" ? codex : json;
+  const tabs = live ? TABS : TABS.filter((t) => t.id !== "signer");
   return (
     <div className="space-y-3">
-      <SegTabs label="Tool" tabs={TABS} value={tab} onChange={setTab} />
+      <SegTabs label="Tool" tabs={tabs} value={tab} onChange={setTab} />
       <CopyBlock value={value} display={mask(value)} />
       <p className="font-mono text-[11px] text-muted">
-        {tab === "claude" && "Run it once in your terminal. Then start claude and type /mcp to see rialto connected."}
+        {tab === "signer" && "Real sellers are paid from your own wallet, in USDC, straight to them: the key stays on your machine and Rialto never holds your money. The wallet needs USDC and no SOL."}
+        {tab === "claude" && (live ? "The hosted endpoint buys only from simulated providers, with test credit. Use \"Pay from your wallet\" for real sellers." : "Run it once in your terminal. Then start claude and type /mcp to see rialto connected.")}
         {tab === "codex" && "Codex reads the token from an environment variable, so the key never sits in the config file."}
         {tab === "json" && "Works with any MCP client that supports remote (streamable HTTP) servers. Claude Code reads this as .mcp.json in your project."}
       </p>

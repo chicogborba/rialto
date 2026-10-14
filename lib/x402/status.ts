@@ -1,36 +1,41 @@
+import { liveGateway } from "./index";
 import type { Clock } from "@/lib/types";
-import { liveRail } from "./index";
-import { explorerAddress, LIVE_ASSET, liveConfig, usdcBalance } from "./solana";
+import { explorerAddress, liveConfig, NETWORK, usdcBalance } from "./solana";
 
 export interface LiveStatus {
+  /** `live`: real sellers are paid on-chain, by their buyers' own wallets */
   mode: "simulated" | "live";
-  network: "solana-devnet";
+  network: "solana-devnet" | "solana-mainnet";
+  /** true when the money on this network is test money */
+  testMoney: boolean;
   asset: string;
   facilitator?: string;
-  /** the wallet that pays sellers */
-  payer?: { address: string; explorer: string; usdcMicro: number | null };
+  /** where Rialto's commission is paid. It only ever receives: there is no key for it on this server */
+  feeWallet?: { address: string; explorer: string; usdcMicro: number | null };
+  /** what keeps the live rail from working, in words */
   problem?: string;
 }
 
-/** What the live rail is, and whether its wallet can pay. Never includes a secret. */
+/** What the live rail is, and whether it can work. Never includes a secret: there is none. */
 export async function liveStatus(clock: Clock): Promise<LiveStatus> {
-  const base = { network: "solana-devnet" as const, asset: LIVE_ASSET };
+  const base = { network: NETWORK.name, testMoney: NETWORK.testMoney, asset: NETWORK.usdc };
   const cfg = liveConfig();
-  const rail = liveRail(clock);
-  if (!cfg || !rail) return { mode: "simulated", ...base };
+  if (!cfg) return { mode: "simulated", ...base };
+  const feeUsdc = await usdcBalance(cfg.rpcUrl, cfg.feePayTo).catch(() => null);
+  const problems: string[] = [];
+  if (feeUsdc === null) problems.push("the fee wallet has no USDC account yet, so the commission cannot be paid into it: send it any amount of USDC once");
   try {
-    const payer = (await rail.payer()).address;
-    const usdcMicro = await usdcBalance(cfg.rpcUrl, payer).catch(() => null);
-    return {
-      mode: "live",
-      ...base,
-      facilitator: cfg.facilitatorUrl,
-      payer: { address: payer, explorer: explorerAddress(payer), usdcMicro },
-      ...(usdcMicro === null ? { problem: "the paying wallet has no devnet USDC yet" } : {}),
-    };
+    await liveGateway(clock)?.legsFor({ scheme: "exact", network: NETWORK.name, asset: "USDC", amountMicro: 1, payTo: cfg.feePayTo, resource: "/status", description: "status" });
   } catch {
-    return { mode: "live", ...base, facilitator: cfg.facilitatorUrl, problem: "SOLANA_PAYER_SECRET_KEY is not a valid secret key" };
+    problems.push(`the facilitator (${cfg.facilitatorUrl}) does not answer for ${cfg.network.caip2}`);
   }
+  return {
+    mode: "live",
+    ...base,
+    facilitator: cfg.facilitatorUrl,
+    feeWallet: { address: cfg.feePayTo, explorer: explorerAddress(cfg.feePayTo), usdcMicro: feeUsdc },
+    ...(problems.length ? { problem: problems.join("; ") } : {}),
+  };
 }
 
 /**

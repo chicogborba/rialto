@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db/client";
 import { handle } from "@/lib/http";
 import { currentMode } from "@/lib/x402";
-import { isSolanaAddress } from "@/lib/x402/solana";
+import { isSolanaAddress, NETWORK } from "@/lib/x402/solana";
 import type { CatalogEntry } from "@/lib/api-types";
 import { isCapabilityId } from "@/lib/agent/capabilities";
 
@@ -36,10 +36,10 @@ export async function GET(): Promise<Response> {
           demo: p.isDemo,
           unproven: !p.isDemo && p.requestCount === 0,
           // a real seller is paid on Solana only when the live rail is on and their address is a real one
-          settlement: !p.isDemo && live && isSolanaAddress(p.payTo) ? "solana-devnet" : "simulated",
+          settlement: !p.isDemo && live && isSolanaAddress(p.payTo) ? NETWORK.name : "simulated",
         },
       ];
     });
-    return Response.json({ mode: live ? "live" : "simulated", live: entries.filter((e) => !e.demo), demo: entries.filter((e) => e.demo) });
+    return Response.json({ mode: live ? "live" : "simulated", network: NETWORK.name, testMoney: NETWORK.testMoney, live: entries.filter((e) => !e.demo), demo: entries.filter((e) => e.demo) });
   });
 }

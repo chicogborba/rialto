@@ -1,6 +1,7 @@
 import type { Provider as DbProvider, Service as DbService } from "@prisma/client";
 import { isCapabilityId } from "@/lib/agent/capabilities";
 import type { Provider, ProviderStatus, Service } from "@/lib/types";
+import { isSolanaAddress, liveConfig, NETWORK } from "@/lib/x402/solana";
 
 function toStatus(s: string): ProviderStatus {
   return s === "offline" || s === "degraded" ? s : "online";
@@ -13,7 +14,7 @@ export function toProvider(p: DbProvider): Provider {
     slug: p.slug,
     name: p.name,
     description: p.description,
-    network: "solana-devnet",
+    network: NETWORK.name,
     x402Enabled: p.x402Enabled,
     status: toStatus(p.status),
     qualityScore: p.qualityScore,
@@ -22,6 +23,8 @@ export function toProvider(p: DbProvider): Provider {
     latencyMs: p.latencyMs,
     requestCount: p.requestCount,
     isDemo: p.isDemo,
+    // a real seller with a real wallet is paid by its buyers on-chain, when the live rail is on
+    ...(!p.isDemo && isSolanaAddress(p.payTo) && liveConfig() ? { settlement: "live" as const } : {}),
   };
 }
 

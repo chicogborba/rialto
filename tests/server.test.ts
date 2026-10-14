@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { internalBase } from "@/lib/http";
 import { isAdmin } from "@/lib/security/admin";
-import { liveDailyCapMicro } from "@/lib/x402/solana";
 
 const req = (auth?: string) => new Request("https://rialto.example.com/api/reset", { method: "POST", headers: auth ? { authorization: auth } : {} });
 
@@ -21,13 +20,6 @@ describe("who may reset the data", () => {
 });
 
 describe("server settings", () => {
-  it("caps what the platform wallet pays per day, defaulting to $5", () => {
-    expect(liveDailyCapMicro({})).toBe(5_000_000);
-    expect(liveDailyCapMicro({ LIVE_DAILY_CAP_USD: "0.5" })).toBe(500_000);
-    expect(liveDailyCapMicro({ LIVE_DAILY_CAP_USD: "0" })).toBe(0);
-    expect(liveDailyCapMicro({ LIVE_DAILY_CAP_USD: "lots" })).toBe(5_000_000);
-    expect(liveDailyCapMicro({ LIVE_DAILY_CAP_USD: "-1" })).toBe(5_000_000);
-  });
   it("reaches itself on INTERNAL_BASE_URL when set, else where the request came in", () => {
     const r = new Request("https://rialto.example.com/api/runs");
     const before = process.env.INTERNAL_BASE_URL;

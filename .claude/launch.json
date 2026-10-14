@@ -38,6 +38,21 @@
         "dev"
       ],
       "port": 3100
+    },
+    {
+      "name": "rialto-live-test",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "DATABASE_URL=file:./live-test.db",
+        "OPERATOR_DAILY_CAP_USD=1",
+        "npm",
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3120"
+      ],
+      "port": 3120
     }
   ]
 }

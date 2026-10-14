@@ -43,7 +43,7 @@ function SettingsForm({ data, providers }: { data: WalletResponse; providers: Pr
     const next: SpendingPolicy = {
       maxPerRequestMicro: toMicro(parseFloat(max) || 0),
       sessionBudgetMicro: toMicro(parseFloat(budget) || 0),
-      allowedNetworks: ["solana-devnet"],
+      allowedNetworks: ["solana-devnet", "solana-mainnet"],
       allowedProviderIds: allowed,
       minQuality: Math.min(100, Math.max(0, parseFloat(minQ) || 0)),
       requireX402: x402,
@@ -74,7 +74,7 @@ function SettingsForm({ data, providers }: { data: WalletResponse; providers: Pr
         <div className="mt-4 flex items-center gap-2 font-mono text-xs uppercase tracking-wider"><StatusDot tone={within ? "ok" : "fail"} /> {within ? "Within policy" : "Over policy"}</div>
         <div className="mt-4"><HardButton variant="ghost" onClick={newSession}>New session</HardButton></div>
         <p className="mt-4 font-mono text-[11px] text-muted">
-          Payment mode: <span className="text-paper">{wallet.data.mode}</span>. This build ships the simulated rail only; live x402 on Solana devnet is documented in the README (Phase 8) and is off.
+          This wallet holds test credit and buys from the simulated providers. Sellers paid on-chain are paid straight from your agent&apos;s own Solana wallet, through the local signer: nothing here is ever spent on-chain.
         </p>
       </Panel>
 

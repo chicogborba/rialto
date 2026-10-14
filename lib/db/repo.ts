@@ -50,6 +50,14 @@ export async function listCandidates(): Promise<Candidate[]> {
   return out;
 }
 
+/**
+ * What Rialto's own agent can buy: the providers paid on the simulation. A seller paid on-chain is
+ * paid by its buyer's wallet, which only a signer on the buyer's side can do (see mcp/server.ts).
+ */
+export async function listHostedCandidates(): Promise<Candidate[]> {
+  return (await listCandidates()).filter((c) => c.provider.settlement !== "live");
+}
+
 /** Recent (last 20) success rate per provider from local transactions. */
 export async function getHistory(): Promise<ProviderHistory> {
   const txs = await prisma.transaction.findMany({
@@ -194,12 +202,6 @@ export async function persistEvent(e: RunEvent): Promise<void> {
   }
 }
 
-/** What sellers were paid on the live rail since `since`, in micro-USDC. */
-export async function liveSettledSinceMicro(since: Date): Promise<number> {
-  const sum = await prisma.transaction.aggregate({ where: { mode: "live", status: "settled", createdAt: { gte: since } }, _sum: { sellerMicro: true } });
-  return sum._sum.sellerMicro ?? 0;
-}
-
 /** What the sellers of this name sold since `since`, at seller price, in either payment mode. */
 export async function soldBySellerSinceMicro(sellerName: string, since: Date): Promise<number> {
   const sum = await prisma.transaction.aggregate({ where: { status: "settled", createdAt: { gte: since }, provider: { seller: { name: sellerName } } }, _sum: { sellerMicro: true } });
@@ -250,9 +252,10 @@ export async function recordTransaction(tx: TransactionRecord): Promise<void> {
     });
     if (!settled) return;
     interface Entry { kind: string; agentId?: string; sellerId?: string; amountMicro: number; transactionId: string; note: string }
-    const entries: Entry[] = [{ kind: "purchase", agentId, amountMicro: -tx.amountMicro, transactionId: row.id, note: tx.capability }];
+    // a buyer who paid from their own wallet on-chain spent nothing that Rialto holds: no debit to record
+    const entries: Entry[] = tx.directPayer ? [] : [{ kind: "purchase", agentId, amountMicro: -tx.amountMicro, transactionId: row.id, note: tx.capability }];
     if (sellerId) {
-      entries.push({ kind: "seller_earning", sellerId, amountMicro: split.sellerMicro, transactionId: row.id, note: tx.capability });
+      entries.push({ kind: "seller_earning", sellerId, amountMicro: split.sellerMicro, transactionId: row.id, note: tx.directPayer ? `${tx.capability} · paid by ${tx.directPayer}` : tx.capability });
       if (tx.mode === "live") {
         // paid in the same call, on-chain: nothing accrues, and the payout row points at that transaction
         await db.seller.update({ where: { id: sellerId }, data: { paidOutMicro: { increment: split.sellerMicro } } });
@@ -262,7 +265,7 @@ export async function recordTransaction(tx: TransactionRecord): Promise<void> {
         await db.seller.update({ where: { id: sellerId }, data: { balanceMicro: { increment: split.sellerMicro } } });
       }
     }
-    if (split.feeMicro > 0) entries.push({ kind: "platform_fee", amountMicro: split.feeMicro, transactionId: row.id, note: sellerId ? "commission" : "house provider" });
+    if (split.feeMicro > 0 && !(tx.directPayer && !tx.feeTxRef)) entries.push({ kind: "platform_fee", amountMicro: split.feeMicro, transactionId: row.id, note: sellerId ? "commission" : "house provider" });
     await db.ledgerEntry.createMany({ data: entries });
   });
 }
@@ -270,7 +273,7 @@ export async function recordTransaction(tx: TransactionRecord): Promise<void> {
 /** Persistent deps for one buyer (ephemeral runs omit ledger/reputation/sink). */
 export function persistentDepsFor(agentId: string): Pick<RunDeps, "registry" | "reputation" | "ledger" | "sink"> & { wallet: RunDeps["wallet"] } {
   return {
-    registry: { listCandidates, history: getHistory },
+    registry: { listCandidates: listHostedCandidates, history: getHistory },
     wallet: { get: () => getWallet(agentId), debit: (amt) => debitWallet(amt, agentId) },
     reputation: { apply: applyReputation },
     ledger: { record: recordTransaction },

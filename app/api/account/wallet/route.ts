@@ -10,19 +10,16 @@ export const runtime = "nodejs";
 
 const Body = z.object({ address: z.string().trim() });
 
-/**
- * Register the Solana address you want to be paid at, without proving you hold it. Enough to
- * publish APIs; to deposit from a wallet you also have to verify it (sign a message).
- */
+/** Register the Solana address you want to be paid at. Nothing is ever sent from it by us: we only pay into it. */
 export async function PUT(req: Request): Promise<Response> {
   return handle(async () => {
     const { user } = await requireUser(req);
     const parsed = Body.safeParse(await readJson(req));
     if (!parsed.success || !isSolanaAddress(parsed.data.address)) throw new HttpError(400, "invalid_address", "That is not a Solana address.");
     if (!(await canReceiveLive(parsed.data.address))) {
-      throw new HttpError(400, "wallet_not_ready", "That address has no USDC account on Solana devnet yet, so it cannot be paid. Send it any amount of devnet USDC once (https://faucet.circle.com), then add it again.");
+      throw new HttpError(400, "wallet_not_ready", "That address has no USDC account yet, so it cannot be paid. Send it any amount of USDC once, then add it again.");
     }
-    await setWallet(user.id, parsed.data.address, false);
+    await setWallet(user.id, parsed.data.address);
     return Response.json({ ok: true });
   });
 }

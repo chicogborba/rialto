@@ -49,14 +49,19 @@ ADMIN_TOKEN=$(openssl rand -hex 24)
 PLATFORM_FEE_BPS=500
 PLATFORM_MIN_FEE_MICRO=1000
 
-# simulated | live (x402 in USDC on Solana devnet). The wallets below are filled in by:
-#   docker compose run --rm -v ./.env:/app/.env app npm run x402:keys -- --live
+# simulated | live. On the live rail real sellers are paid on-chain by their buyers' own wallets: this
+# server holds no key and no funds, it only needs the address its commission is paid to.
 PAYMENT_MODE=simulated
-X402_FACILITATOR_URL=https://x402.org/facilitator
-SOLANA_PAYER_SECRET_KEY=
+# devnet (test USDC) | mainnet (real USDC). Keep it equal to the NEXT_PUBLIC_SOLANA_NETWORK the image was built with
+SOLANA_NETWORK=devnet
+# a wallet you control, with a USDC account (it has received USDC once): the commission is paid there
+PLATFORM_FEE_PAYTO=
+# where the PokéDex test seller and the first-party integrations are paid: also a wallet with a USDC account
 SOLANA_PAY_TO=
-# the most the platform wallet pays sellers per 24 hours, in dollars
-LIVE_DAILY_CAP_USD=5
+# X402_FACILITATOR_URL=  (default: x402.org on devnet, facilitator.payai.network on mainnet)
+# SOLANA_RPC_URL=        (default: the network's public RPC; a private one is kinder on mainnet)
+# the most the first-party integrations may sell per 24 hours, in dollars: each call spends the operator's keys
+OPERATOR_DAILY_CAP_USD=5
 ENV
   echo "Wrote $DIR/.env"
 fi

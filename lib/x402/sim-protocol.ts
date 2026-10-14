@@ -1,5 +1,5 @@
 import type { PaymentMode } from "@/lib/types";
-import type { PaymentRequirements, Settlement } from "./rail";
+import type { PaymentRequirements, Settlement, X402Leg } from "./rail";
 
 /**
  * Wire format between the agent's executor and the provider routes.
@@ -17,6 +17,10 @@ export const RUN_ID_HEADER = "x-run-id";
 export const X402_REQUIRED_HEADER = "payment-required";
 export const X402_PAYMENT_HEADER = "payment-signature";
 export const X402_RESPONSE_HEADER = "payment-response";
+/** The commission's payment travels beside the seller's: same encoding as `PAYMENT-SIGNATURE`. */
+export const FEE_PAYMENT_HEADER = "x-rialto-fee-payment";
+/** On a 402: the commission's x402 requirement, encoded like `PAYMENT-REQUIRED`'s accepts entry. */
+export const FEE_REQUIRED_HEADER = "x-rialto-fee-required";
 
 /** The request header that carries the payment on each rail. */
 export const paymentHeader = (mode: PaymentMode): string => (mode === "live" ? X402_PAYMENT_HEADER : SIM_PAYMENT_HEADER);
@@ -30,10 +34,16 @@ export interface SimPaymentRequiredBody {
 export interface SimSuccessBody {
   result: unknown;
   settlement: Settlement;
+  /** live rail: the commission's own transaction, when it settled */
+  feeSettlement?: Settlement | null;
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
+}
+
+function isLeg(v: unknown): v is X402Leg {
+  return isRecord(v) && v.scheme === "exact" && typeof v.network === "string" && typeof v.asset === "string" && typeof v.amount === "string" && typeof v.payTo === "string" && isRecord(v.extra);
 }
 
 export function parsePaymentRequired(json: unknown): PaymentRequirements | null {
@@ -42,7 +52,7 @@ export function parsePaymentRequired(json: unknown): PaymentRequirements | null 
   if (!isRecord(r)) return null;
   if (
     r.scheme !== "exact" ||
-    r.network !== "solana-devnet" ||
+    (r.network !== "solana-devnet" && r.network !== "solana-mainnet") ||
     r.asset !== "USDC" ||
     typeof r.amountMicro !== "number" ||
     typeof r.payTo !== "string" ||
@@ -61,6 +71,8 @@ export function parsePaymentRequired(json: unknown): PaymentRequirements | null 
     description: r.description,
     ...(r.live === true ? { live: true } : {}),
     ...(typeof r.settleMicro === "number" && Number.isInteger(r.settleMicro) && r.settleMicro > 0 ? { settleMicro: r.settleMicro } : {}),
+    ...(typeof r.feePayTo === "string" ? { feePayTo: r.feePayTo } : {}),
+    ...(isLeg(isRecord(r.x402) ? r.x402.seller : null) ? { x402: { seller: (r.x402 as { seller: X402Leg }).seller, ...(isLeg((r.x402 as { fee?: unknown }).fee) ? { fee: (r.x402 as { fee: X402Leg }).fee } : {}) } } : {}),
   };
 }
 

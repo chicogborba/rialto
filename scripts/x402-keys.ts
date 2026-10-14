@@ -1,6 +1,8 @@
-// Creates the two devnet wallets the live rail needs and writes them to .env (git-ignored):
-// the platform wallet that pays sellers, and a test seller that receives the payments.
-// Prints only the public addresses. Existing keys are kept.
+// Creates the wallets a local live-rail test needs, and writes them to .env (git-ignored):
+//   SOLANA_WALLET_KEY   the BUYER's wallet: it signs the payments (this is what an agent's machine holds)
+//   SOLANA_PAY_TO       the test seller's payout address (PokéDex), with its key in SOLANA_TEST_SELLER_SECRET_KEY
+//   PLATFORM_FEE_PAYTO  where Rialto's commission is paid: only an address, never a key on the server
+// Prints only public addresses. Existing values are kept.
 //
 //   npm run x402:keys            create what is missing
 //   npm run x402:keys -- --live  also switch PAYMENT_MODE to "live"
@@ -28,23 +30,25 @@ function newSecret(): string {
 const addressOf = async (secret: string): Promise<string> => (await createKeyPairSignerFromBytes(new Uint8Array(getBase58Encoder().encode(secret)))).address;
 
 async function main(): Promise<void> {
-  if (!read("SOLANA_PAYER_SECRET_KEY")) write("SOLANA_PAYER_SECRET_KEY", newSecret());
+  // an older .env named the buyer's wallet after what it used to be: the platform's payer
+  if (!read("SOLANA_WALLET_KEY")) write("SOLANA_WALLET_KEY", read("SOLANA_PAYER_SECRET_KEY") || newSecret());
   if (!read("SOLANA_PAY_TO")) {
     const seller = newSecret();
     write("SOLANA_TEST_SELLER_SECRET_KEY", seller);
     write("SOLANA_PAY_TO", await addressOf(seller));
   }
-  if (!read("X402_FACILITATOR_URL")) write("X402_FACILITATOR_URL", "https://x402.org/facilitator");
+  if (!read("PLATFORM_FEE_PAYTO")) write("PLATFORM_FEE_PAYTO", read("SOLANA_PAY_TO"));
   if (process.argv.includes("--live")) write("PAYMENT_MODE", "live");
   writeFileSync(file, text);
 
-  console.log(`Devnet wallets (keys are in ${file}, which git ignores):\n`);
-  console.log(`  pays sellers   ${await addressOf(read("SOLANA_PAYER_SECRET_KEY"))}`);
-  console.log(`  test seller    ${read("SOLANA_PAY_TO")}`);
-  console.log(`  PAYMENT_MODE   ${read("PAYMENT_MODE") || "simulated"}`);
-  console.log("\nFund BOTH addresses with devnet USDC at https://faucet.circle.com (network: Solana Devnet).");
-  console.log("The paying wallet needs the USDC; the seller needs one drop so its USDC account exists.");
-  console.log("Neither needs SOL: the x402 facilitator pays the transaction fees.");
-  console.log("Then: npm run x402:check");
+  console.log(`Wallets (keys are in ${file}, which git ignores):\n`);
+  console.log(`  buyer (signs)      ${await addressOf(read("SOLANA_WALLET_KEY"))}`);
+  console.log(`  test seller        ${read("SOLANA_PAY_TO")}`);
+  console.log(`  fee goes to        ${read("PLATFORM_FEE_PAYTO")}   (the test seller, here; use your own wallet's address for a real deployment)`);
+  console.log(`  network            ${read("SOLANA_NETWORK") || "devnet"}`);
+  console.log(`  PAYMENT_MODE       ${read("PAYMENT_MODE") || "simulated"}`);
+  console.log("\nOn devnet, fund the buyer with USDC at https://faucet.circle.com (network: Solana Devnet), and send the");
+  console.log("seller one drop so its USDC account exists. Nothing here needs SOL: the facilitator pays the fees.");
+  console.log("Then: npm run x402:check -- --pay");
 }
 void main();

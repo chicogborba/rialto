@@ -93,25 +93,42 @@ All from `/opt/rialto` on the server.
 | Reset the demo data | `curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" https://DOMAIN/api/reset` |
 | Roll back | `IMAGE=ghcr.io/<owner>/rialto:sha-<older> docker compose up -d` |
 
-**Live payments (Solana devnet)** on the server:
+**Live payments** on the server. Rialto's server holds **no key and no funds** on this rail: buyers sign their own payments. All it needs is an address for its commission:
 
 ```bash
-docker compose run --rm --user root -v ./.env:/app/.env app npm run x402:keys -- --live   # prints two addresses
-# fund BOTH addresses with devnet USDC at https://faucet.circle.com (Solana Devnet)
-docker compose up -d                                  # picks up the new settings
-docker compose exec app npm run x402:check -- --pay   # one real $0.001 payment; prints the explorer link
+# in /opt/rialto/.env
+PAYMENT_MODE=live
+SOLANA_NETWORK=devnet              # or mainnet
+PLATFORM_FEE_PAYTO=<your wallet's address>   # must already hold a USDC account
+SOLANA_PAY_TO=<a wallet address>             # where the PokéDex test seller and the integrations are paid
+docker compose up -d
+curl https://DOMAIN/api/x402       # {"mode":"live","network":…,"feeWallet":…} and no "problem"
 ```
 
-`GET /api/x402` shows which rail is on and what the paying wallet holds.
+`GET /api/x402` states the network, the facilitator and the fee wallet, and names what keeps it from working (no USDC account on the fee wallet, a facilitator that does not serve the network). Then, from any machine with a funded buyer wallet, `E2E_BASE=https://DOMAIN npm run e2e:live` runs the whole flow.
+
+### Going to mainnet
+
+Devnet and mainnet are the same code; one setting and a few facts about money change.
+
+1. **A fee wallet you control.** Any Solana wallet (Phantom, a hardware wallet). It needs a USDC account: send it any amount of real USDC once. Put its *address* in `PLATFORM_FEE_PAYTO`. The server never needs its key.
+2. **Payout addresses that can be paid.** `SOLANA_PAY_TO` (and every seller's address) needs a USDC account too; the app checks this when a seller registers.
+3. **The network, in two places.** `SOLANA_NETWORK=mainnet` in `/opt/rialto/.env`, and the repository variable `SOLANA_NETWORK=mainnet` (Settings → Secrets and variables → Actions → Variables), which the deploy workflow passes to the image build as `NEXT_PUBLIC_SOLANA_NETWORK` so the pages say "real USDC" instead of "test money". Redeploy.
+4. **A facilitator for mainnet.** `https://x402.org/facilitator` serves only test networks; with `SOLANA_NETWORK=mainnet` the default becomes `https://facilitator.payai.network` (public, no key). Any x402 v2 facilitator that lists `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` works (`X402_FACILITATOR_URL`); one that needs credentials needs a small addition to `LiveGateway`.
+5. **An RPC.** The public `api.mainnet-beta.solana.com` rate-limits. Set `SOLANA_RPC_URL` to a private one for the server, and tell buyers to do the same for the signer.
+6. **Check before you announce.** `npm run x402:check -- --pay` with `SOLANA_NETWORK=mainnet` makes one real purchase of a tenth of a cent through the facilitator and prints both explorer links; `npm run e2e:live` runs the rest.
+
+Things that stay true on mainnet and are worth knowing before you point real money at it: the platform still has no email verification, no password recovery and no 2FA; reputation and quality are self-reported by sellers; and a seller's price is paid out to whatever address they registered, so a typo is a lost payment. Rialto holding no funds removes custody risk, not these.
 
 ### What a public server changes
 
 - `POST /api/reset` needs `ADMIN_TOKEN`. Without it nobody can wipe the data, and the app's *Reset demo* button says so. It wipes **everything**, accounts included.
 - Keys without an account (`POST /api/agents`, `POST /api/sellers`) are off: people sign up, and the account owns the agents and the seller profile. `ALLOW_ANONYMOUS_KEYS=1` turns them back on.
+- The gateway's live path is open to anyone who pays (it is rate limited per address, and a signed payment is accepted once). Sellers on the simulation can only be called by Rialto's own agent.
 - Accounts: email + password (scrypt), a 30-day HttpOnly session cookie, requests that started on another site are refused, sign-in attempts are rate limited per address and per email. There is **no email verification and no password recovery**; the operator resets one with `docker compose exec app npm run -s user:admin -- reset-password <email>` (`list` shows the accounts).
 - Behind Traefik the client address comes from `X-Forwarded-For`, which Traefik sets itself and does not accept from clients.
 - Runs without a key use the shared demo agent; in production they are throttled per address.
-- On the live rail the platform wallet pays at most `LIVE_DAILY_CAP_USD` (default 5) per 24 hours.
+- The first-party integrations spend the operator's upstream keys, so what they may sell per 24 hours is capped (`OPERATOR_DAILY_CAP_USD`, default 5), whoever pays.
 - The server calls its own routes on the loopback (`INTERNAL_BASE_URL`), never out through the proxy.
 - Traefik redirects HTTP to HTTPS and adds HSTS, `nosniff`, frame-deny and a referrer policy.
 
@@ -120,4 +137,4 @@ docker compose exec app npm run x402:check -- --pay   # one real $0.001 payment;
 - One instance: the SQLite file, the in-memory rate limiter and the gateway token assume it. Vercel-style serverless is a poor fit.
 - `prisma db push` runs on every start. It applies additive schema changes and **stops the container instead of applying one that would lose data**; such a change needs a manual migration.
 - The image is about 1.7 GB unpacked: it carries the Prisma CLI and `tsx` so the same image can migrate, seed and run the scripts above.
-- Payments are **simulated** unless `PAYMENT_MODE=live`, and then they are **devnet** USDC. Do not advertise real payouts.
+- Payments are **simulated** unless `PAYMENT_MODE=live`. On the live rail they are USDC on the network `SOLANA_NETWORK` names: devnet is test money, mainnet is real money. Say which one a deployment is on.

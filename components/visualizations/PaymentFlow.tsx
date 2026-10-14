@@ -7,6 +7,7 @@ import { activeAttempt, nameOfProvider, type AttemptState, type RunState } from 
 import { MOTION } from "@/lib/agent/timing";
 import { cn } from "@/lib/utils";
 import { Label, ModeBadge, Panel } from "@/components/primitives";
+import { EXPLORER_LABEL } from "@/lib/network-label";
 
 /** How far through the 9-step rail an attempt got (0–9). */
 function reached(a: AttemptState): number {
@@ -110,7 +111,7 @@ export function PaymentFlow({ state, className }: { state: RunState; className?:
                 </div>
                 {attempt.mode === "live" && attempt.explorerUrl ? (
                   <a className="mt-1 inline-block font-mono text-[11px] text-signal underline" href={attempt.explorerUrl} target="_blank" rel="noreferrer">
-                    View on Solana Explorer (devnet)
+                    View on {EXPLORER_LABEL}
                   </a>
                 ) : (
                   <div className="mt-1 font-mono text-[11px] text-pay">SIMULATED — no blockchain transaction</div>

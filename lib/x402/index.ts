@@ -1,30 +1,32 @@
 import type { Clock, PaymentMode } from "@/lib/types";
 import { DemoPaymentRail } from "./demo-rail";
-import { HybridPaymentRail } from "./hybrid-rail";
+import { LiveGateway } from "./live-server";
 import type { PaymentRail } from "./rail";
 import { liveConfig } from "./solana";
-import { X402PaymentRail } from "./x402-rail";
 
 declare global {
-  var __rialtoLiveRail: X402PaymentRail | undefined;
+  var __rialtoLiveGateway: LiveGateway | undefined;
 }
 
 /**
- * The live rail, or null when `PAYMENT_MODE` is not `live` or no payer wallet is configured.
- * One instance per process: it caches the payer key and the facilitator's fee payer.
+ * The live gateway, or null when `PAYMENT_MODE` is not `live` or no fee address is configured.
+ * One instance per process: it caches the facilitator's fee payer.
  */
-export function liveRail(clock: Clock): X402PaymentRail | null {
+export function liveGateway(clock: Clock): LiveGateway | null {
   const cfg = liveConfig();
   if (!cfg) return null;
-  return (globalThis.__rialtoLiveRail ??= new X402PaymentRail(cfg, clock));
+  return (globalThis.__rialtoLiveGateway ??= new LiveGateway(cfg, clock));
 }
 
-/** Simulation only, or simulation for demo providers plus real x402 for real sellers. */
+/**
+ * The rail Rialto's own orchestrator pays on: always the simulation. Real payments are made by the
+ * buyer's wallet, outside this server (see `BuyerPaymentRail`), and never from a balance held here.
+ */
 export function getRail(clock: Clock): PaymentRail {
-  const live = liveRail(clock);
-  return live ? new HybridPaymentRail(new DemoPaymentRail(clock), live) : new DemoPaymentRail(clock);
+  return new DemoPaymentRail(clock);
 }
 
+/** `live` when real sellers are paid on-chain by their buyers; `simulated` otherwise. */
 export function currentMode(): PaymentMode {
   return liveConfig() ? "live" : "simulated";
 }

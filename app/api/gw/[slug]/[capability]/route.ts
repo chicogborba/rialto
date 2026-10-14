@@ -1,14 +1,19 @@
 import { realClock } from "@/lib/agent/clock";
+import { buyerFromRequest } from "@/lib/auth/session";
+import { prisma } from "@/lib/db/client";
 import { toProvider, toService } from "@/lib/db/mappers";
-import { getProviderBySlug, liveSettledSinceMicro, soldBySellerSinceMicro } from "@/lib/db/repo";
+import { applyReputation, getProviderBySlug, recordTransaction, soldBySellerSinceMicro } from "@/lib/db/repo";
+import { handleLiveCall } from "@/lib/gateway/live-call";
 import { OPERATOR_SELLER, operatorDailyCapMicro } from "@/lib/gateway/operator";
 import { HttpError, handle, readJson } from "@/lib/http";
 import { callUpstream, isTripoTaskEndpoint, timeoutFor, UpstreamError } from "@/lib/gateway/upstream";
 import { handleSimCall } from "@/lib/providers/sim-provider";
+import { outcomeOf, updateReputation } from "@/lib/reputation/update";
+import { allow } from "@/lib/security/rate-limit";
 import { isInternal } from "@/lib/security/internal";
-import { getRail, liveRail } from "@/lib/x402";
-import { X402_PAYMENT_HEADER } from "@/lib/x402/sim-protocol";
-import { isSolanaAddress, liveDailyCapMicro } from "@/lib/x402/solana";
+import { getRail, liveGateway } from "@/lib/x402";
+import { RUN_ID_HEADER } from "@/lib/x402/sim-protocol";
+import { isSolanaAddress } from "@/lib/x402/solana";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -21,13 +26,17 @@ const clock = realClock(0);
 
 /**
  * Gateway for seller-published APIs. Same order as x402: 402 → verify payment → run the seller's API →
- * settle only if it succeeded. With the live rail on, that is a real x402 exchange: the 402 carries
- * `PAYMENT-REQUIRED`, the retry `PAYMENT-SIGNATURE`, and the seller receives USDC on Solana devnet.
- * Callable only by the Rialto orchestrator, which pays from the platform wallet and debits the buyer.
+ * settle only if it succeeded.
+ *
+ * - A seller with a Solana payout address, while the live rail is on, is called by **anyone who
+ *   pays**: the buyer's own wallet signs a USDC transfer of the seller's price to the seller and
+ *   one of the commission to Rialto, and the facilitator submits them after the seller's API
+ *   answered. Rialto never holds the money. `Authorization: Bearer rl_buyer_…` is optional and only
+ *   puts the call in that agent's activity.
+ * - Everything else is the simulation, callable only by Rialto's own orchestrator.
  */
 export async function POST(req: Request, ctx: { params: Promise<{ slug: string; capability: string }> }): Promise<Response> {
   return handle(async () => {
-    if (!isInternal(req)) throw new HttpError(403, "forbidden", "Gateway calls go through the Rialto agent (use the MCP tools or /api/runs).");
     const { slug, capability } = await ctx.params;
     const row = await getProviderBySlug(slug);
     const svcRow = row?.services.find((s) => s.capability === capability);
@@ -35,13 +44,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
     if (!row || !svcRow || !service || row.isDemo || !svcRow.upstreamUrl) throw new HttpError(404, "unknown_service", "No such published API");
     if (row.status === "offline") throw new HttpError(503, "offline", "This API is paused by its publisher");
 
-    // a seller is paid on-chain when the live rail is on and their payout address is a real one
-    const x402 = liveRail(clock);
-    const live = x402 && isSolanaAddress(row.payTo) && svcRow.sellerPriceMicro > 0 ? { settleMicro: svcRow.sellerPriceMicro } : undefined;
-    const rail = getRail(clock);
-    if (live && (await liveSettledSinceMicro(new Date(Date.now() - 24 * 3600_000))) + live.settleMicro > liveDailyCapMicro()) {
-      throw new HttpError(503, "live_daily_cap_reached", "The platform wallet has paid out its limit for the last 24 hours.");
-    }
+    const gateway = liveGateway(clock);
+    const live = gateway && isSolanaAddress(row.payTo) && svcRow.sellerPriceMicro > 0;
+    if (!live && !isInternal(req)) throw new HttpError(403, "forbidden", "This API is paid on the simulation, which only Rialto's own agent can call (use the MCP tools or /api/runs).");
 
     // Rialto's own integrations spend its upstream keys even when the buyer pays in test credit
     if (row.seller?.name === OPERATOR_SELLER && (await soldBySellerSinceMicro(OPERATOR_SELLER, new Date(Date.now() - 24 * 3600_000))) + svcRow.sellerPriceMicro > operatorDailyCapMicro()) {
@@ -49,41 +54,75 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
     }
 
     const body = await readJson(req);
+    const upstream = {
+      url: svcRow.upstreamUrl,
+      method: svcRow.upstreamMethod,
+      bodyTemplate: svcRow.upstreamBody,
+      encryptedHeaders: svcRow.upstreamHeaders,
+      resultPick: svcRow.resultPick,
+      taskMode: svcRow.capability === "model.3d" && isTripoTaskEndpoint(svcRow.upstreamUrl) ? ("tripo-v2" as const) : undefined,
+      timeoutMs: timeoutFor(row.latencyMs),
+    };
+    const produce = (b: unknown) =>
+      callUpstream(upstream, b).catch((e: unknown) => {
+        throw e instanceof UpstreamError ? e : new Error("upstream_error");
+      });
+    const headers = Object.fromEntries(req.headers.entries());
+    const provider = toProvider(row);
+
+    if (live) {
+      const caller = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+      if (!allow(`gw:${caller}`, 60, 1)) throw new HttpError(429, "rate_limited", "Too many calls from this address. Slow down.");
+      const out = await handleLiveCall({ gateway, provider, service, sellerMicro: svcRow.sellerPriceMicro, payTo: row.payTo, resourceUrl: req.url, headers, body, produce });
+      if (out.outcome) {
+        const o = out.outcome;
+        // judged only on what happened after a payment checked out: a refused payment is the buyer's problem
+        const rep = updateReputation(provider, o.status === "settled" ? outcomeOf(true, o.latencyMs, provider.latencyMs) : 0);
+        await applyReputation(provider.id, rep).catch(() => undefined);
+        // whose activity this is: the agent whose key came with the call, else the paying wallet
+        const buyer = await buyerFromRequest(req).catch(() => null);
+        const agentId = buyer?.authed ? buyer.agentId : `wallet:${o.payer}`;
+        const runId = headers[RUN_ID_HEADER] ?? clock.id("run");
+        await prisma.run.upsert({
+          where: { id: runId },
+          create: { id: runId, agentId, goal: typeof (body as { goal?: unknown })?.goal === "string" ? String((body as { goal: string }).goal).slice(0, 500) : service.capability, constraints: "{}", status: "completed", mode: "live" },
+          update: {},
+        });
+        await recordTransaction({
+          runId,
+          stepId: headers["x-step-id"] ?? "s1",
+          providerId: provider.id,
+          serviceId: service.id,
+          capability: service.capability,
+          amountMicro: service.priceMicro,
+          network: provider.network,
+          status: o.status,
+          mode: "live",
+          txRef: o.seller?.txRef ?? null,
+          explorerUrl: o.seller?.explorerUrl ?? null,
+          latencyMs: o.latencyMs,
+          requirements: o.requirements,
+          result: o.result ?? null,
+          error: o.error ?? null,
+          role: "primary",
+          directPayer: o.payer,
+          feeTxRef: o.fee?.txRef ?? null,
+        });
+      }
+      return Response.json(out.json, { status: out.status, headers: out.headers });
+    }
+
     const out = await handleSimCall({
-      provider: toProvider(row),
+      provider,
       service,
       payTo: row.payTo,
       demoFailFirstCall: false,
-      headers: Object.fromEntries(req.headers.entries()),
+      headers,
       body,
-      rail,
+      rail: getRail(clock),
       failedOnce,
-      live,
-      produce: (b) =>
-        callUpstream(
-          {
-            url: svcRow.upstreamUrl ?? "",
-            method: svcRow.upstreamMethod,
-            bodyTemplate: svcRow.upstreamBody,
-            encryptedHeaders: svcRow.upstreamHeaders,
-            resultPick: svcRow.resultPick,
-            taskMode: svcRow.capability === "model.3d" && isTripoTaskEndpoint(svcRow.upstreamUrl ?? "") ? "tripo-v2" : undefined,
-            timeoutMs: timeoutFor(row.latencyMs),
-          },
-          b,
-        ).catch((e: unknown) => {
-          throw e instanceof UpstreamError ? e : new Error("upstream_error");
-        }),
+      produce,
     });
-    const headers = { ...out.headers };
-    if (x402 && live) {
-      if (out.status === 402) {
-        const required = out.json as { accepts?: Parameters<typeof x402.requiredHeaders>[0][] };
-        if (required.accepts?.[0]) Object.assign(headers, await x402.requiredHeaders(required.accepts[0], req.url).catch(() => ({})));
-      } else if (out.status === 200) {
-        Object.assign(headers, x402.responseHeaders(req.headers.get(X402_PAYMENT_HEADER) ?? ""));
-      }
-    }
-    return Response.json(out.json, { status: out.status, headers });
+    return Response.json(out.json, { status: out.status, headers: out.headers });
   });
 }

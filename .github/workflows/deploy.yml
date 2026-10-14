@@ -2,7 +2,7 @@ name: Deploy
 
 # Builds the platform image, pushes it to GitHub's registry, and (when a server is configured)
 # rolls it out there over SSH. Repository settings, under Secrets and variables → Actions:
-#   variables: VPS_HOST, VPS_USER, optional VPS_PORT (22) and VPS_PATH (/opt/rialto)
+#   variables: VPS_HOST, VPS_USER, optional VPS_PORT (22), VPS_PATH (/opt/rialto) and SOLANA_NETWORK (devnet | mainnet)
 #   secrets:   VPS_SSH_KEY, optional VPS_KNOWN_HOSTS (output of `ssh-keyscan <host>`)
 # Without VPS_HOST the image is still built and pushed; nothing is deployed.
 
@@ -46,6 +46,8 @@ jobs:
         with:
           context: .
           push: true
+          build-args: |
+            NEXT_PUBLIC_SOLANA_NETWORK=${{ vars.SOLANA_NETWORK || 'devnet' }}
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ steps.meta.outputs.tag }}

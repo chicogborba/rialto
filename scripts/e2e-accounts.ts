@@ -1,20 +1,17 @@
 // End-to-end check of the whole account flow, over HTTP, the way people use it:
 //
-//   sign up → sign in → agents and money → wallet proof → publish an API → another account's
-//   agent hires it through the hosted MCP endpoint → the money lands → keys, sessions, password.
+//   sign up → sign in → agents and money → publish an API → another account's agent hires it
+//   through the hosted MCP endpoint → the (test) money lands → keys, sessions, password.
 //
 //   npm run e2e:accounts                                   against $NEXT_PUBLIC_APP_URL or localhost:3000
 //   E2E_BASE=https://your.server npm run e2e:accounts      against a deployed server
 //
-// Works on both rails. On the live rail it needs SOLANA_TEST_SELLER_SECRET_KEY (a devnet wallet that
-// holds USDC): that wallet is the seller's, and it also makes a real deposit to the platform wallet.
-import { createPrivateKey, generateKeyPairSync, sign } from "node:crypto";
+// This covers accounts and the hosted agent, which pays from test credit on the simulation. Real
+// payments are made by the buyer's own wallet, outside the server: `npm run e2e:live` covers them.
 import { existsSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { createKeyPairSignerFromBytes, getBase58Decoder, getBase58Encoder } from "@solana/kit";
-import { HTTPFacilitatorClient } from "@x402/core/server";
-import { ExactSvmScheme } from "@x402/svm/exact/client";
+import { generateKeyPairSigner } from "@solana/kit";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
 const base = (process.env.E2E_BASE ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/+$/, "");
@@ -46,19 +43,6 @@ interface CatalogResponse {
   demo: { demo: boolean; settlement: string }[];
 }
 const PASSWORD = `correct horse ${run} battery`;
-/** An ed25519 wallet: from the env on the live rail (it needs USDC), fresh on the simulation. */
-function walletFrom(secretBase58?: string) {
-  if (secretBase58) {
-    const bytes = new Uint8Array(getBase58Encoder().encode(secretBase58));
-    const seed = Buffer.from(bytes.slice(0, 32));
-    const privateKey = createPrivateKey({ key: Buffer.concat([Buffer.from("302e020100300506032b657004220420", "hex"), seed]), format: "der", type: "pkcs8" });
-    return { address: getBase58Decoder().decode(bytes.slice(32)), signBase64: (m: string) => sign(null, Buffer.from(m), privateKey).toString("base64"), secret: secretBase58 };
-  }
-  const { privateKey, publicKey } = generateKeyPairSync("ed25519");
-  const raw = Buffer.from(String(publicKey.export({ format: "jwk" }).x), "base64url");
-  return { address: getBase58Decoder().decode(raw), signBase64: (m: string) => sign(null, Buffer.from(m), privateKey).toString("base64"), secret: undefined };
-}
-
 async function main() {
   console.log(`E2E against ${base}\n`);
   const alice = new Browser(); // publishes an API
@@ -88,20 +72,10 @@ async function main() {
   const noWallet = await alice.call("/api/sellers/me/apis", { json: { name: "Too early", description: "no wallet yet", capability: "data.lookup", upstreamUrl: "https://pokeapi.co/api/v2/pokemon/{query}", priceUsd: 0.002 } });
   check("publishing needs a wallet to be paid at", noWallet.status === 400 && noWallet.body?.error?.code === "wallet_required");
 
-  const secret = process.env.SOLANA_TEST_SELLER_SECRET_KEY;
-  if (mode === "live" && !secret) throw new Error("The live rail needs SOLANA_TEST_SELLER_SECRET_KEY (a devnet wallet with USDC) to play the seller.");
-  const wallet = walletFrom(mode === "live" ? secret : undefined);
-  const challenge = await alice.call("/api/account/wallet/challenge", { json: { address: wallet.address } });
-  check("the wallet challenge names the account and the wallet", challenge.status === 200 && challenge.body?.message?.includes(wallet.address) && challenge.body?.message?.includes(`alice-${run}@example.com`));
-  const forged = await alice.call("/api/account/wallet/verify", { json: { address: wallet.address, issuedAt: challenge.body?.issuedAt, signature: walletFrom().signBase64(challenge.body?.message) } });
-  check("another wallet's signature does not verify this one", forged.status === 400 && forged.body?.error?.code === "bad_signature");
-  const verified = await alice.call("/api/account/wallet/verify", { json: { address: wallet.address, issuedAt: challenge.body?.issuedAt, signature: wallet.signBase64(challenge.body?.message) } });
-  check("the owner's signature verifies the wallet", verified.status === 200 && verified.body?.verified === true, verified.body?.error?.message);
-  const stolen = new Browser();
-  await stolen.call("/api/auth/signup", { json: { email: `mallory-${run}@example.com`, password: PASSWORD, name: "Mallory" } });
-  const c2 = await stolen.call("/api/account/wallet/challenge", { json: { address: wallet.address } });
-  const steal = await stolen.call("/api/account/wallet/verify", { json: { address: wallet.address, issuedAt: c2.body?.issuedAt, signature: wallet.signBase64(challenge.body?.message) } });
-  check("a signature made for one account cannot link the wallet to another", steal.status === 400);
+  if (mode === "live") throw new Error("This server is on the live rail: its real sellers are paid by their buyers' own wallets. Run `npm run e2e:live` for that, and point this script at a simulated server.");
+  const address = (await generateKeyPairSigner()).address;
+  const reg = await alice.call("/api/account/wallet", { method: "PUT", json: { address } });
+  check("she registers the wallet she wants to be paid at", reg.status === 200, reg.body?.error?.message);
 
   const pub = await alice.call("/api/sellers/me/apis", {
     json: { name: `PokeAPI ${run}`, description: "Pokémon data from the public PokéAPI.", capability: "data.lookup", upstreamUrl: "https://pokeapi.co/api/v2/pokemon/{query}", resultPick: "name,id,sprite=sprites.front_default,types=types.*.type.name", priceUsd: 0.002, quality: 95, latencyMs: 300 },
@@ -114,7 +88,7 @@ async function main() {
   check("the account knows it is a seller now", aliceView.body?.seller?.apis === 1 && aliceView.body?.seller?.online === 1);
   const entry = async () => ((await (await fetch(`${base}/api/catalog`)).json()) as CatalogResponse).live.find((e) => e.name === `PokeAPI ${run}`);
   const listed = await entry();
-  check("the public catalog lists it as live, at the buyer price, paid the right way", listed !== undefined && listed.priceMicro === 3_000 && listed.demo === false && listed.unproven === true && listed.settlement === (mode === "live" ? "solana-devnet" : "simulated"), JSON.stringify(listed)?.slice(0, 120));
+  check("the public catalog lists it as live, at the buyer price, paid the right way", listed !== undefined && listed.priceMicro === 3_000 && listed.demo === false && listed.unproven === true && listed.settlement === "simulated", JSON.stringify(listed)?.slice(0, 120));
   const cat = (await (await fetch(`${base}/api/catalog`)).json()) as CatalogResponse;
   check("demo providers are listed apart, never among the live ones", cat.demo.length > 0 && cat.demo.every((e) => e.demo && e.settlement === "simulated") && cat.live.every((e) => !e.demo));
 
@@ -142,12 +116,10 @@ async function main() {
   const ran = JSON.parse(text(await mcp.callTool({ name: "execute_service", arguments: { goal: "Look up the Pokémon charizard.", budgetUsd: 0.05 } })));
   check("the agent hires Alice's API and gets the result", ran.result?.final?.name === "charizard" && ran.mode === mode, JSON.stringify(ran.result?.final)?.slice(0, 80));
   check("the buyer paid the buyer price", ran.totalCostUsd === 0.003, String(ran.totalCostUsd));
-  const tx = ran.transactions?.[0];
-  if (mode === "live") check("the payment is on Solana, with an explorer link", tx?.mode === "live" && String(tx?.explorerUrl).includes("explorer.solana.com/tx/"), tx?.explorerUrl);
   const afterRun = await bob.call("/api/account");
   check("Bob's agent was debited exactly that", afterRun.body?.agents?.[0]?.balanceMicro === 497_000);
   const aliceAfter = await alice.call("/api/sellers/me");
-  check(mode === "live" ? "Alice was paid on-chain, per call" : "Alice was credited her price", mode === "live" ? aliceAfter.body?.seller?.paidOutMicro === 2_000 : aliceAfter.body?.seller?.balanceMicro === 2_000, `balance ${aliceAfter.body?.seller?.balanceMicro}, paid out ${aliceAfter.body?.seller?.paidOutMicro}`);
+  check("Alice was credited her price", aliceAfter.body?.seller?.balanceMicro === 2_000, `balance ${aliceAfter.body?.seller?.balanceMicro}, paid out ${aliceAfter.body?.seller?.paidOutMicro}`);
   const act = await bob.call("/api/account/activity");
   check("the call shows up in Bob's activity", act.body?.rows?.[0]?.providerName?.startsWith("PokeAPI") && act.body?.rows?.[0]?.status === "settled");
   const fail = await mcp.callTool({ name: "execute_service", arguments: { goal: "Look up the Pokémon notarealmon.", budgetUsd: 0.05 } });
@@ -187,29 +159,6 @@ async function main() {
   const afterRevoke = await bob.call("/api/account");
   check("revoking an agent kills its key and returns its money", revoke.status === 200 && revoke.body?.returnedMicro === 497_000 && dead.status === 401 && afterRevoke.body?.user?.balanceMicro === welcome - 3_000 && afterRevoke.body?.agents?.length === 0, `account ${afterRevoke.body?.user?.balanceMicro}`);
 
-  // ---- real deposit (live rail only)
-  if (mode === "live" && secret && acc.body?.treasury?.address) {
-    const sig = await depositOnChain(secret, acc.body.treasury.address, 50_000);
-    console.log(`  deposit sent: ${sig}`);
-    // the transfer takes a few seconds to be readable; older unclaimed transfers from the same wallet may be credited with it
-    let found = false;
-    for (let i = 0; i < 12 && !found; i++) {
-      await new Promise((r) => setTimeout(r, 4000));
-      await alice.call("/api/account/deposits", { json: {} });
-      found = ((await alice.call("/api/account")).body?.deposits as { signature: string }[] | undefined)?.some((d) => d.signature === sig) ?? false;
-    }
-    const afterDep = (await alice.call("/api/account")).body;
-    const mine = (afterDep?.deposits as { signature: string; amountMicro: number }[] | undefined)?.find((d) => d.signature === sig);
-    check("a real USDC deposit from her verified wallet is credited", found && mine?.amountMicro === 50_000, mine ? `+${mine.amountMicro}` : "not found");
-    const total = afterDep?.user?.balanceMicro as number;
-    const again = await alice.call("/api/account/deposits", { json: {} });
-    check("the same transfer is never credited twice", (again.body?.credited ?? []).length === 0 && (await alice.call("/api/account")).body?.user?.balanceMicro === total);
-    const bobTry = await bob.call("/api/account/deposits", { json: {} });
-    check("an account without a verified wallet cannot claim deposits", bobTry.status === 400 && bobTry.body?.error?.code === "wallet_not_verified");
-  } else {
-    console.log("  (simulated rail: no on-chain deposit to test)");
-  }
-
   // ---- password and sessions
   const second = new Browser();
   await second.call("/api/auth/login", { json: { email: `alice-${run}@example.com`, password: PASSWORD } });
@@ -233,23 +182,6 @@ async function main() {
     if (!found) throw new Error(`provider ${name} not listed`);
     return found.provider.id;
   }
-}
-
-/** Sends USDC from a wallet to the platform wallet, through the x402 facilitator (which pays the fees). */
-async function depositOnChain(secret: string, to: string, amountMicro: number): Promise<string> {
-  const facilitatorUrl = process.env.X402_FACILITATOR_URL ?? "https://x402.org/facilitator";
-  const facilitator = new HTTPFacilitatorClient({ url: facilitatorUrl });
-  const supported = await facilitator.getSupported();
-  const kind = supported.kinds.find((k) => k.x402Version === 2 && k.scheme === "exact" && k.network === "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1");
-  const feePayer = kind?.extra?.feePayer;
-  if (typeof feePayer !== "string") throw new Error("facilitator has no devnet fee payer");
-  const signer = await createKeyPairSignerFromBytes(new Uint8Array(getBase58Encoder().encode(secret)));
-  const accepted = { scheme: "exact", network: "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1" as const, asset: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU", amount: String(amountMicro), payTo: to, maxTimeoutSeconds: 60, extra: { feePayer } };
-  const signed = await new ExactSvmScheme(signer, { rpcUrl: process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com" }).createPaymentPayload(2, accepted);
-  const payload = { x402Version: 2, accepted, payload: signed.payload };
-  const settled = await facilitator.settle(payload, accepted);
-  if (!settled.success) throw new Error(`deposit failed: ${settled.errorReason}`);
-  return settled.transaction;
 }
 
 main().catch((e: unknown) => {

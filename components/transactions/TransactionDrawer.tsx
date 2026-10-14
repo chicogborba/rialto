@@ -5,6 +5,7 @@ import { useFetch } from "@/lib/client/useFetch";
 import { formatUsdc } from "@/lib/money";
 import { Label, ModeBadge } from "@/components/primitives";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { EXPLORER_LABEL } from "@/lib/network-label";
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
@@ -46,7 +47,7 @@ export function TransactionDrawer({ id, onClose }: { id: string | null; onClose:
                 </ul>
               )}
               {tx.txRef ? <div className="break-all text-muted">ref {tx.txRef}</div> : <div className="text-muted">No settlement{failed ? " — not charged" : ""}.</div>}
-              {tx.mode === "live" && tx.explorerUrl ? <a className="text-signal underline" href={tx.explorerUrl} target="_blank" rel="noreferrer">Solana Explorer (devnet)</a> : <div className="text-pay">SIMULATED — no blockchain transaction</div>}
+              {tx.mode === "live" && tx.explorerUrl ? <a className="text-signal underline" href={tx.explorerUrl} target="_blank" rel="noreferrer">{EXPLORER_LABEL}</a> : <div className="text-pay">SIMULATED — no blockchain transaction</div>}
             </Step>
             <Step n={3} title="Provider">
               <div>{tx.provider.name} {tx.provider.isDemo && <span className="text-muted">(demo provider)</span>}</div>

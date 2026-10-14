@@ -149,15 +149,12 @@ export async function reclaimFromAgent(userId: string, agentId: string, amountMi
 // ---------- wallet ----------
 
 /**
- * Registers the Solana address this account is paid at (and, once verified, deposits from).
- * An API already published keeps working: its payout address follows.
+ * Registers the Solana address this account is paid at. An API already published keeps working:
+ * its payout address follows.
  */
-export async function setWallet(userId: string, address: string, verified: boolean): Promise<void> {
+export async function setWallet(userId: string, address: string): Promise<void> {
   await prisma.$transaction(async (db) => {
-    // a wallet is verified for one account at a time (the deposits it sends are credited to that one):
-    // proving it again somewhere else, which takes its key, moves it
-    if (verified) await db.user.updateMany({ where: { walletAddress: address, walletVerifiedAt: { not: null }, id: { not: userId } }, data: { walletVerifiedAt: null } });
-    await db.user.update({ where: { id: userId }, data: { walletAddress: address, walletVerifiedAt: verified ? new Date() : null } });
+    await db.user.update({ where: { id: userId }, data: { walletAddress: address } });
     const seller = await db.seller.findUnique({ where: { userId }, select: { id: true } });
     if (seller) {
       await db.seller.update({ where: { id: seller.id }, data: { payoutAddress: address } });
@@ -181,12 +178,11 @@ export async function ensureSellerFor(userId: string): Promise<string> {
 // ---------- the dashboard's view of an account ----------
 
 export interface AccountView {
-  user: { id: string; email: string; name: string; createdAt: string; balanceMicro: number; wallet: { address: string; verified: boolean } | null };
+  user: { id: string; email: string; name: string; createdAt: string; balanceMicro: number; wallet: { address: string } | null };
   agents: { id: string; name: string; keyPrefix: string | null; balanceMicro: number; sessionSpendMicro: number; policy: ReturnType<typeof parsePolicy>; createdAt: string }[];
   seller: { apis: number; online: number; balanceMicro: number; paidOutMicro: number } | null;
   sessions: { id: string; createdAt: string; lastUsedAt: string; userAgent: string | null; current: boolean }[];
   ledger: { id: number; at: string; kind: string; amountMicro: number; note: string | null }[];
-  deposits: { id: string; at: string; amountMicro: number; signature: string; from: string }[];
 }
 
 export async function accountView(userId: string, currentSessionId: string): Promise<AccountView> {
@@ -196,7 +192,6 @@ export async function accountView(userId: string, currentSessionId: string): Pro
       agents: { where: { revokedAt: null }, orderBy: { createdAt: "asc" } },
       seller: { include: { providers: { select: { status: true } } } },
       sessions: { orderBy: { lastUsedAt: "desc" }, take: 10 },
-      deposits: { orderBy: { createdAt: "desc" }, take: 10 },
     },
   });
   if (!user) throw new HttpError(401, "signed_out", "Sign in to continue.");
@@ -209,13 +204,12 @@ export async function accountView(userId: string, currentSessionId: string): Pro
       name: user.name,
       createdAt: user.createdAt.toISOString(),
       balanceMicro: user.balanceMicro,
-      wallet: user.walletAddress ? { address: user.walletAddress, verified: user.walletVerifiedAt !== null } : null,
+      wallet: user.walletAddress ? { address: user.walletAddress } : null,
     },
     agents: user.agents.map((a) => ({ id: a.id, name: a.name, keyPrefix: a.keyPrefix, balanceMicro: a.balanceMicro, sessionSpendMicro: a.sessionSpendMicro, policy: parsePolicy(a.policy), createdAt: a.createdAt.toISOString() })),
     seller: user.seller ? { apis: user.seller.providers.length, online: user.seller.providers.filter((p) => p.status === "online").length, balanceMicro: user.seller.balanceMicro, paidOutMicro: user.seller.paidOutMicro } : null,
     sessions: user.sessions.map((s) => ({ id: s.id, createdAt: s.createdAt.toISOString(), lastUsedAt: s.lastUsedAt.toISOString(), userAgent: s.userAgent, current: s.id === currentSessionId })),
     ledger: ledger.map((l) => ({ id: l.id, at: l.createdAt.toISOString(), kind: l.kind, amountMicro: l.amountMicro, note: l.note })),
-    deposits: user.deposits.map((d) => ({ id: d.id, at: d.createdAt.toISOString(), amountMicro: d.amountMicro, signature: d.signature, from: d.fromAddress })),
   };
 }
 

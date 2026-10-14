@@ -30,6 +30,7 @@ jobs:
         run: npm run build:pages
         env:
           NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+          NEXT_PUBLIC_SOLANA_NETWORK: ${{ vars.SOLANA_NETWORK || 'devnet' }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: out

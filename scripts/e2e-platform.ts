@@ -59,7 +59,8 @@ async function main() {
   check("seller dry-run reaches the real PokéAPI", dry.body?.ok === true && dry.body?.result?.name === "pikachu", JSON.stringify(dry.body?.result)?.slice(0, 120));
 
   // ---- gateway is not a public door
-  const direct = await api("/api/gw/anything/data.lookup", { json: { goal: "x" } });
+  // a seller paid on the simulation can only be called by Rialto's own agent; one paid on-chain is open to whoever pays
+  const direct = await api(`/api/gw/${String(pub.body?.slug)}/data.lookup`, { json: { goal: "x" } });
   check("gateway refuses calls that skip the platform", direct.status === 403);
 
   // ---- buyer

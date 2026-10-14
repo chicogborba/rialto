@@ -8,8 +8,9 @@ import { api } from "./api";
 
 export type AccountData = AccountView & {
   mode: PaymentMode;
-  /** where deposits go; null unless the live rail is on */
-  treasury: { address: string; explorer: string; mint: string; network: "solana-devnet" } | null;
+  network: "solana-devnet" | "solana-mainnet";
+  /** true when the money on this network is test money */
+  testMoney: boolean;
   welcomeCreditMicro: number;
 };
 

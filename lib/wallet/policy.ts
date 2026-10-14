@@ -56,7 +56,7 @@ export function defaultPolicy(): SpendingPolicy {
   return {
     maxPerRequestMicro: 50_000,
     sessionBudgetMicro: 500_000,
-    allowedNetworks: ["solana-devnet"],
+    allowedNetworks: ["solana-devnet", "solana-mainnet"],
     allowedProviderIds: "any",
     minQuality: 75,
     requireX402: true,

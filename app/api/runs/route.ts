@@ -5,7 +5,7 @@ import { DemoAgentPlanner } from "@/lib/agent/demo-planner";
 import type { RunEvent } from "@/lib/agent/events";
 import { runAgent, type RunDeps } from "@/lib/agent/run";
 import { buyerFromRequest } from "@/lib/auth/session";
-import { createRun, persistentDepsFor, getWallet, listCandidates, getHistory } from "@/lib/db/repo";
+import { createRun, persistentDepsFor, getWallet, listHostedCandidates, getHistory } from "@/lib/db/repo";
 import { errorResponse, internalBase } from "@/lib/http";
 import { createHttpExecutor } from "@/lib/providers/http-executor";
 import { anonymousRunAllowed } from "@/lib/security/rate-limit";
@@ -74,7 +74,7 @@ export async function POST(req: Request): Promise<Response> {
       planner: new DemoAgentPlanner(),
       rail,
       clock,
-      registry: { listCandidates, history: getHistory },
+      registry: { listCandidates: listHostedCandidates, history: getHistory },
       wallet: {
         get: () => Promise.resolve({ ...mem }),
         debit: (amt) => {

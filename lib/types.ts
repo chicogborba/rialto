@@ -2,7 +2,7 @@
 
 export type MicroUsdc = number;
 export type PaymentMode = "simulated" | "live";
-export type Network = "solana-devnet";
+export type Network = "solana-devnet" | "solana-mainnet";
 
 export type CapabilityId =
   | "data.lookup"
@@ -49,6 +49,8 @@ export interface Provider {
   latencyMs: number;
   requestCount: number;
   isDemo: boolean;
+  /** `live`: paid on-chain by the buyer's own wallet (needs a signer); absent: paid on the simulation */
+  settlement?: "live";
 }
 
 export interface Service {

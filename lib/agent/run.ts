@@ -55,6 +55,10 @@ export interface TransactionRecord {
   result: unknown;
   error: string | null;
   role: PurchaseRole;
+  /** live rail: the wallet that paid the seller and Rialto directly, on-chain; set only by the gateway */
+  directPayer?: string;
+  /** live rail: the commission's own transaction, when it settled */
+  feeTxRef?: string | null;
 }
 
 export interface RunDeps {
@@ -320,12 +324,12 @@ export async function* runAgent(input: RunInput, deps: RunDeps): AsyncGenerator<
       mode: auth.mode,
     });
 
-    let paid = await deps.executor.call(service, body, { ...baseHeaders, [paymentHeader(auth.mode)]: auth.payload });
+    let paid = await deps.executor.call(service, body, { ...baseHeaders, [paymentHeader(auth.mode)]: auth.payload, ...auth.headers });
     // A refusal is often only timing: the facilitator's node has not seen the block the payment
     // was signed against yet. Nothing was charged, so sign a fresh payment and try once more.
     if (paid.status === 402 && auth.mode === "live") {
       auth = await rail.requestPayment(requirements, wallet);
-      paid = await deps.executor.call(service, body, { ...baseHeaders, [paymentHeader(auth.mode)]: auth.payload });
+      paid = await deps.executor.call(service, body, { ...baseHeaders, [paymentHeader(auth.mode)]: auth.payload, ...auth.headers });
     }
     const fail = async function* (error: string, verified: boolean): AsyncGenerator<RunEvent, PurchaseResult, void> {
       if (verified) {

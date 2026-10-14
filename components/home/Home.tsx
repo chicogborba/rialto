@@ -8,6 +8,7 @@ import { SolanaMark } from "./SolanaMark";
 import { SolanaRace } from "./SolanaRace";
 import { Caption, Story as StoryScroll } from "./Story";
 import { BEATS } from "./story-beats";
+import { FOOTER_NOTE, MONEY_NOTE } from "@/lib/network-label";
 
 const WRAP = "mx-auto w-full max-w-6xl px-5 md:px-8";
 const H2 = "text-[clamp(2rem,5.6vw,4rem)] font-bold leading-[1.02] tracking-[-0.04em]";
@@ -116,7 +117,7 @@ export function Solana() {
             </div>
           ))}
         </dl>
-        <p className="mt-8 text-xs text-coal/45">Card payouts take about 2 days, bank transfers 1 to 3, wires up to 5. This build pays with x402 on Solana devnet: test money.</p>
+        <p className="mt-8 text-xs text-coal/45">Card payouts take about 2 days, bank transfers 1 to 3, wires up to 5. {MONEY_NOTE}</p>
       </div>
     </section>
   );
@@ -181,7 +182,7 @@ export function Footer() {
     <footer className="border-t-2 border-coal/10">
       <div className={`${WRAP} flex flex-wrap items-center justify-between gap-3 py-6 text-sm text-coal/60`}>
         <p className="flex items-center gap-2">
-          <Image src={asset("/brand/rialto-mark.svg")} alt="" width={100} height={100} unoptimized className="size-7" /> Rialto · hackathon build · devnet test money, never real funds
+          <Image src={asset("/brand/rialto-mark.svg")} alt="" width={100} height={100} unoptimized className="size-7" /> {FOOTER_NOTE}
         </p>
         <a href={REPO_URL} className="font-medium text-coal hover:underline">GitHub ↗</a>
       </div>

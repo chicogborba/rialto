@@ -1,35 +1,25 @@
 import { z } from "zod";
-import { ALL_CAPABILITIES, CAPABILITY_LABELS, isCapabilityId } from "@/lib/agent/capabilities";
-import type { Route } from "@/lib/agent/scenarios";
+import { ALL_CAPABILITIES, CAPABILITY_LABELS } from "@/lib/agent/capabilities";
 import { realClock } from "@/lib/agent/clock";
 import { resolveConstraints } from "@/lib/agent/constraints";
 import { DemoAgentPlanner } from "@/lib/agent/demo-planner";
 import { runAgent } from "@/lib/agent/run";
-import { createRun, DEFAULT_AGENT_ID, getHistory, getWallet, listCandidates, listTransactions, persistentDepsFor, recentOutcomes } from "@/lib/db/repo";
+import { createRun, getHistory, getWallet, listCandidates, listTransactions, persistentDepsFor, recentOutcomes } from "@/lib/db/repo";
 import { explain } from "@/lib/routing/explain";
 import { scoreCandidates } from "@/lib/routing/score";
 import { weightsFor } from "@/lib/routing/weights";
 import { createHttpExecutor } from "@/lib/providers/http-executor";
 import { toDollars, toMicro } from "@/lib/money";
+import { noProviderMessage, resolveRoute, SIGNER_HELP, ToolError } from "./route";
+import { PresetSchema, WeightsShape, type GoalArgs } from "./schemas";
 import { NoQualifiedProviderError, type Candidate, type CapabilityId, type ExecutionPlan, type ScoredCandidate } from "@/lib/types";
 import { currentMode, getRail } from "@/lib/x402";
-
-const PresetSchema = z.enum(["balanced", "accuracy", "cost", "speed"]);
-const WeightsShape = z.object({ quality: z.number().min(0), price: z.number().min(0), latency: z.number().min(0), trust: z.number().min(0) });
-
-export const CapabilitySchema = z.enum(ALL_CAPABILITIES as [CapabilityId, ...CapabilityId[]]);
-
-export class ToolError extends Error {}
 
 /** Who is calling and where the platform lives. */
 export interface ToolCtx {
   agentId: string;
   baseUrl: string;
-  /** stdio only: verify the web server (which hosts the providers) is running */
-  checkReachable?: boolean;
 }
-
-export const localCtx = (): ToolCtx => ({ agentId: DEFAULT_AGENT_ID, baseUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000", checkReachable: true });
 
 const usd = (micro: number) => toDollars(micro);
 
@@ -40,6 +30,7 @@ function summarizeScored(s: ScoredCandidate) {
     serviceId: s.candidate.service.id,
     capability: s.candidate.service.capability,
     priceUsd: usd(s.candidate.service.priceMicro),
+    paidWith: s.candidate.provider.settlement === "live" ? "your own Solana wallet, through the local signer" : "test credit (simulated)",
     quality: s.candidate.provider.qualityScore,
     latencyMs: s.candidate.provider.latencyMs,
     reputation: s.candidate.provider.reputationScore,
@@ -73,10 +64,6 @@ export function summarizePlan(plan: ExecutionPlan) {
 
 // ---------- tool handlers ----------
 
-export const discoverInput = {
-  capability: CapabilitySchema.optional().describe("Leave out to list every capability on Rialto with how many providers offer it."),
-  maxPriceUsd: z.number().min(0).optional(),
-};
 export async function discoverServices(args: { capability?: CapabilityId; maxPriceUsd?: number }) {
   const all = await listCandidates();
   const max = args.maxPriceUsd === undefined ? Infinity : toMicro(args.maxPriceUsd);
@@ -101,6 +88,7 @@ export async function discoverServices(args: { capability?: CapabilityId; maxPri
       status: c.provider.status,
       x402Enabled: c.provider.x402Enabled,
       network: c.provider.network,
+      paidWith: c.provider.settlement === "live" ? "your own Solana wallet, through the local signer (USDC straight to the seller)" : "test credit (simulated)",
       priceUsd: usd(c.service.priceMicro),
       priceMicro: c.service.priceMicro,
       quality: c.provider.qualityScore,
@@ -112,11 +100,6 @@ export async function discoverServices(args: { capability?: CapabilityId; maxPri
   return { capability: args.capability, count: services.length, services };
 }
 
-export const compareInput = {
-  serviceIds: z.array(z.string()).min(1),
-  preset: PresetSchema.optional(),
-  weights: WeightsShape.optional(),
-};
 export async function compareServices(args: { serviceIds: string[]; preset?: z.infer<typeof PresetSchema>; weights?: z.infer<typeof WeightsShape> }) {
   const all = await listCandidates();
   const picked = all.filter((c) => args.serviceIds.includes(c.service.id));
@@ -131,7 +114,6 @@ export async function compareServices(args: { serviceIds: string[]; preset?: z.i
   };
 }
 
-export const reputationInput = { provider: z.string().describe("Provider slug, id or name") };
 export async function getProviderReputation(args: { provider: string }) {
   const all = await listCandidates();
   const needle = args.provider.toLowerCase();
@@ -152,41 +134,7 @@ export async function getProviderReputation(args: { provider: string }) {
   };
 }
 
-export const planInput = {
-  goal: z.string().min(3).describe("What you need, in words. This text is what the provider receives: put the prompt here, text to speak or translate in double quotes, and the https link of any file the provider should work on (an image to edit, audio to transcribe)."),
-  budgetUsd: z.number().min(0).optional().describe("The most this run may spend. Default $0.10; raise it for video, music or 3D."),
-  preset: PresetSchema.optional(),
-  capability: CapabilitySchema.optional().describe("Name the capability instead of letting Rialto read it from the goal's wording. See discover_services."),
-  provider: z.string().optional().describe("Use this provider only (slug, id or name from discover_services). Without it Rialto picks the best one for your preset."),
-};
-type GoalArgs = { goal: string; budgetUsd?: number; preset?: z.infer<typeof PresetSchema>; capability?: CapabilityId; provider?: string };
-
-/** What the caller pinned down: a capability, a provider, or both. A provider alone brings its capability. */
-export function resolveRoute(args: { capability?: CapabilityId; provider?: string }, candidates: Candidate[]): Route {
-  if (!args.provider) return { capability: args.capability };
-  const needle = args.provider.trim().toLowerCase();
-  const offered = candidates.filter((c) => c.provider.id === args.provider || c.provider.slug === needle || c.provider.name.toLowerCase() === needle);
-  if (offered.length === 0) throw new ToolError(`Unknown provider "${args.provider}". Use discover_services to see the providers of a capability.`);
-  const hit = offered.find((c) => c.service.capability === args.capability) ?? (args.capability ? null : offered[0]);
-  if (!hit) throw new ToolError(`${offered[0].provider.name} does not offer ${args.capability}; it offers ${offered.map((c) => c.service.capability).join(", ")}.`);
-  return { capability: hit.service.capability, providerId: hit.provider.id };
-}
-
-/**
- * Why nobody qualified, and what to do about it. The usual reason is money: video, music and 3D cost
- * more than the default budget of a run or the wallet's limit per call.
- */
-function noProviderMessage(capability: CapabilityId, rejected: { candidate: Candidate; reason: string }[], maxPerRequestMicro: number): string {
-  if (rejected.length === 0) return `Nobody on Rialto offers ${capability} yet. Call discover_services without arguments to see what is available.`;
-  const reasons = rejected.map((r) => `${r.candidate.provider.name}=${r.reason}`).join(", ");
-  const cheapest = Math.min(...rejected.map((r) => r.candidate.service.priceMicro));
-  const hints: string[] = [];
-  if (rejected.some((r) => r.reason === "over_budget")) hints.push(`pass budgetUsd of at least ${usd(cheapest)}`);
-  if (rejected.every((r) => r.reason === "over_max_per_request")) hints.push(`the wallet allows ${usd(maxPerRequestMicro)} per call and the cheapest costs ${usd(cheapest)}: the owner must raise "may spend per call" in the agent's spending limits`);
-  return `No qualified provider for ${capability}: ${reasons}.${hints.length ? ` To fix: ${hints.join("; ")}.` : ""}`;
-}
-
-export async function planExecution(args: GoalArgs, ctx: ToolCtx = localCtx()) {
+export async function planExecution(args: GoalArgs, ctx: ToolCtx) {
   const wallet = await getWallet(ctx.agentId);
   const constraints = resolveConstraints({ goal: args.goal, policy: wallet.policy, budgetMicro: args.budgetUsd === undefined ? undefined : toMicro(args.budgetUsd), preset: args.preset });
   try {
@@ -201,22 +149,22 @@ export async function planExecution(args: GoalArgs, ctx: ToolCtx = localCtx()) {
   }
 }
 
-export async function executeService(args: GoalArgs, ctx: ToolCtx = localCtx()) {
+export async function executeService(args: GoalArgs, ctx: ToolCtx) {
   const base = ctx.baseUrl;
-  if (ctx.checkReachable) {
-    try {
-      await fetch(`${base}/api/wallet`, { signal: AbortSignal.timeout(3000) });
-    } catch {
-      throw new ToolError(`Rialto web server not reachable at ${base}. Start it with \`npm run dev\` (providers are served by it), then retry.`);
-    }
-  }
   const wallet = await getWallet(ctx.agentId);
   const constraints = resolveConstraints({ goal: args.goal, policy: wallet.policy, budgetMicro: args.budgetUsd === undefined ? undefined : toMicro(args.budgetUsd), preset: args.preset });
+  // a seller paid on-chain is paid by the buyer's own wallet: this endpoint holds none
+  const everything = await listCandidates();
+  const route = resolveRoute(args, everything);
+  const paidOnChain = (c: Candidate) => c.provider.settlement === "live";
+  if (route.providerId ? everything.some((c) => c.provider.id === route.providerId && paidOnChain(c)) : route.capability && everything.some((c) => c.service.capability === route.capability && paidOnChain(c)) && !everything.some((c) => c.service.capability === route.capability && !paidOnChain(c))) {
+    throw new ToolError(SIGNER_HELP);
+  }
   const clock = realClock(0);
   const rail = getRail(clock);
   const runId = clock.id("run");
   await createRun({ runId, goal: args.goal, constraints, mode: rail.mode, agentId: ctx.agentId });
-  const deps = { planner: new DemoAgentPlanner(resolveRoute(args, await listCandidates())), rail, clock, executor: createHttpExecutor(base), ...persistentDepsFor(ctx.agentId) };
+  const deps = { planner: new DemoAgentPlanner(route), rail, clock, executor: createHttpExecutor(base), ...persistentDepsFor(ctx.agentId) };
   let last;
   for await (const e of runAgent({ goal: args.goal, constraints, runId }, deps)) last = e;
   if (last?.type === "run.failed" && last.capability && last.rejected && last.stepId === null) throw new ToolError(noProviderMessage(last.capability, last.rejected, wallet.policy.maxPerRequestMicro));
@@ -226,18 +174,19 @@ export async function executeService(args: GoalArgs, ctx: ToolCtx = localCtx()) 
   return { runId, mode: rail.mode, totalCostUsd: usd(last.totalCostMicro), savedVsPremiumUsd: usd(last.savings.savedMicro), result: last.result, transactions: txs };
 }
 
-export const transactionsInput = { limit: z.number().int().min(1).max(100).optional() };
-export async function getTransactions(args: { limit?: number }, ctx: ToolCtx = localCtx()) {
+export async function getTransactions(args: { limit?: number }, ctx: ToolCtx) {
   return (await listTransactions(args.limit ?? 10, undefined, ctx.agentId)).rows;
 }
 
-export async function getWalletStatus(ctx: ToolCtx = localCtx()) {
+export async function getWalletStatus(ctx: ToolCtx) {
   const w = await getWallet(ctx.agentId);
   return {
     balanceUsd: usd(w.balanceMicro),
     sessionSpendUsd: usd(w.sessionSpendMicro),
     withinPolicy: w.sessionSpendMicro <= w.policy.sessionBudgetMicro,
-    mode: currentMode(),
+    // what this hosted wallet pays with: test credit, on the simulation
+    mode: "simulated" as const,
+    realPayments: currentMode() === "live" ? "Sellers paid on-chain are paid by your own Solana wallet, through the local signer. This hosted wallet only holds test credit." : "off",
     policy: {
       maxPerRequestUsd: usd(w.policy.maxPerRequestMicro),
       sessionBudgetUsd: usd(w.policy.sessionBudgetMicro),
@@ -249,4 +198,3 @@ export async function getWalletStatus(ctx: ToolCtx = localCtx()) {
   };
 }
 
-export { isCapabilityId };

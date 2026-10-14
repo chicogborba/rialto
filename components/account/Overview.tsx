@@ -19,7 +19,7 @@ function Checklist() {
     { done: account.agents.length > 0, title: "Create an agent", text: "A key for Claude Code, Codex or any MCP client.", href: "/dashboard/agents" },
     { done: funded, title: "Give it some money", text: "Move part of your balance to the agent. It cannot spend more than that.", href: "/dashboard/agents" },
     { done: used, title: "Ask for something", text: "Paste the connect command in your terminal, then ask: “Use rialto to look up the Pokémon pikachu.”", href: "/dashboard/agents" },
-    { done: account.user.wallet !== null, title: "Add your wallet", text: "Where you get paid, and where deposits come from.", href: "/dashboard/wallet" },
+    { done: account.user.wallet !== null, title: "Add your wallet", text: "Where you get paid when other agents use your APIs.", href: "/dashboard/wallet" },
     { done: (account.seller?.apis ?? 0) > 0, title: "Publish an API (optional)", text: "Let other agents hire yours and pay per call.", href: "/dashboard/apis" },
   ];
   const next = steps.findIndex((s) => !s.done);

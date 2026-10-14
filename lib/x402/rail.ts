@@ -11,16 +11,33 @@ export interface PaymentRequirements {
   /** true = this must be paid for real, with x402 on Solana. Absent on simulated providers. */
   live?: boolean;
   /**
-   * What actually moves on-chain to `payTo` (the seller's price). The buyer is still debited
-   * `amountMicro`; the difference is Rialto's commission and never leaves the treasury.
+   * What moves on-chain to `payTo`: the seller's price. On the live rail the buyer pays
+   * `amountMicro` in total, so the difference is Rialto's commission and is paid to `feePayTo`.
    */
   settleMicro?: MicroUsdc;
+  /** live rail: where the commission (`amountMicro - settleMicro`) is paid; Rialto's own address */
+  feePayTo?: string;
+  /** live rail: the exact x402 requirement of each payment, which is what the buyer signs */
+  x402?: { seller: X402Leg; fee?: X402Leg };
+}
+
+/** One x402 payment requirement, as the facilitator checks it. */
+export interface X402Leg {
+  scheme: "exact";
+  network: string;
+  asset: string;
+  amount: string;
+  payTo: string;
+  maxTimeoutSeconds: number;
+  extra: Record<string, unknown>;
 }
 
 export interface PaymentAuthorization {
   mode: PaymentMode;
   payload: string;
   payer: string;
+  /** more request headers the payment travels in (the live rail's second payment, the fee) */
+  headers?: Record<string, string>;
 }
 
 export interface VerifyResult {
