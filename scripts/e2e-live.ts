@@ -51,6 +51,9 @@ async function main(): Promise<void> {
   const bal = (owner: string) => usdcBalance(rpc, owner, undefined).then((v) => v ?? 0);
   // the balance reads follow the server's network through the same constant the server uses
   const settled = async () => { await new Promise((r) => setTimeout(r, 4_000)); };
+  // when the buyer's wallet is also the fee address (a one-wallet test setup) the commission comes straight back to it
+  const feeBackToBuyer = feeAddress === signer.address;
+  const buyerPays = feeBackToBuyer ? 2_000 : 3_000;
 
   // ---- a seller publishes, paid at SOLANA_PAY_TO
   const alice = new Browser();
@@ -88,8 +91,9 @@ async function main(): Promise<void> {
   check("so is the commission, as its own transaction", Boolean(paidBody.feeSettlement?.txRef) && paidBody.feeSettlement?.txRef !== paidBody.settlement?.txRef, paidBody.feeSettlement?.txRef);
   await settled();
   const after = { buyer: await bal(signer.address), seller: await bal(sellerAddress), fee: await bal(feeAddress) };
-  check("the buyer's wallet paid exactly the buyer price", before.buyer - after.buyer === 3_000, `${before.buyer - after.buyer} micro-USDC`);
-  if (sellerAddress === feeAddress) check("the money arrived at the payee (seller and fee address are the same here)", after.seller - before.seller === 3_000, `${after.seller - before.seller}`);
+  check("the buyer's wallet paid exactly the buyer price", before.buyer - after.buyer === buyerPays, `${before.buyer - after.buyer} micro-USDC${feeBackToBuyer ? " (its own fee came back)" : ""}`);
+  if (feeBackToBuyer) check("the seller received exactly their price", after.seller - before.seller === 2_000, `${after.seller - before.seller}`);
+  else if (sellerAddress === feeAddress) check("the money arrived at the payee (seller and fee address are the same here)", after.seller - before.seller === 3_000, `${after.seller - before.seller}`);
   else check("the seller received exactly their price, and Rialto exactly the fee", after.seller - before.seller === 2_000 && after.fee - before.fee === 1_000, `${after.seller - before.seller} / ${after.fee - before.fee}`);
 
   // ---- it is single-use, and a failure is free
@@ -128,7 +132,7 @@ async function main(): Promise<void> {
   check("the signer buys through the gateway and returns the result", boughtJson?.result?.final?.name === "charizard" && boughtJson.totalCostUsd === 0.003, bought.isError ? bought.content[0].text.slice(0, 160) : JSON.stringify(boughtJson?.result?.final)?.slice(0, 60));
   check("with an explorer link, paid from the buyer's wallet", Boolean(boughtJson?.transactions[0]?.explorerUrl) && boughtJson?.paidFrom === signer.address);
   await settled();
-  check("the wallet paid for it, and only for it", beforeSigner - (await bal(signer.address)) === 3_000);
+  check("the wallet paid for it, and only for it", beforeSigner - (await bal(signer.address)) === buyerPays);
   const discovered = (await signerClient.callTool({ name: "discover_services", arguments: { capability: "data.lookup" } })) as { content: { text: string }[] };
   check("discovery goes through to the hosted endpoint", discovered.content[0].text.includes(`PokeAPI ${run}`));
   await signerClient.close();
