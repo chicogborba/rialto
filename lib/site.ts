@@ -6,6 +6,7 @@
 export const STATIC_PREVIEW = process.env.NEXT_PUBLIC_STATIC === "1";
 export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 export const REPO_URL = "https://github.com/chicogborba/rialto";
+export const X_URL = "https://x.com/GalleriaRialto";
 /** Where the platform lives; link previews point here from every build. */
 export const SITE_URL = "https://galleriarialto.com";
 

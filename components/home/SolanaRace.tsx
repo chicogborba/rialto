@@ -105,18 +105,18 @@ export function SolanaRace() {
           ref={canvasRef}
           role="img"
           aria-label="A 3D race in real time: Rialto's critter pays over Solana and finishes a lap every 0.6 seconds while a card, a bank and a globe, all in dark tones, jog down their lanes and never finish."
-          className={cn("block h-[32svh] min-h-[240px] w-full transition-opacity duration-500 md:h-[52svh]", ready ? "opacity-100" : "opacity-0")}
+          className={cn("block h-[34svh] min-h-[260px] w-full transition-opacity duration-500 md:h-[52svh]", ready ? "opacity-100" : "opacity-0")}
         />
         {/* the scoreboard: a sticker like the page's captions; the number lands with a slam on every payment */}
-        <div className="pointer-events-none absolute left-3 top-3 md:left-6 md:top-5">
+        <div className="pointer-events-none absolute left-2.5 top-2.5 md:left-6 md:top-5">
           <span className="sr-only">Payments settled on Solana: {laps}. Card, bank and wire: 0.</span>
-          <div aria-hidden className="relative flex items-center gap-2.5 border-[3px] border-coal bg-lime px-3 py-1.5 shadow-[4px_4px_0_var(--color-coal)] md:gap-4 md:px-6 md:py-3 md:shadow-[7px_7px_0_var(--color-coal)]">
+          <div aria-hidden className="relative flex items-center gap-2 border-[3px] border-coal bg-lime px-2.5 py-1 shadow-[3px_3px_0_var(--color-coal)] md:gap-4 md:px-6 md:py-3 md:shadow-[7px_7px_0_var(--color-coal)]">
             <span key={laps} className="relative inline-block">
-              <span className={cn("home-ring absolute left-1/2 top-1/2 size-[1.6em] rounded-full border-[0.05em] border-coal text-4xl md:text-7xl", laps > 0 && laps % 10 === 0 && "home-ring-big")} />
-              <span className="home-ghost tnum absolute right-0 top-0 font-mono text-5xl font-bold leading-none md:text-7xl">{laps}</span>
-              <span className="home-slam tnum relative block min-w-[1.2ch] text-right font-mono text-5xl font-bold leading-none md:text-7xl">{laps}</span>
+              <span className={cn("home-ring absolute left-1/2 top-1/2 size-[1.6em] rounded-full border-[0.05em] border-coal text-3xl md:text-7xl", laps > 0 && laps % 10 === 0 && "home-ring-big")} />
+              <span className="home-ghost tnum absolute right-0 top-0 font-mono text-3xl font-bold leading-none md:text-7xl">{laps}</span>
+              <span className="home-slam tnum relative block min-w-[1.2ch] text-right font-mono text-3xl font-bold leading-none md:text-7xl">{laps}</span>
             </span>
-            <span className="text-xs font-bold leading-tight md:text-base">
+            <span className="text-[11px] font-bold leading-tight md:text-base">
               payments settled
               <span className="mt-1 flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-coal/70 md:text-xs">
                 on <SolanaMark className="h-[0.9em] w-auto" />

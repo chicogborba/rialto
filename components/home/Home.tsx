@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Buddy } from "@/components/landing/Buddy";
-import { asset, flowHref, REPO_URL } from "@/lib/site";
+import { asset, flowHref, REPO_URL, X_URL } from "@/lib/site";
 import { HeroMarket, Needs } from "./HeroMarket";
 import { PitchVideo } from "./PitchVideo";
 import { SolanaMark } from "./SolanaMark";
@@ -9,6 +9,15 @@ import { SolanaRace } from "./SolanaRace";
 import { Caption, Story as StoryScroll } from "./Story";
 import { BEATS } from "./story-beats";
 import { FOOTER_NOTE, MONEY_NOTE } from "@/lib/network-label";
+
+/** The X (Twitter) logo, drawn in the current text colour. */
+export function XMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden className={className} fill="currentColor">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
 
 const WRAP = "mx-auto w-full max-w-6xl px-5 md:px-8";
 const H2 = "text-[clamp(2rem,5.6vw,4rem)] font-bold leading-[1.02] tracking-[-0.04em]";
@@ -25,6 +34,7 @@ export function Header() {
         <Link href="/#story" className="hidden text-coal/70 hover:text-coal md:block">How it works</Link>
         <Link href="/#solana" className="hidden text-coal/70 hover:text-coal md:block">Why Solana</Link>
         <a href={REPO_URL} className="hidden text-coal/70 hover:text-coal sm:block">GitHub</a>
+        <a href={X_URL} target="_blank" rel="noreferrer" aria-label="Rialto on X" className="grid size-8 shrink-0 place-items-center text-coal/70 hover:text-coal"><XMark className="size-[18px]" /></a>
         <Link href={flowHref("/login")} className="hidden text-coal/70 hover:text-coal sm:block">Sign in</Link>
         <Link href={flowHref("/signup")} className="home-btn home-btn-ink !min-h-10 whitespace-nowrap !px-3.5 text-sm sm:!px-4">Get started</Link>
       </nav>
@@ -180,11 +190,14 @@ export function Start() {
 export function Footer() {
   return (
     <footer className="border-t-2 border-coal/10">
-      <div className={`${WRAP} flex flex-wrap items-center justify-between gap-3 py-6 text-sm text-coal/60`}>
+      <div className={`${WRAP} flex flex-col gap-4 py-6 text-sm text-coal/60 sm:flex-row sm:items-center sm:justify-between`}>
         <p className="flex items-center gap-2">
           <Image src={asset("/brand/rialto-mark.svg")} alt="" width={100} height={100} unoptimized className="size-7" /> {FOOTER_NOTE}
         </p>
-        <a href={REPO_URL} className="font-medium text-coal hover:underline">GitHub ↗</a>
+        <div className="flex items-center gap-5 font-medium text-coal">
+          <a href={X_URL} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 hover:underline"><XMark className="size-4" /> @GalleriaRialto</a>
+          <a href={REPO_URL} className="hover:underline">GitHub ↗</a>
+        </div>
       </div>
     </footer>
   );

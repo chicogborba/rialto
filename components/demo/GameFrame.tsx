@@ -38,7 +38,10 @@ export function GameFrame({ src, width, height, title, tone }: { src: string; wi
           <span className={`home-btn ${tone === "rialto" ? "home-btn-lime" : "bg-cream text-coal"} text-lg`}>
             <span aria-hidden>▶</span> {state === "loading" ? "Loading…" : state === "failed" ? "Try again" : "Play"}
           </span>
-          <span className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-cream/55">← → to steer · space to start</span>
+          <span className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-cream/55">
+            <span className="hidden sm:inline">← → to steer · space to start</span>
+            <span className="sm:hidden">tap to start · hold or drag to steer</span>
+          </span>
         </button>
       )}
     </div>

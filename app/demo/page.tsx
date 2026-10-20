@@ -3,8 +3,7 @@ import Link from "next/link";
 import { DemoVideo } from "@/components/demo/DemoVideo";
 import { GameFrame } from "@/components/demo/GameFrame";
 import { Footer, Header } from "@/components/home/Home";
-import { GAME_BUILDS, GAME_PROMPT, GAME_PROMPT_SUFFIX, GAME_PURCHASES } from "@/lib/demo/game-demo";
-import { formatUsd } from "@/lib/money";
+import { formatApiUsd, GAME_BUILDS, GAME_PROMPT, GAME_PROMPT_SUFFIX, GAME_PURCHASES, GAME_TOTAL_MICRO } from "@/lib/demo/game-demo";
 import { flowHref } from "@/lib/site";
 import { explorerTx, solanaNetwork } from "@/lib/x402/solana";
 
@@ -14,7 +13,6 @@ export const metadata: Metadata = {
 };
 
 const WRAP = "mx-auto w-full max-w-6xl px-5 md:px-8";
-const total = GAME_PURCHASES.reduce((sum, p) => sum + p.micro, 0);
 
 function Prompt({ rialto = false }: { rialto?: boolean }) {
   return (
@@ -53,8 +51,8 @@ export default function DemoPage() {
       <Header />
       <main>
         <section className={`${WRAP} pb-10 pt-8 md:pb-14 md:pt-12`}>
-          <h1 className="text-[clamp(2.6rem,7vw,5.6rem)] font-bold leading-[0.95] tracking-[-0.05em]">
-            Same prompt. <span className="bg-lime px-2">Two more words.</span>
+          <h1 className="text-[clamp(2.4rem,7vw,5.6rem)] font-bold leading-[1.08] tracking-[-0.05em]">
+            Same prompt. <span className="whitespace-nowrap bg-lime px-2 [box-decoration-break:clone]">Two more words.</span>
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-snug text-coal/75 md:text-xl">We asked Claude Code for a game, twice. The second time it could shop on Rialto. Both are below, exactly as it left them. <span aria-hidden>🎮</span></p>
         </section>
@@ -78,26 +76,27 @@ export default function DemoPage() {
 
         <section aria-labelledby="bill-title" className={`${WRAP} pb-16 md:pb-24`}>
           <div className="mx-auto max-w-3xl border-2 border-coal bg-[#fffdf7] p-5 shadow-[8px_8px_0_var(--color-coal)] md:p-8">
-            <h2 id="bill-title" className="border-b-2 border-dashed border-coal pb-3 text-3xl font-bold tracking-[-0.03em] md:text-4xl">What Claude bought <span aria-hidden>🧾</span></h2>
+            <h2 id="bill-title" className="border-b-2 border-dashed border-coal pb-3 text-[1.7rem] font-bold leading-tight tracking-[-0.03em] md:text-4xl"><span className="whitespace-nowrap">What Claude</span> <span className="whitespace-nowrap">bought <span aria-hidden>🧾</span></span></h2>
             <ul className="mt-3 divide-y divide-coal/10">
               {GAME_PURCHASES.map((p) => (
                 <li key={p.tx} className="flex items-baseline gap-3 py-2.5">
                   <span aria-hidden>{p.emoji}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="font-bold">{p.what}</span> <span className="text-coal/55">· {p.provider}</span>
+                  <span className="min-w-0 flex-1 leading-snug">
+                    <span className="font-bold">{p.what}</span>
+                    <span className="block font-mono text-[11px] uppercase tracking-[0.06em] text-coal/55 sm:inline sm:font-sans sm:text-base sm:normal-case sm:tracking-normal"><span className="hidden sm:inline"> · </span>{p.provider}</span>
                   </span>
                   <a href={explorerTx(p.tx, solanaNetwork({ SOLANA_NETWORK: "devnet" }))} target="_blank" rel="noreferrer" className="hidden font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-coal/55 underline decoration-coal/30 underline-offset-4 hover:text-coal sm:block">
                     on Solana ↗
                   </a>
-                  <span className="tnum font-mono font-bold">{formatUsd(p.micro)}</span>
+                  <span className="tnum font-mono font-bold">{formatApiUsd(p.micro)}</span>
                 </li>
               ))}
             </ul>
-            <p className="mt-3 flex items-center justify-between border-t-2 border-dashed border-coal pt-4 text-2xl font-bold md:text-3xl">
-              Total
-              <span className="tnum border-2 border-coal bg-lime px-3 font-mono">{formatUsd(total)}</span>
+            <p className="mt-3 flex items-center justify-between gap-3 border-t-2 border-dashed border-coal pt-4 text-2xl font-bold md:text-3xl">
+              <span>Total <span className="block font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-coal/55 md:text-xs">what the APIs charged</span></span>
+              <span className="tnum border-2 border-coal bg-lime px-3 font-mono">{formatApiUsd(GAME_TOTAL_MICRO)}</span>
             </p>
-            <p className="mt-4 font-mono text-[11px] font-bold uppercase leading-relaxed tracking-[0.1em] text-coal/55 md:text-xs">{GAME_PURCHASES.length} calls · no sign-up, no API key, no card · each paid on its own in USDC on Solana devnet</p>
+            <p className="mt-4 font-mono text-[11px] font-bold uppercase leading-relaxed tracking-[0.1em] text-coal/55 md:text-xs">{GAME_PURCHASES.length} calls · each line is the API’s own price (fal.ai) · no sign-up, no API key, no card · each paid on its own in USDC on Solana devnet</p>
           </div>
         </section>
 

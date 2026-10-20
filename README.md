@@ -47,7 +47,7 @@ We asked Claude Code for a game, twice. The second time it could shop on Rialto.
 
 | | `Make a game where you dodge cars in traffic` | `…, use rialto` |
 |---|---|---|
-| **Cost** | $0 | **$1.08** |
+| **Cost** | $0 | **$0.633** in API calls |
 | **Bought** | nothing | 24 assets from 6 providers |
 | **Made of** | coloured boxes, no sound | title art, sprites, textures, music, sound effects, an announcer |
 

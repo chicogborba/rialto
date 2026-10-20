@@ -142,7 +142,7 @@ export class RaceScene {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, mobile ? 1.5 : 2));
     this.renderer.setClearColor(0x000000, 0);
     this.half = mobile ? 3.6 : 5.6;
-    this.margin = mobile ? 3.3 : 4.6;
+    this.margin = mobile ? 2.7 : 4.6;
     const START = -this.half;
     const FINISH = this.half;
     const LENGTH = this.half * 2 + 3.8;
