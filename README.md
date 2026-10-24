@@ -395,6 +395,7 @@ docs/                architecture, deployment, credits
 
 ## Documentation
 
+- [ROADMAP.md](ROADMAP.md): what is left before Rialto opens to the public on Solana mainnet
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the decision engine, the ranking formula, how x402 fits, accounts, the security model, limitations
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md): running the platform on a server (Docker, Traefik, GitHub Actions) and the static landing page
 - [docs/CREDITS.md](docs/CREDITS.md): third-party assets and licences
