@@ -13,7 +13,7 @@ Where Rialto stands on 2026-10-24 and what is left before real people pay real m
 
 ### Real money on mainnet
 - [ ] **owner** Send any amount of real USDC to the commission wallet `GW1joGToHBm2z9qXiHro8vP8agJvoGLqvAVjRJQrVDrz` (it has no USDC account on mainnet yet).
-- [ ] **owner** Pick the integrations payout wallet (cost + margin is paid there; it can be the same address) and fund it with any amount of USDC once.
+- [ ] **owner** Fund the integrations payout wallet `8p9mDB1ZZfKTe5uzJLj2XPQKrQV3yUKCzAmycDm3crPx` (cost + margin is paid there) with any amount of USDC once, then set it in `/admin` → Keys & wallets.
 - [ ] **owner** Create a private Solana RPC (Helius or QuickNode free tier) and paste it in `/admin` → Keys & wallets.
 - [ ] **owner** Set the GitHub repository variable `SOLANA_NETWORK=mainnet` (Settings → Secrets and variables → Actions → Variables).
 - [ ] **owner** Turn on auto top-up on fal.ai and confirm the fal key is a permanent one.
