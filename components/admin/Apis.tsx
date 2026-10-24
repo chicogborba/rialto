@@ -59,7 +59,7 @@ export function AdminApis() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight md:text-4xl">APIs & prices</h1>
+          <h1 className="text-[clamp(2.1rem,4.5vw,3.2rem)] font-bold leading-[0.95] tracking-[-0.05em]">APIs & prices</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">
             Buyer pays = seller price + commission. For Rialto&apos;s integrations the seller price is fal&apos;s cost + your margin, so each call earns both. Change the margin and the commission in{" "}
             <Link href="/admin/settings" className="text-signal underline">Keys & wallets</Link>.

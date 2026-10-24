@@ -26,10 +26,10 @@ export function Notice({ tone, children }: { tone: "ok" | "error"; children: Rea
 
 export function Stat({ label, value, hint }: { label: string; value: React.ReactNode; hint?: React.ReactNode }) {
   return (
-    <div className="border border-line bg-surface p-4">
-      <Label>{label}</Label>
-      <p className="tnum mt-2 font-mono text-3xl font-bold">{value}</p>
-      {hint && <p className="mt-1 font-mono text-[11px] text-muted">{hint}</p>}
+    <div className="sy-stat border border-line bg-surface p-3 sm:p-4">
+      <Label className="block leading-tight">{label}</Label>
+      <p className="tnum mt-2 truncate font-mono text-2xl font-bold sm:text-3xl">{value}</p>
+      {hint && <p className="mt-1 font-mono text-[10px] leading-snug text-muted sm:text-[11px]">{hint}</p>}
     </div>
   );
 }

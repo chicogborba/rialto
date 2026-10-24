@@ -112,7 +112,7 @@ export function AdminOverview() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight md:text-4xl">The market</h1>
+          <h1 className="text-[clamp(2.1rem,4.5vw,3.2rem)] font-bold leading-[0.95] tracking-[-0.05em]">The market</h1>
           <p className="mt-1 font-mono text-[11px] text-muted">
             {health ? `${health.network} · ${health.paymentMode === "live" ? "x402 live" : "simulated"} · ` : ""}times in {tz} · refreshes every minute
           </p>

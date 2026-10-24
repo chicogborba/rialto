@@ -21,6 +21,8 @@ export interface SettingDef {
   /** for numbers: inclusive bounds */
   min?: number;
   max?: number;
+  /** what applies when nothing is set, in words */
+  fallback?: string;
 }
 
 export const SETTING_DEFS: SettingDef[] = [
@@ -30,12 +32,12 @@ export const SETTING_DEFS: SettingDef[] = [
   { key: "PLATFORM_FEE_PAYTO", label: "Commission wallet", group: "wallets", kind: "address", hint: "Where every purchase pays Rialto's commission. An address only; it needs a USDC account on the network." },
   { key: "SOLANA_PAY_TO", label: "Integrations payout wallet", group: "wallets", kind: "address", hint: "Where buyers pay for Rialto's own integrations (fal cost + margin). Also needs a USDC account." },
   { key: "RIALTO_SPENDER_KEY", label: "Spender key (pays from buyers' allowances)", group: "wallets", secret: true, kind: "text", hint: "Buyers approve this key, from Phantom or any wallet, to spend up to a limit from their USDC; it signs their purchases and pays the SOL fee of the approval. It holds no USDC, only a little SOL. Changing it voids every allowance given so far." },
-  { key: "OPERATOR_MARGIN_PCT", label: "Margin over the API cost (%)", group: "pricing", kind: "number", min: 0, max: 1000, hint: "Seller price of Rialto's integrations = fal's price × (1 + margin), rounded up to $0.001. Default 15." },
-  { key: "PLATFORM_FEE_BPS", label: "Commission (basis points)", group: "pricing", kind: "number", min: 0, max: 5000, hint: "Paid by the buyer on top of every seller's price, Rialto's included. 500 = 5%. Default 500." },
-  { key: "PLATFORM_MIN_FEE_MICRO", label: "Minimum commission (micro-USDC)", group: "pricing", kind: "number", min: 0, max: 1_000_000, hint: "Floor of the commission per call. 1000 = $0.001. Default 1000." },
-  { key: "OPERATOR_DAILY_CAP_USD", label: "Daily limit of integration sales (USD)", group: "pricing", kind: "number", min: 0, max: 100_000, hint: "The most Rialto's integrations may sell in 24 h, at seller price: a ceiling on what fal can bill you in a day. Default 5." },
-  { key: "SOLANA_RPC_URL", label: "Solana RPC URL", group: "network", kind: "url", hint: "A private RPC (Helius, QuickNode, Triton). The public one rate-limits on mainnet." },
-  { key: "X402_FACILITATOR_URL", label: "x402 facilitator URL", group: "network", kind: "url", hint: "Leave empty for the network's default (x402.org on devnet, PayAI on mainnet)." },
+  { key: "OPERATOR_MARGIN_PCT", fallback: "15", label: "Margin over the API cost (%)", group: "pricing", kind: "number", min: 0, max: 1000, hint: "Seller price of Rialto's integrations = fal's price × (1 + margin), rounded up to $0.001. Default 15." },
+  { key: "PLATFORM_FEE_BPS", fallback: "500 (5%)", label: "Commission (basis points)", group: "pricing", kind: "number", min: 0, max: 5000, hint: "Paid by the buyer on top of every seller's price, Rialto's included. 500 = 5%. Default 500." },
+  { key: "PLATFORM_MIN_FEE_MICRO", fallback: "1000 ($0.001)", label: "Minimum commission (micro-USDC)", group: "pricing", kind: "number", min: 0, max: 1_000_000, hint: "Floor of the commission per call. 1000 = $0.001. Default 1000." },
+  { key: "OPERATOR_DAILY_CAP_USD", fallback: "5", label: "Daily limit of integration sales (USD)", group: "pricing", kind: "number", min: 0, max: 100_000, hint: "The most Rialto's integrations may sell in 24 h, at seller price: a ceiling on what fal can bill you in a day. Default 5." },
+  { key: "SOLANA_RPC_URL", fallback: "the public RPC", label: "Solana RPC URL", group: "network", kind: "url", hint: "A private RPC (Helius, QuickNode, Triton). The public one rate-limits on mainnet." },
+  { key: "X402_FACILITATOR_URL", fallback: "the network's default", label: "x402 facilitator URL", group: "network", kind: "url", hint: "Leave empty for the network's default (x402.org on devnet, PayAI on mainnet)." },
 ];
 
 const DEF = new Map(SETTING_DEFS.map((d) => [d.key, d]));
@@ -95,6 +97,7 @@ export interface SettingView {
   hint: string;
   kind: SettingDef["kind"];
   secret: boolean;
+  fallback: string | null;
   /** the effective value; masked for secrets */
   value: string;
   /** where the effective value comes from */
@@ -126,6 +129,7 @@ export async function listSettings(prisma: PrismaClient): Promise<SettingView[]>
       hint: def.hint,
       kind: def.kind,
       secret: Boolean(def.secret),
+      fallback: def.fallback ?? null,
       value: def.secret ? maskSecret(value) : value,
       source: saved !== null ? "admin" : fromEnv ? "env" : "unset",
       updatedAt: row?.updatedAt.toISOString() ?? null,

@@ -11,7 +11,7 @@ export interface Bar {
 }
 
 /**
- * One series of bars on the dashboard surface: lime marks with rounded tops, a 2 px gap between
+ * One series of bars on the dashboard surface: coal marks with rounded tops (lime under the pointer), a 2 px gap between
  * bars, a recessive baseline and a tooltip on hover or focus. The numbers are also in a table for
  * screen readers.
  */
@@ -26,6 +26,7 @@ export function BarChart({ bars, format, height = 160, label }: { bars: Bar[]; f
         <div aria-hidden className="absolute inset-x-0 bottom-0 border-t border-line-hi" />
         <div aria-hidden className="absolute inset-x-0 top-0 border-t border-dashed border-line" />
         <span aria-hidden className="tnum absolute -top-5 right-0 font-mono text-[10px] text-muted">{format(max)}</span>
+        {max === 0 && <span className="absolute inset-0 grid place-items-center font-mono text-[11px] text-muted">Nothing yet in this range</span>}
         <div className="absolute inset-0 flex items-end">
           {bars.map((b, i) => {
             const h = max > 0 ? Math.max(b.value > 0 ? 2 : 0, (b.value / max) * (height - 4)) : 0;
@@ -40,7 +41,7 @@ export function BarChart({ bars, format, height = 160, label }: { bars: Bar[]; f
                 className="group flex h-full items-end px-px focus-visible:outline-none"
                 style={{ width: `${w}%` }}
               >
-                <span className={`block w-full rounded-t-[4px] transition-colors ${hover === i ? "bg-paper" : "bg-signal"} group-focus-visible:bg-paper`} style={{ height: h }} />
+                <span className={`block w-full rounded-t-[4px] transition-colors ${hover === i ? "bg-signal outline-2 outline-paper" : "bg-paper"} group-focus-visible:bg-signal`} style={{ height: h }} />
               </button>
             );
           })}

@@ -116,13 +116,10 @@
     @apply font-sans;
     scroll-behavior: smooth;
   }
+  /* every page is light now (landing, catalog, dashboard, admin): the page behind them is cream too,
+     which is what shows when a phone scrolls past the top or the bottom */
   body {
-    @apply bg-ink text-paper;
-    background-image:
-      linear-gradient(to right, rgb(237 235 227 / 0.04) 1px, transparent 1px),
-      linear-gradient(to bottom, rgb(237 235 227 / 0.04) 1px, transparent 1px);
-    background-size: 48px 48px;
-    background-attachment: fixed;
+    @apply bg-cream text-coal;
   }
   :focus-visible {
     outline: 2px solid var(--color-signal);
@@ -275,3 +272,74 @@
 @keyframes home-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
 .home-bob { animation: home-bob 1.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .home-bob { animation: none; } }
+
+/* ---- the signed-in app (dashboard, /admin, sign-in) in the landing's light palette ----
+   The app's components are written against the dark tokens (ink, surface, paper, signal…); inside
+   `.light` those tokens take the landing's cream, coal and lime, so every screen follows without
+   rewriting each one. Lime stays a fill (buttons, highlights, active tabs): as a text colour it
+   cannot be read on cream, so text that was "signal" becomes a deep green. */
+.light {
+  --color-ink: #f6efe0;
+  --color-surface: #fffdf7;
+  --color-raised: #f2e9d7;
+  --color-line: #e0d5c0;
+  --color-line-hi: #9d9180;
+  --color-paper: #17120f;
+  --color-muted: #6b6256;
+  --color-signal: #c6ff3d;
+  --color-pay: #ef6a24;
+  --color-data: #0a7a85;
+  --color-fail: #c8261b;
+  --shadow-hard: 4px 4px 0 var(--color-coal);
+  --shadow-hard-pay: 4px 4px 0 var(--color-coal);
+  --background: #f6efe0;
+  --foreground: #17120f;
+  --card: #fffdf7;
+  --card-foreground: #17120f;
+  --popover: #fffdf7;
+  --popover-foreground: #17120f;
+  --primary: #c6ff3d;
+  --primary-foreground: #17120f;
+  --secondary: #f2e9d7;
+  --secondary-foreground: #17120f;
+  --muted: #f2e9d7;
+  --muted-foreground: #6b6256;
+  --accent: #f2e9d7;
+  --accent-foreground: #17120f;
+  --border: #e0d5c0;
+  --input: #9d9180;
+  --ring: #17120f;
+  color-scheme: light;
+  background-color: var(--color-cream);
+  background-image: radial-gradient(rgb(23 18 15 / 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  color: var(--color-coal);
+}
+.light :focus-visible { outline-color: var(--color-coal); }
+.light ::selection { background: var(--color-lime); color: var(--color-coal); }
+.light .text-signal,
+.light [class*="hover:text-signal"]:hover,
+.light .group:hover [class*="group-hover:text-signal"] { color: #3c6a00; }
+.light .text-ink,
+.light [class*="hover:text-ink"]:hover { color: var(--color-coal); }
+.light .bg-paper.text-ink,
+.light .bg-paper .text-ink { color: var(--color-cream); }
+.light .border-signal { border-color: var(--color-coal); }
+.light .placeholder\:text-muted\/60::placeholder { color: rgb(107 98 86 / 0.7); }
+
+/* cards: a coal outline like the landing's, a sand strip for the title */
+.light .sy-panel { border: 2px solid var(--color-coal); background: var(--color-surface); }
+.light .sy-panel-head { border-bottom: 2px solid var(--color-coal); background: var(--color-sand); }
+.light .sy-panel-head > span:first-child { color: var(--color-coal); font-weight: 700; }
+.light .sy-stat { border: 2px solid var(--color-coal); background: var(--color-surface); box-shadow: 4px 4px 0 var(--color-coal); }
+/* code and commands read like the terminal on the landing: coal block, cream text */
+.light .sy-code { background: var(--color-coal); border-color: var(--color-coal); }
+.light .sy-code pre { color: var(--color-cream); }
+.light .sy-code button { background: var(--color-lime); color: var(--color-coal); border-color: var(--color-lime); }
+/* buttons speak the landing's voice: sans, bold, sentence case */
+.light .sy-btn { font-family: var(--font-display); text-transform: none; letter-spacing: -0.01em; font-size: 15px; border-width: 2px; border-color: var(--color-coal); }
+.light .sy-btn:hover { transform: translate(-2px, -2px); }
+.light input:not([type="checkbox"]):not([type="radio"]),
+.light select,
+.light textarea { background-color: #fffdf7; border-width: 2px; border-color: var(--color-coal); color: var(--color-coal); }
+.light .sy-mark { color: var(--color-coal); transform: none; padding: 0 0.15em; }

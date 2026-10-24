@@ -60,10 +60,10 @@ export function Overview() {
     <div className="space-y-8">
       <header>
         <Label tone="signal">Dashboard</Label>
-        <h1 className="mt-3 text-[clamp(2.2rem,6vw,4.5rem)] font-bold uppercase leading-[0.9] tracking-[-0.05em]">Hi, {account.user.name.split(" ")[0]}.</h1>
+        <h1 className="mt-3 text-[clamp(2.3rem,5.5vw,4rem)] font-bold leading-[0.95] tracking-[-0.05em]">Hi, {account.user.name.split(" ")[0]} 👋</h1>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <Stat label="On your account" value={formatUsd(account.user.balanceMicro)} hint="Not given to an agent yet" />
         <Stat label="In your agents" value={formatUsd(inAgents)} hint={`${account.agents.length} agent${account.agents.length === 1 ? "" : "s"}`} />
         <Stat label="Your APIs" value={account.seller ? `${account.seller.online}/${account.seller.apis}` : "0"} hint="Online / published" />

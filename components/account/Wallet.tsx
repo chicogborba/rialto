@@ -8,6 +8,7 @@ import { useAccount } from "@/lib/client/account";
 import { formatUsd } from "@/lib/money";
 import { Field, inputCls, Notice, Stat } from "./ui";
 import { PayWallet } from "./PayWallet";
+import { usePayWalletAvailable } from "@/lib/client/pay-wallet";
 
 type Msg = { tone: "ok" | "error"; text: string } | null;
 
@@ -16,6 +17,7 @@ export function Wallet() {
   const [address, setAddress] = useState("");
   const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState<"save" | "credit" | null>(null);
+  const linkable = usePayWalletAvailable();
   if (!account) return null;
   const { user, mode, network, testMoney } = account;
   const live = mode === "live";
@@ -43,11 +45,11 @@ export function Wallet() {
     <div className="space-y-8">
       <header>
         <Label tone="signal">Wallet</Label>
-        <h1 className="mt-3 text-[clamp(2.2rem,6vw,4.5rem)] font-bold uppercase leading-[0.9] tracking-[-0.05em]">Your money stays yours.</h1>
+        <h1 className="mt-3 text-[clamp(2.3rem,5.5vw,4rem)] font-bold leading-[0.95] tracking-[-0.05em]">Your money stays yours.</h1>
         <p className="mt-4 max-w-2xl text-lg font-medium">Rialto never holds your money. Agents pay from their own wallet, straight to the seller; sellers are paid straight into theirs.</p>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
         <Stat label="Payments" value={live ? netName : "Simulated"} hint={live ? (testMoney ? "Real transactions, test USDC" : "Real USDC, settled on-chain") : "Play money, no blockchain"} />
         <Stat label="Held by Rialto" value="$0.000" hint={live ? "Nothing: payments go wallet to wallet" : "Only play money on this server"} />
         <Stat label="Test credit" value={formatUsd(user.balanceMicro)} hint="Play money for the simulated providers" />
@@ -81,7 +83,15 @@ export function Wallet() {
         {live ? (
           <>
             <p className="text-sm">
-              The easy way is <b>Pay from your wallet</b> above: your agents pay from the wallet you already use, within the limit you approved. Developers can instead keep a wallet key on their own machine with the local signer (the command is in <b>Agents</b>).
+              {linkable ? (
+                <>
+                  The easy way is <b>Pay from your wallet</b> above: your agents pay from the wallet you already use, within the limit you approved. Developers can instead keep a wallet key on their own machine with the local signer (the command is in <b>Agents</b>).
+                </>
+              ) : (
+                <>
+                  Your agent signs each payment with <b>its own Solana wallet</b>, on your machine. The key never reaches this server. Put USDC ({netName.toLowerCase()}) in that wallet, then connect with the local signer: the command is in <b>Agents</b>.
+                </>
+              )}
             </p>
             <p className="font-mono text-[11px] text-muted">
               Either way, each call is two transfers from that wallet: the seller&apos;s price to the seller, and Rialto&apos;s small fee to Rialto. The facilitator pays the network fees, so the wallet needs USDC and no SOL.

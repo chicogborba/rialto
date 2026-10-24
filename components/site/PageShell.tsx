@@ -1,23 +1,21 @@
+import Image from "next/image";
 import Link from "next/link";
-import { ModeBadge } from "@/components/primitives";
+import { asset } from "@/lib/site";
 
-/** Shell for the pages outside the dashboard: sign up, sign in. */
+/** Shell for the pages outside the dashboard (sign up, sign in), in the landing's light style. */
 export function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-4 md:px-10">
-        <Link href="/" className="text-xl font-bold uppercase tracking-tight">Rial<span className="text-signal">to</span></Link>
-        <nav aria-label="Primary" className="flex items-center gap-4 font-mono text-[11px] font-bold uppercase tracking-[0.12em]">
-          <Link href="/catalog" className="py-2 text-muted hover:text-paper">Catalog</Link>
-          <Link href="/login" className="py-2 text-muted hover:text-paper">Sign in</Link>
-          <Link href="/signup" className="py-2 text-muted hover:text-paper">Create account</Link>
-          <ModeBadge mode="simulated" />
+    <div className="light flex min-h-screen flex-col">
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-5 py-4 md:px-8 md:py-5">
+        <Link href="/" aria-label="Rialto home" className="flex shrink-0 items-center">
+          <Image src={asset("/brand/rialto-logo.svg")} alt="Rialto" width={358} height={100} priority unoptimized className="h-8 w-auto sm:h-9" />
+        </Link>
+        <nav aria-label="Primary" className="flex items-center gap-5 text-sm font-medium">
+          <Link href="/catalog" className="text-coal/70 hover:text-coal">Catalog</Link>
+          <Link href="/demo" className="text-coal/70 hover:text-coal">Demo</Link>
         </nav>
       </header>
-      <main className="mx-auto w-full max-w-[1100px] flex-1 px-4 py-10 md:px-10 md:py-16">{children}</main>
-      <footer className="border-t border-line px-4 py-5 font-mono text-[10px] uppercase tracking-[0.08em] text-muted md:px-10">
-        Demo build · payments are simulated unless the LIVE badge is shown · built for Solana ◎
-      </footer>
+      <main className="mx-auto flex w-full max-w-6xl flex-1 items-start justify-center px-5 pb-16 pt-4 md:items-center md:px-8 md:pt-0">{children}</main>
     </div>
   );
 }

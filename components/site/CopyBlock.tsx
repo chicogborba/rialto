@@ -17,7 +17,7 @@ export function CopyBlock({ value, display, className }: { value: string; displa
     }
   };
   return (
-    <div className={cn("relative border border-line-hi bg-ink", className)}>
+    <div className={cn("sy-code relative border border-line-hi bg-ink", className)}>
       <pre className="overflow-x-auto p-3 pr-24 font-mono text-xs leading-relaxed text-paper">{display ?? value}</pre>
       <button
         type="button"

@@ -148,7 +148,7 @@ export function Apis() {
     <div className="space-y-8">
       <header>
         <Label tone="signal">My APIs</Label>
-        <h1 className="mt-3 text-[clamp(2.2rem,6vw,4.5rem)] font-bold uppercase leading-[0.9] tracking-[-0.05em]">
+        <h1 className="mt-3 text-[clamp(2.3rem,5.5vw,4rem)] font-bold leading-[0.95] tracking-[-0.05em]">
           Get paid <span className="sy-mark">per call.</span>
         </h1>
         <p className="mt-4 max-w-2xl text-lg font-medium">Paste your endpoint and set a price; every agent on Rialto can hire it. You keep 100% of your price; buyers pay a small platform fee on top.</p>
@@ -158,14 +158,14 @@ export function Apis() {
         <Panel title="One thing first" tone="default" className="border-pay" bodyClassName="space-y-3">
           <p className="text-lg font-medium">Where should we pay you?</p>
           <p className="text-sm text-muted">Add the Solana wallet you want to be paid at. Every successful call sends your price there.</p>
-          <Link href="/dashboard/wallet" className="inline-flex min-h-11 items-center border border-signal bg-signal px-4 font-mono text-xs font-bold uppercase tracking-[0.1em] text-ink">
+          <Link href="/dashboard/wallet" className="home-btn home-btn-lime !min-h-11 text-[15px]">
             Add my wallet
           </Link>
         </Panel>
       ) : (
         <>
           {ov && (
-            <div className="grid gap-4 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
               <Stat label="Available to withdraw" value={formatUsd(ov.seller.balanceMicro)} />
               <Stat label="Paid to your wallet" value={formatUsd(ov.seller.paidOutMicro)} hint={`at ${shortAddress(ov.seller.payoutAddress)}`} />
               <Stat label="Paid calls" value={String(ov.totals.calls)} />

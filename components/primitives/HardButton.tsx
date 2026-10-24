@@ -18,7 +18,7 @@ export function hardButtonClass(
   className?: string,
 ): string {
   return cn(
-    "inline-flex min-h-11 items-center justify-center gap-2 border font-mono font-bold uppercase tracking-[0.1em]",
+    "sy-btn inline-flex min-h-11 items-center justify-center gap-2 border font-mono font-bold uppercase tracking-[0.1em]",
     "transition-[transform,box-shadow] duration-75 ease-out",
     "active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0_var(--color-paper)]",
     "disabled:pointer-events-none disabled:opacity-40",

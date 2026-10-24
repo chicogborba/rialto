@@ -41,7 +41,7 @@ export function Settings() {
     <div className="space-y-8">
       <header>
         <Label tone="signal">Settings</Label>
-        <h1 className="mt-3 text-[clamp(2.2rem,6vw,4.5rem)] font-bold uppercase leading-[0.9] tracking-[-0.05em]">Your account.</h1>
+        <h1 className="mt-3 text-[clamp(2.3rem,5.5vw,4rem)] font-bold leading-[0.95] tracking-[-0.05em]">Your account.</h1>
       </header>
 
       <Panel title="Profile" bodyClassName="space-y-4">

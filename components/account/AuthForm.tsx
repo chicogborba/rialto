@@ -3,14 +3,16 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { HardButton, Label } from "@/components/primitives";
+import { Buddy } from "@/components/landing/Buddy";
 import { api } from "@/lib/client/api";
-import { Field, inputCls, Notice } from "./ui";
+import { cn } from "@/lib/utils";
 
 /** A path on this site, never another address: where to go once signed in. */
 function safeNext(next: string | null): string {
   return next && next.startsWith("/") && !next.startsWith("//") && !next.includes("\\") && !next.startsWith("/api/") ? next : "/dashboard";
 }
+
+const input = "mt-1.5 block min-h-12 w-full border-2 border-coal bg-[#fffdf7] px-3.5 text-[16px] text-coal placeholder:text-coal/35 focus-visible:outline-none focus-visible:shadow-[4px_4px_0_var(--color-lime)]";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
@@ -37,7 +39,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const r = await api(signup ? "/api/auth/signup" : "/api/auth/login", { json: signup ? { email, password, name } : { email, password } });
+    const r = await api(signup ? "/api/auth/signup" : "/api/auth/login", { json: signup ? { email, password, name: name.trim() || email.split("@")[0] } : { email, password } });
     if (!r.ok) {
       setBusy(false);
       return setError(r.error);
@@ -46,39 +48,72 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   };
 
   const other = `${signup ? "/login" : "/signup"}${params.get("next") ? `?next=${encodeURIComponent(next)}` : ""}`;
+  const tooShort = signup && password.length > 0 && password.length < 10;
   return (
-    <form onSubmit={submit} className="w-full max-w-md space-y-5 border-2 border-ink bg-surface p-6 shadow-[8px_8px_0_var(--color-signal)]">
-      <div>
-        <Label tone="signal">{signup ? "New account" : "Welcome back"}</Label>
-        <h1 className="mt-3 text-4xl font-bold uppercase leading-[0.9] tracking-[-0.04em]">{signup ? "Create your account" : "Sign in"}</h1>
-        {signup && <p className="mt-3 text-sm text-muted">One account to connect your AI agents, publish APIs and manage the money. New accounts start with a test credit.</p>}
+    <div className="grid w-full max-w-4xl items-center gap-10 md:grid-cols-[1fr_minmax(0,26rem)] md:gap-16">
+      <div className="hidden md:block">
+        <Buddy mood={signup ? "wave" : "happy"} className="w-24" />
+        <h1 className="mt-6 text-[clamp(2.6rem,5vw,4.2rem)] font-bold leading-[0.95] tracking-[-0.05em]">{signup ? (
+            <>
+              Your agent&apos;s first shopping <span className="whitespace-nowrap">trip 🛒</span>
+            </>
+          ) : (
+            <>
+              Welcome <span className="whitespace-nowrap">back 👋</span>
+            </>
+          )}</h1>
+        <p className="mt-4 max-w-sm text-lg leading-snug text-coal/70">{signup ? "Connect Claude Code, Codex or any MCP agent, set a limit, and let it buy the APIs it needs." : "Your agents, your wallet and your APIs are where you left them."}</p>
       </div>
-      {signup && (
-        <Field label="Your name">
-          <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" maxLength={60} required />
-        </Field>
-      )}
-      <Field label="Email">
-        <input className={inputCls} type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
-      </Field>
-      <Field label="Password" hint={signup ? "At least 10 characters. A few random words is better than symbols." : undefined}>
-        <div className="relative">
-          <input className={`${inputCls} pr-20`} type={show ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={signup ? "new-password" : "current-password"} minLength={signup ? 10 : 1} required />
-          <button type="button" onClick={() => setShow((s) => !s)} className="absolute right-2 top-1/2 -translate-y-1/2 font-mono text-[10px] font-bold uppercase text-muted hover:text-signal" style={{ marginTop: 4 }}>
-            {show ? "Hide" : "Show"}
-          </button>
+
+      <form onSubmit={submit} className="w-full border-2 border-coal bg-[#fffdf7] p-6 shadow-[8px_8px_0_var(--color-coal)] md:p-8">
+        <h2 className="text-3xl font-bold tracking-[-0.04em] md:text-[2rem]">{signup ? "Create your account" : "Sign in"}</h2>
+        <p className="mt-1.5 text-coal/60">{signup ? "Free. Takes 20 seconds." : "Good to see you again."}</p>
+
+        <div className="mt-6 space-y-4">
+          <label className="block">
+            <span className="text-sm font-bold">Email</span>
+            <input className={input} type="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete={signup ? "email" : "username"} autoFocus placeholder="you@example.com" required />
+          </label>
+          {signup && (
+            <label className="block">
+              <span className="text-sm font-bold">
+                Your name <span className="font-normal text-coal/50">(optional)</span>
+              </span>
+              <input className={input} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" maxLength={60} placeholder="What should we call you?" />
+            </label>
+          )}
+          <label className="block">
+            <span className="flex items-baseline justify-between text-sm font-bold">
+              Password
+              {signup && <span className={cn("font-mono text-[11px] font-normal", tooShort ? "text-fail" : "text-coal/50")}>{password.length}/10+</span>}
+            </span>
+            <span className="relative block">
+              <input className={cn(input, "pr-20")} type={show ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={signup ? "new-password" : "current-password"} minLength={signup ? 10 : 1} placeholder={signup ? "A few random words work great" : ""} required />
+              <button type="button" onClick={() => setShow((s) => !s)} aria-pressed={show} className="absolute right-2 top-1/2 mt-[3px] -translate-y-1/2 px-2 py-1 text-sm font-bold text-coal/60 hover:text-coal">
+                {show ? "Hide" : "Show"}
+              </button>
+            </span>
+          </label>
         </div>
-      </Field>
-      {error && <Notice tone="error">{error}</Notice>}
-      <HardButton type="submit" size="lg" className="w-full" disabled={busy || !email || !password || (signup && !name.trim())}>
-        {busy ? "One moment…" : signup ? "Create account" : "Sign in"}
-      </HardButton>
-      <p className="font-mono text-xs text-muted">
-        {signup ? "Already have an account?" : "No account yet?"}{" "}
-        <Link href={other} className="underline hover:text-signal">
-          {signup ? "Sign in" : "Create one"}
-        </Link>
-      </p>
-    </form>
+
+        {error && (
+          <p role="alert" className="mt-4 border-2 border-fail bg-fail/5 px-3 py-2 text-sm font-medium text-fail">
+            {error}
+          </p>
+        )}
+
+        <button type="submit" disabled={busy || !email || !password || tooShort} className="home-btn home-btn-ink mt-6 w-full justify-center text-[17px] disabled:pointer-events-none disabled:opacity-40">
+          {busy ? "One moment…" : signup ? "Create account →" : "Sign in →"}
+        </button>
+
+        <p className="mt-5 text-center text-coal/70">
+          {signup ? "Already have an account?" : "New here?"}{" "}
+          <Link href={other} className="font-bold text-coal underline decoration-lime decoration-4 underline-offset-4 hover:decoration-coal">
+            {signup ? "Sign in" : "Create an account"}
+          </Link>
+        </p>
+        {!signup && <p className="mt-3 text-center text-xs text-coal/45">Forgot your password? Write to us on X, @GalleriaRialto, and we will reset it.</p>}
+      </form>
+    </div>
   );
 }

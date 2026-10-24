@@ -61,7 +61,7 @@ export function AdminSettings() {
     >
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Keys & wallets</h1>
+          <h1 className="text-[clamp(2.1rem,4.5vw,3.2rem)] font-bold leading-[0.95] tracking-[-0.05em]">Keys & wallets</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">A value saved here wins over the server&apos;s environment. Clear it to go back to the environment&apos;s value.</p>
         </div>
         <button type="submit" disabled={busy || changed.length === 0} className="border border-signal bg-signal px-5 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wider text-ink disabled:border-line disabled:bg-transparent disabled:text-muted">
@@ -104,7 +104,7 @@ export function AdminSettings() {
                           />
                         </label>
                       ) : (
-                        <p className={cn("min-h-11 break-all border border-line px-3 py-2.5 font-mono text-sm", s.value ? "text-paper" : "text-muted")}>{s.value || "—"}</p>
+                        <p className={cn("min-h-11 break-all border border-line px-3 py-2.5 font-mono text-sm", s.value ? "text-paper" : "text-muted")}>{s.value || (s.fallback ? `${s.fallback} · default` : "—")}</p>
                       )}
                       <div className="mt-2 flex flex-wrap gap-3 font-mono text-[10px] font-bold uppercase tracking-wider">
                         {editing ? (

@@ -23,7 +23,7 @@ export function Panel({
   return (
     <section
       className={cn(
-        "border bg-surface text-paper",
+        "sy-panel border bg-surface text-paper",
         selected ? "border-signal shadow-hard" : "border-line",
         tone === "pay" && "border-pay bg-pay text-ink",
         className,
@@ -33,7 +33,7 @@ export function Panel({
       {(title || status) && (
         <header
           className={cn(
-            "flex items-center justify-between gap-3 border-b px-3 py-2",
+            "sy-panel-head flex items-center justify-between gap-3 border-b px-3 py-2",
             tone === "pay" ? "border-ink/30" : "border-line",
           )}
         >

@@ -107,7 +107,7 @@ export function PayWallet() {
     );
 
   return (
-    <Panel title="Pay from your wallet" status={<span className={cn("font-mono text-[10px]", a?.forRialto ? "text-signal" : "text-muted")}>{a?.forRialto ? "ON" : "OFF"}</span>}>
+    <Panel className="shadow-[6px_6px_0_var(--color-lime)]" title="Pay from your wallet" status={<span className={cn("font-mono text-[10px]", a?.forRialto ? "text-signal" : "text-muted")}>{a?.forRialto ? "ON" : "OFF"}</span>}>
       <div className="space-y-5 p-1">
         {linked && a ? (
           <>

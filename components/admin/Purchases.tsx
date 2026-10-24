@@ -46,7 +46,7 @@ export function AdminPurchases() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Purchases</h1>
+        <h1 className="text-[clamp(2.1rem,4.5vw,3.2rem)] font-bold leading-[0.95] tracking-[-0.05em]">Purchases</h1>
         <div className="flex flex-wrap gap-2">
           <Segmented label="Status" value={status} onChange={setStatus} options={[{ id: "any", label: "All" }, { id: "settled", label: "Paid" }, { id: "failed", label: "Failed" }]} />
           <Segmented label="Payments" value={mode} onChange={setMode} options={[{ id: "all", label: "All" }, { id: "live", label: "On-chain" }, { id: "simulated", label: "Simulated" }]} />

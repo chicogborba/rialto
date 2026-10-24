@@ -30,12 +30,12 @@ export function Header() {
       </Link>
       <nav aria-label="Primary" className="flex items-center gap-4 text-sm font-medium sm:gap-6">
         <Link href="/catalog" className="hidden text-coal/70 hover:text-coal min-[400px]:block">Catalog</Link>
-        <Link href="/demo" className="text-coal/70 hover:text-coal">Demo</Link>
+        <Link href="/demo" className="hidden text-coal/70 hover:text-coal min-[380px]:block">Demo</Link>
         <Link href="/#story" className="hidden text-coal/70 hover:text-coal md:block">How it works</Link>
         <Link href="/#solana" className="hidden text-coal/70 hover:text-coal md:block">Why Solana</Link>
         <a href={REPO_URL} className="hidden text-coal/70 hover:text-coal sm:block">GitHub</a>
-        <a href={X_URL} target="_blank" rel="noreferrer" aria-label="Rialto on X" className="grid size-8 shrink-0 place-items-center text-coal/70 hover:text-coal"><XMark className="size-[18px]" /></a>
-        <Link href={flowHref("/login")} className="hidden text-coal/70 hover:text-coal sm:block">Sign in</Link>
+        <a href={X_URL} target="_blank" rel="noreferrer" aria-label="Rialto on X" className="hidden size-8 shrink-0 place-items-center text-coal/70 hover:text-coal min-[420px]:grid"><XMark className="size-[18px]" /></a>
+        <Link href={flowHref("/login")} className="whitespace-nowrap text-coal/70 hover:text-coal">Sign in</Link>
         <Link href={flowHref("/signup")} className="home-btn home-btn-ink !min-h-10 whitespace-nowrap !px-3.5 text-sm sm:!px-4">Get started</Link>
       </nav>
     </header>
