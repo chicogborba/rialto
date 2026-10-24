@@ -6,7 +6,7 @@
 //
 //   npm run delegate:check
 import { existsSync } from "node:fs";
-import { createSolanaRpc, getBase64Encoder, getTransactionDecoder, getBase64EncodedWireTransaction, signTransaction, type Signature } from "@solana/kit";
+import { createSolanaRpc, getBase64Encoder, getTransactionDecoder, getBase64EncodedWireTransaction, partiallySignTransaction, type KeyPairSigner, type Signature } from "@solana/kit";
 import { realClock } from "../lib/agent/clock";
 import { liveGateway } from "../lib/x402";
 import { buildApproveTransaction, buildRevokeTransaction, DelegatePaymentRail, readAllowance } from "../lib/x402/delegate";
@@ -16,13 +16,13 @@ import { isSolanaAddress, liveConfig } from "../lib/x402/solana";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
 
-/** What the buyer's wallet does with the transaction Rialto prepared: add the owner's signature and send it. */
-async function ownerSignsAndSends(rpcUrl: string, wire: string, ownerSecret: string): Promise<string> {
+/** The buyer's wallet signs the transaction Rialto prepared, then Rialto adds the spender's signature and sends it. */
+async function ownerSignsAndSends(rpcUrl: string, wire: string, ownerSecret: string, spender: KeyPairSigner): Promise<string> {
   const rpc = createSolanaRpc(rpcUrl);
   const tx = getTransactionDecoder().decode(getBase64Encoder().encode(wire));
   const key = await crypto.subtle.importKey("pkcs8", pkcs8(secretBytes(ownerSecret).slice(0, 32)), "Ed25519", false, ["sign"]);
   const pub = await crypto.subtle.importKey("raw", secretBytes(ownerSecret).slice(32), "Ed25519", true, ["verify"]);
-  const signed = await signTransaction([{ privateKey: key, publicKey: pub }], tx);
+  const signed = await partiallySignTransaction([spender.keyPair], await partiallySignTransaction([{ privateKey: key, publicKey: pub }], tx));
   const sig = await rpc.sendTransaction(getBase64EncodedWireTransaction(signed), { encoding: "base64", preflightCommitment: "confirmed" }).send();
   for (let i = 0; i < 40; i++) {
     const { value } = await rpc.getSignatureStatuses([sig as Signature]).send();
@@ -62,7 +62,7 @@ async function main(): Promise<void> {
   console.log(`spender   ${spender.address}`);
 
   const approve = await buildApproveTransaction({ rpcUrl: cfg.rpcUrl, owner, mint, spender, amountMicro: 10_000 });
-  console.log(`approve   ${await ownerSignsAndSends(cfg.rpcUrl, approve, ownerSecret)}`);
+  console.log(`approve   ${await ownerSignsAndSends(cfg.rpcUrl, approve, ownerSecret, spender)}`);
   const before = await readAllowance(cfg.rpcUrl, owner, mint);
   console.log(`allowance ${usd(before.delegatedMicro)} to ${before.delegate} · balance ${usd(before.balanceMicro)}`);
 
@@ -81,7 +81,7 @@ async function main(): Promise<void> {
   }
 
   const revoke = await buildRevokeTransaction({ rpcUrl: cfg.rpcUrl, owner, mint, spender });
-  console.log(`revoke    ${await ownerSignsAndSends(cfg.rpcUrl, revoke, ownerSecret)}`);
+  console.log(`revoke    ${await ownerSignsAndSends(cfg.rpcUrl, revoke, ownerSecret, spender)}`);
   const end = await readAllowance(cfg.rpcUrl, owner, mint);
   console.log(`allowance ${end.delegate ? `${usd(end.delegatedMicro)} to ${end.delegate}` : "none"}`);
   if (!v1.ok || !v2.ok) process.exit(1);

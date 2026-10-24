@@ -1,5 +1,7 @@
 import {
   decompileTransactionMessage,
+  partiallySignTransaction,
+  type Transaction,
   getBase64Encoder,
   getBase64EncodedWireTransaction,
   getCompiledTransactionMessageDecoder,
@@ -8,6 +10,7 @@ import {
   type Signature,
 } from "@solana/kit";
 import { identifyTokenInstruction, TOKEN_PROGRAM_ADDRESS, TokenInstruction } from "@solana-program/token";
+import { COMPUTE_BUDGET_PROGRAM_ADDRESS, ComputeBudgetInstruction, identifyComputeBudgetInstruction, parseSetComputeUnitLimitInstruction, parseSetComputeUnitPriceInstruction } from "@solana-program/compute-budget";
 import { prisma } from "@/lib/db/client";
 import { HttpError } from "@/lib/http";
 import { liveConfig, NETWORK, isSolanaAddress, solanaRpc, type LiveConfig } from "@/lib/x402/solana";
@@ -101,35 +104,22 @@ export async function submit(userId: string, wallet: string, signedBase64: strin
   if (!isSolanaAddress(wallet)) throw new HttpError(400, "bad_wallet", "That is not a Solana address.");
   const { cfg, spender: s } = await ready();
   let kind: "approve" | "revoke";
+  let tx: Transaction;
   try {
-    const tx = getTransactionDecoder().decode(getBase64Encoder().encode(signedBase64));
-    const message = decompileTransactionMessage(getCompiledTransactionMessageDecoder().decode(tx.messageBytes));
-    if (message.feePayer.address !== s.address) throw new Error("fee payer");
-    const ixs = message.instructions;
-    if (ixs.length !== 1 || ixs[0].programAddress !== TOKEN_PROGRAM_ADDRESS) throw new Error("instructions");
-    const which = identifyTokenInstruction(ixs[0] as { data: Uint8Array });
-    const accounts = (ixs[0].accounts ?? []).map((a) => a.address);
-    const source = await usdcAccountOf(wallet, cfg.network.usdc);
-    if (which === TokenInstruction.ApproveChecked) {
-      // source, mint, delegate, owner
-      if (accounts[0] !== source || accounts[1] !== cfg.network.usdc || accounts[2] !== s.address || accounts[3] !== wallet) throw new Error("approve accounts");
-      kind = "approve";
-    } else if (which === TokenInstruction.Revoke) {
-      // source, owner
-      if (accounts[0] !== source || accounts[1] !== wallet) throw new Error("revoke accounts");
-      kind = "revoke";
-    } else throw new Error("instruction");
-    if (!(tx.signatures as Record<string, Uint8Array | null>)[wallet]) throw new Error("not signed by the wallet");
-  } catch {
+    tx = getTransactionDecoder().decode(getBase64Encoder().encode(signedBase64));
+    kind = await checkApproval(tx, wallet, s.address, cfg.network.usdc);
+  } catch (e) {
+    console.warn("[allowance] refused a signed approval:", e instanceof Error ? e.message : e);
     throw new HttpError(400, "bad_transaction", "That is not the approval Rialto prepared. Start again.");
   }
+  // the wallet signed first; now the spender adds its signature as fee payer
+  const signed = await partiallySignTransaction([s.keyPair], tx);
   const rpc = solanaRpc(cfg.rpcUrl);
   let sig: Signature;
   try {
-    const tx = getTransactionDecoder().decode(getBase64Encoder().encode(signedBase64));
-    sig = await rpc.sendTransaction(getBase64EncodedWireTransaction(tx), { encoding: "base64", preflightCommitment: "confirmed" }).send();
+    sig = await rpc.sendTransaction(getBase64EncodedWireTransaction(signed), { encoding: "base64", preflightCommitment: "confirmed" }).send();
   } catch (e) {
-    throw new HttpError(400, "send_failed", `The network refused it: ${e instanceof Error ? e.message.slice(0, 160) : "unknown error"}. If it expired, start again.`);
+    throw new HttpError(400, "send_failed", explainSendFailure(e));
   }
   for (let i = 0; i < 40; i++) {
     const { value } = await rpc.getSignatureStatuses([sig]).send();
@@ -140,6 +130,60 @@ export async function submit(userId: string, wallet: string, signedBase64: strin
   }
   await prisma.user.update({ where: { id: userId }, data: kind === "approve" ? { payWallet: wallet, payWalletAt: new Date() } : { payWallet: null, payWalletAt: null } });
   return payWalletView(userId);
+}
+
+const LIGHTHOUSE = "L2TExMFKdjpN9kozasaurPirfHy9P8sbXoAN1qA3S95";
+/** The most a wallet may add as priority fee on a transaction the spender pays for: 0.00002 SOL at 200k units. */
+const MAX_PRICE_MICROLAMPORTS = BigInt(100_000);
+
+/**
+ * Is this exactly an approval (or revocation) of `wallet`'s USDC account in favour of the spender,
+ * paid by the spender and signed by the wallet? A wallet may add its own safety checks (Lighthouse)
+ * and compute-budget settings; nothing else, so the spender's SOL pays for nothing but this.
+ */
+export async function checkApproval(tx: Transaction, wallet: string, spenderAddress: string, usdc: string): Promise<"approve" | "revoke"> {
+  const message = decompileTransactionMessage(getCompiledTransactionMessageDecoder().decode(tx.messageBytes));
+  if (message.feePayer.address !== spenderAddress) throw new Error("fee payer");
+  if (!(tx.signatures as Record<string, Uint8Array | null>)[wallet]) throw new Error("not signed by the wallet");
+  const source = await usdcAccountOf(wallet, usdc);
+  let kind: "approve" | "revoke" | null = null;
+  for (const ix of message.instructions) {
+    const program = ix.programAddress as string;
+    if (program === LIGHTHOUSE) continue;
+    if (program === COMPUTE_BUDGET_PROGRAM_ADDRESS) {
+      const which = identifyComputeBudgetInstruction(ix as { data: Uint8Array });
+      if (which === ComputeBudgetInstruction.SetComputeUnitLimit) {
+        if (parseSetComputeUnitLimitInstruction(ix as never).data.units > 200_000) throw new Error("compute limit");
+      } else if (which === ComputeBudgetInstruction.SetComputeUnitPrice) {
+        if (BigInt(parseSetComputeUnitPriceInstruction(ix as never).data.microLamports) > MAX_PRICE_MICROLAMPORTS) throw new Error("priority fee");
+      } else if (which !== ComputeBudgetInstruction.SetLoadedAccountsDataSizeLimit) throw new Error("compute budget");
+      continue;
+    }
+    if (program !== TOKEN_PROGRAM_ADDRESS || kind) throw new Error(`unexpected instruction (${program})`);
+    const which = identifyTokenInstruction(ix as { data: Uint8Array });
+    const accounts = (ix.accounts ?? []).map((a) => a.address as string);
+    if (which === TokenInstruction.ApproveChecked) {
+      // source, mint, delegate, owner
+      if (accounts[0] !== source || accounts[1] !== usdc || accounts[2] !== spenderAddress || accounts[3] !== wallet) throw new Error("approve accounts");
+      kind = "approve";
+    } else if (which === TokenInstruction.Revoke) {
+      // source, owner
+      if (accounts[0] !== source || accounts[1] !== wallet) throw new Error("revoke accounts");
+      kind = "revoke";
+    } else throw new Error("token instruction");
+  }
+  if (!kind) throw new Error("no approval in it");
+  return kind;
+}
+
+/** What the network's refusal means, in words a person can act on. */
+function explainSendFailure(e: unknown): string {
+  const text = `${e instanceof Error ? e.message : String(e)} ${JSON.stringify((e as { context?: unknown })?.context ?? {})} ${(e as { cause?: Error })?.cause?.message ?? ""}`;
+  console.warn("[allowance] send failed:", text.slice(0, 600));
+  if (/blockhash/i.test(text)) return "It took more than a minute in the wallet, so Solana let it expire. Click Approve again and confirm within a minute.";
+  if (/insufficient|no record of a prior credit|debit/i.test(text)) return "Rialto's spender is out of SOL for the network fee. Tell the operator; nothing was charged.";
+  if (/signature/i.test(text)) return "The wallet changed the transaction after signing. Try again, or with another wallet.";
+  return "Solana refused the approval. Nothing was charged. Try again in a moment.";
 }
 
 /** Forgets the linked wallet (the allowance stays on-chain until the user revokes it). */

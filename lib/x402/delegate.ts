@@ -1,8 +1,10 @@
-import { getSetComputeUnitLimitInstruction, setTransactionMessageComputeUnitPrice } from "@solana-program/compute-budget";
+import { getSetComputeUnitLimitInstruction, getSetLoadedAccountsDataSizeLimitInstruction, setTransactionMessageComputeUnitPrice } from "@solana-program/compute-budget";
 import { findAssociatedTokenPda, getApproveCheckedInstruction, getRevokeInstruction, getTransferCheckedInstruction, TOKEN_PROGRAM_ADDRESS } from "@solana-program/token";
 import {
   address,
   appendTransactionMessageInstructions,
+  compileTransaction,
+  type Address,
   createNoopSigner,
   createTransactionMessage,
   getBase64EncodedWireTransaction,
@@ -10,7 +12,6 @@ import {
   pipe,
   prependTransactionMessageInstruction,
   setTransactionMessageFeePayer,
-  setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
   type KeyPairSigner,
 } from "@solana/kit";
@@ -71,36 +72,39 @@ export async function readAllowance(rpcUrl: string, owner: string, mint: string)
 
 /**
  * The transaction the buyer signs in their wallet to set (or change) the allowance: one
- * `ApproveChecked` of `amountMicro` to `spender`. Rialto's spender pays the network fee and signs as
- * fee payer, so the buyer needs no SOL; the buyer's wallet adds the owner signature and sends it.
- * Returns the wire transaction, base64, still missing the owner's signature.
+ * `ApproveChecked` of `amountMicro` to `spender`, with explicit compute limits. Rialto's spender is
+ * the fee payer, so the buyer needs no SOL. It goes out unsigned: the buyer's wallet signs FIRST
+ * (what Phantom asks for, so it can simulate the transaction and not flag it), then the server checks
+ * it, adds the spender's signature and sends it (`submit` in lib/wallet/allowance.ts).
  */
 export async function buildApproveTransaction(opts: { rpcUrl: string; owner: string; mint: string; spender: KeyPairSigner; amountMicro: number }): Promise<string> {
-  const rpc = solanaRpc(opts.rpcUrl);
   const owner = createNoopSigner(address(opts.owner));
   const source = address(await usdcAccountOf(opts.owner, opts.mint));
   const approve = getApproveCheckedInstruction({ source, mint: address(opts.mint), delegate: opts.spender.address, owner, amount: BigInt(opts.amountMicro), decimals: USDC_DECIMALS });
-  return feePaidBySpender(rpc, opts.spender, [approve]);
+  return feePaidBySpender(solanaRpc(opts.rpcUrl), opts.spender.address, [approve]);
 }
 
 /** The transaction that takes the allowance back (`Revoke`), built the same way. */
 export async function buildRevokeTransaction(opts: { rpcUrl: string; owner: string; mint: string; spender: KeyPairSigner }): Promise<string> {
-  const rpc = solanaRpc(opts.rpcUrl);
   const owner = createNoopSigner(address(opts.owner));
   const source = address(await usdcAccountOf(opts.owner, opts.mint));
-  return feePaidBySpender(rpc, opts.spender, [getRevokeInstruction({ source, owner })]);
+  return feePaidBySpender(solanaRpc(opts.rpcUrl), opts.spender.address, [getRevokeInstruction({ source, owner })]);
 }
 
-async function feePaidBySpender(rpc: ReturnType<typeof solanaRpc>, spender: KeyPairSigner, instructions: Parameters<typeof appendTransactionMessageInstructions>[0]): Promise<string> {
-  const { value: blockhash } = await rpc.getLatestBlockhash().send();
+/** Compute units the approval needs (it uses ~500) and the most account data it may load (the token program is ~134 KB). */
+export const APPROVAL_COMPUTE_UNITS = 10_000;
+export const APPROVAL_LOADED_BYTES = 512 * 1024;
+
+async function feePaidBySpender(rpc: ReturnType<typeof solanaRpc>, spender: Address, instructions: Parameters<typeof appendTransactionMessageInstructions>[0]): Promise<string> {
+  const { value: blockhash } = await rpc.getLatestBlockhash({ commitment: "confirmed" }).send();
   const message = pipe(
     createTransactionMessage({ version: 0 }),
-    (m) => setTransactionMessageFeePayerSigner(spender, m),
+    (m) => setTransactionMessageFeePayer(spender, m),
     (m) => setTransactionMessageLifetimeUsingBlockhash(blockhash, m),
-    (m) => appendTransactionMessageInstructions(instructions, m),
+    (m) => appendTransactionMessageInstructions([getSetComputeUnitLimitInstruction({ units: APPROVAL_COMPUTE_UNITS }), getSetLoadedAccountsDataSizeLimitInstruction({ accountDataSizeLimit: APPROVAL_LOADED_BYTES }), ...instructions], m),
   );
-  // the owner's slot stays empty: their wallet fills it
-  return getBase64EncodedWireTransaction(await partiallySignTransactionMessageWithSigners(message));
+  // no signature yet: the owner's wallet signs first, the spender after the server has checked it
+  return getBase64EncodedWireTransaction(compileTransaction(message));
 }
 
 /**

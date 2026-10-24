@@ -150,7 +150,7 @@ export function PayWallet() {
               {picker("approve")}
             </LimitPicker>
             <p className="font-mono text-[10px] text-muted">
-              Needs {usdc} on Solana {view.testMoney ? "devnet" : "mainnet"} in that wallet; no SOL needed, Rialto pays the network fee.{view.spender ? ` Spender: ${shortAddress(view.spender)}.` : ""}
+              Needs {usdc} on Solana {view.testMoney ? "devnet" : "mainnet"} in that wallet; no SOL needed, Rialto pays the network fee.{view.spender ? ` Spender: ${shortAddress(view.spender)}.` : ""} Your wallet will ask you to let that spender use up to the limit you chose: check both, then confirm within a minute.
             </p>
           </>
         )}
