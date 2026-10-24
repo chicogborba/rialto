@@ -33,7 +33,7 @@ export interface BuiltInIntegration {
  * `cost` is what fal charges for ONE call of exactly this request (its published unit price times what
  * the body asks for: megapixels, seconds, characters, a typical number of tokens), in dollars. The
  * seller price Rialto asks is that plus the operator's margin (`operatorSellerPrice`, set in /admin),
- * and the buyer pays Rialto's commission on top. Prices checked against fal.ai on 2026-10-14; when fal
+ * and the buyer pays Rialto's commission on top. Prices checked against fal.ai (its pricing API and model pages) on 2026-10-24; when fal
  * changes a price, change the number here and the next start updates the catalogue.
  */
 function fal(
@@ -70,7 +70,7 @@ const FAL_INTEGRATIONS: BuiltInIntegration[] = [
   // ---- images
   fal("flux2-flash", "FLUX.2 Flash", "image.generate", "fal-ai/flux-2/flash", { prompt: "{goal}", image_size: "landscape_4_3", output_format: "png" }, IMAGE, 0.005, 86, 3_300,
     "Fast, cheap images from a text prompt (FLUX.2 Flash on fal.ai). Returns a PNG link."),
-  fal("flux3", "FLUX 3", "image.generate", "blackforestlabs/flux-3/text-to-image", { prompt: "{goal}" }, IMAGE, 0.024, 94, 20_000,
+  fal("flux3", "FLUX 3", "image.generate", "blackforestlabs/flux-3/text-to-image", { prompt: "{goal}" }, IMAGE, 0.048, 94, 20_000,
     "High-quality images from a text prompt (Black Forest Labs FLUX 3 on fal.ai). Returns an image link."),
   fal("flux2-pro", "FLUX.2 Pro", "image.generate", "fal-ai/flux-2-pro", { prompt: "{goal}" }, IMAGE, 0.03, 93, 9_000,
     "Production-grade images with strong prompt following (FLUX.2 Pro on fal.ai). Returns an image link."),
@@ -98,7 +98,7 @@ const FAL_INTEGRATIONS: BuiltInIntegration[] = [
     "Double the resolution of an image (Real-ESRGAN on fal.ai). Put the image link in your request. Returns a PNG link."),
   fal("recraft-crisp", "Recraft Crisp Upscale", "image.upscale", "fal-ai/recraft/upscale/crisp", { image_url: "{url}" }, "image=image.url", 0.004, 92, 8_000,
     "Sharper, larger images without invented detail (Recraft Crisp Upscale on fal.ai). Put the image link in your request. Returns an image link."),
-  fal("gemini-vision", "Gemini Vision", "vision.describe", "openrouter/router/vision", { model: "google/gemini-2.5-flash", prompt: "{text}", image_urls: ["{url}"], max_tokens: 1000 }, "description=output", 0.002, 93, 3_000,
+  fal("gemini-vision", "Gemini Vision", "vision.describe", "openrouter/router/vision", { model: "google/gemini-2.5-flash", prompt: "{text}", image_urls: ["{url}"], max_tokens: 1000 }, "description=output", 0.004, 93, 3_000,
     "Answer a question about an image, or describe it (Gemini 2.5 Flash through fal.ai). Put the image link and your question in the request."),
   fal("florence-caption", "Florence-2 Caption", "vision.describe", "fal-ai/florence-2-large/more-detailed-caption", { image_url: "{url}" }, "description=results", 0.003, 84, 2_500,
     "A detailed caption of an image (Microsoft Florence-2 on fal.ai). Put the image link in your request."),
@@ -160,19 +160,19 @@ const FAL_INTEGRATIONS: BuiltInIntegration[] = [
     "A 6-second 1080p clip with sound from a text prompt (Lightricks LTX 2.3 Fast on fal.ai). Returns an MP4 link."),
 
   // ---- language models (through fal's OpenRouter endpoint)
-  fal("gemini-search", "Gemini Web Search", "web.search", "openrouter/router", llm("google/gemini-2.5-flash", "Answer from current web results. Be concise and name your sources with their links.", { enable_web_search: true }), "answer=output", 0.02, 90, 5_000,
+  fal("gemini-search", "Gemini Web Search", "web.search", "openrouter/router", llm("google/gemini-2.5-flash", "Answer from current web results. Be concise and name your sources with their links.", { enable_web_search: true }), "answer=output", 0.025, 90, 5_000,
     "A sourced answer from a live web search (Gemini 2.5 Flash with web search, through fal.ai)."),
-  fal("gemini-analysis", "Gemini Flash Analysis", "llm.analysis", "openrouter/router", { ...llm("google/gemini-2.5-flash", ANALYST), prompt: "{goal}\n\nContext from earlier steps (may be empty):\n{inputs}" }, "analysis=output", 0.002, 88, 2_500,
+  fal("gemini-analysis", "Gemini Flash Analysis", "llm.analysis", "openrouter/router", { ...llm("google/gemini-2.5-flash", ANALYST), prompt: "{goal}\n\nContext from earlier steps (may be empty):\n{inputs}" }, "analysis=output", 0.004, 88, 2_500,
     "Reasoning and writing over your request and whatever earlier steps found (Gemini 2.5 Flash through fal.ai). Fast and cheap."),
-  fal("claude-analysis", "Claude Sonnet Analysis", "llm.analysis", "openrouter/router", { ...llm("anthropic/claude-sonnet-4.5", ANALYST), prompt: "{goal}\n\nContext from earlier steps (may be empty):\n{inputs}" }, "analysis=output", 0.015, 96, 4_000,
+  fal("claude-analysis", "Claude Sonnet Analysis", "llm.analysis", "openrouter/router", { ...llm("anthropic/claude-sonnet-4.5", ANALYST), prompt: "{goal}\n\nContext from earlier steps (may be empty):\n{inputs}" }, "analysis=output", 0.025, 96, 4_000,
     "Careful analysis and writing over your request and whatever earlier steps found (Claude Sonnet 4.5 through fal.ai)."),
-  fal("gemini-translate", "Gemini Translate", "text.translate", "openrouter/router", llm("google/gemini-2.5-flash", TRANSLATOR), "translation=output", 0.002, 90, 2_000,
+  fal("gemini-translate", "Gemini Translate", "text.translate", "openrouter/router", llm("google/gemini-2.5-flash", TRANSLATOR), "translation=output", 0.004, 90, 2_000,
     "Translate text between languages (Gemini 2.5 Flash through fal.ai). Name the target language and put the text in double quotes."),
-  fal("claude-translate", "Claude Haiku Translate", "text.translate", "openrouter/router", llm("anthropic/claude-haiku-4.5", TRANSLATOR), "translation=output", 0.004, 94, 2_000,
+  fal("claude-translate", "Claude Haiku Translate", "text.translate", "openrouter/router", llm("anthropic/claude-haiku-4.5", TRANSLATOR), "translation=output", 0.008, 94, 2_000,
     "Translation that keeps tone and idiom (Claude Haiku 4.5 through fal.ai). Name the target language and put the text in double quotes."),
-  fal("gemini-summarize", "Gemini Summarize", "text.summarize", "openrouter/router", { ...llm("google/gemini-2.5-flash", SUMMARIZER), prompt: "{goal}\n\n{inputs}" }, "summary=output", 0.002, 89, 2_000,
+  fal("gemini-summarize", "Gemini Summarize", "text.summarize", "openrouter/router", { ...llm("google/gemini-2.5-flash", SUMMARIZER), prompt: "{goal}\n\n{inputs}" }, "summary=output", 0.004, 89, 2_000,
     "A five-bullet summary of the text in your request (Gemini 2.5 Flash through fal.ai)."),
-  fal("claude-summarize", "Claude Haiku Summarize", "text.summarize", "openrouter/router", { ...llm("anthropic/claude-haiku-4.5", SUMMARIZER), prompt: "{goal}\n\n{inputs}" }, "summary=output", 0.004, 94, 2_000,
+  fal("claude-summarize", "Claude Haiku Summarize", "text.summarize", "openrouter/router", { ...llm("anthropic/claude-haiku-4.5", SUMMARIZER), prompt: "{goal}\n\n{inputs}" }, "summary=output", 0.008, 94, 2_000,
     "A faithful five-bullet summary of the text in your request (Claude Haiku 4.5 through fal.ai)."),
 ];
 
