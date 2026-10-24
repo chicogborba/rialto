@@ -6,6 +6,8 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
  * The live x402 path does not need it: there the facilitator verifies a real signed payment.
  */
 export const INTERNAL_HEADER = "x-sy-internal";
+/** On an internal call: the agent the hosted endpoint is buying for (believed only together with INTERNAL_HEADER). */
+export const AGENT_HEADER = "x-rialto-agent";
 
 declare global {
   var __syInternalToken: string | undefined;

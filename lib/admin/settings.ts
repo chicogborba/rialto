@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { decryptSecret, encryptSecret } from "@/lib/security/secrets";
+import { getBase58Encoder } from "@solana/kit";
 import { isSolanaAddress } from "@/lib/x402/solana";
 
 /**
@@ -28,6 +29,7 @@ export const SETTING_DEFS: SettingDef[] = [
   { key: "TRIPO_API_KEY", label: "Tripo API key", group: "keys", secret: true, kind: "text", hint: "The direct Tripo 3D integration (optional)." },
   { key: "PLATFORM_FEE_PAYTO", label: "Commission wallet", group: "wallets", kind: "address", hint: "Where every purchase pays Rialto's commission. An address only; it needs a USDC account on the network." },
   { key: "SOLANA_PAY_TO", label: "Integrations payout wallet", group: "wallets", kind: "address", hint: "Where buyers pay for Rialto's own integrations (fal cost + margin). Also needs a USDC account." },
+  { key: "RIALTO_SPENDER_KEY", label: "Spender key (pays from buyers' allowances)", group: "wallets", secret: true, kind: "text", hint: "Buyers approve this key, from Phantom or any wallet, to spend up to a limit from their USDC; it signs their purchases and pays the SOL fee of the approval. It holds no USDC, only a little SOL. Changing it voids every allowance given so far." },
   { key: "OPERATOR_MARGIN_PCT", label: "Margin over the API cost (%)", group: "pricing", kind: "number", min: 0, max: 1000, hint: "Seller price of Rialto's integrations = fal's price × (1 + margin), rounded up to $0.001. Default 15." },
   { key: "PLATFORM_FEE_BPS", label: "Commission (basis points)", group: "pricing", kind: "number", min: 0, max: 5000, hint: "Paid by the buyer on top of every seller's price, Rialto's included. 500 = 5%. Default 500." },
   { key: "PLATFORM_MIN_FEE_MICRO", label: "Minimum commission (micro-USDC)", group: "pricing", kind: "number", min: 0, max: 1_000_000, hint: "Floor of the commission per call. 1000 = $0.001. Default 1000." },
@@ -54,6 +56,15 @@ export function normaliseSetting(def: SettingDef, raw: string): string {
   if (!value) return "";
   if (value.length > 2_000) throw new Error(`${def.label}: too long`);
   if (def.kind === "address" && !isSolanaAddress(value)) throw new Error(`${def.label}: not a Solana address`);
+  if (def.key === "RIALTO_SPENDER_KEY") {
+    let bytes = 0;
+    try {
+      bytes = value.startsWith("[") ? (JSON.parse(value) as number[]).length : getBase58Encoder().encode(value).length;
+    } catch {
+      bytes = 0;
+    }
+    if (bytes !== 64) throw new Error(`${def.label}: a Solana secret key (64 bytes, base58 or the JSON array), or use Generate`);
+  }
   if (def.kind === "url") {
     let url: URL;
     try {

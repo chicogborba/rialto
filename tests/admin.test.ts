@@ -142,3 +142,12 @@ describe("the operator's numbers", () => {
     expect(s.topBuyers.map((b) => b.kind).sort()).toEqual(["user", "wallet"]);
   });
 });
+
+describe("the spender key typed in /admin", () => {
+  it("must be a whole Solana secret key", () => {
+    const d = settingDef("RIALTO_SPENDER_KEY");
+    if (!d) throw new Error("missing");
+    expect(() => normaliseSetting(d, "GW1joGToHBm2z9qXiHro8vP8agJvoGLqvAVjRJQrVDrz")).toThrow(/64 bytes/);
+    expect(normaliseSetting(d, JSON.stringify(Array.from({ length: 64 }, (_, i) => i)))).toMatch(/^\[0,1,2/);
+  });
+});

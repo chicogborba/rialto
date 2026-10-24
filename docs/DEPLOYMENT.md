@@ -119,6 +119,12 @@ Accounts listed in `SUPERADMIN_EMAILS` (or promoted with `npm run user:admin -- 
 
 Every purchase records what the call cost upstream (`Transaction.costMicro`), so profit is computed from what really happened, not from today's prices.
 
+### Paying from an existing wallet
+
+Buyers can let their agents pay from the wallet they already use (Phantom, Solflare, Backpack: anything that implements the Wallet Standard). In Dashboard → Wallet they pick a limit and sign one `ApproveChecked` that makes Rialto's **spender** the delegate of their USDC account up to that limit; the spender pays the SOL fee of that transaction. From then on the hosted MCP (`/api/mcp`) pays on-chain sellers with ordinary x402 `exact` payments from the buyer's USDC account, signed by the spender as delegate. The token program refuses anything over the allowance, the buyer revokes it from the dashboard or their wallet, and the agent's own limits (per call, per session) still apply.
+
+Set it up in `/admin` → Keys & wallets → *Spender key* → **Generate**, then send the spender's address ~0.01 SOL (each approval costs about 0.000005 SOL). The spender holds no USDC, but it can move up to the sum of all approved allowances, so treat its key like any production secret. Generating a new one voids every allowance given to the old one. `npm run delegate:check` runs the whole path (approve, a two-leg purchase through the facilitator, revoke) with keys from `.env`.
+
 ### Going to mainnet
 
 Devnet and mainnet are the same code; one setting and a few facts about money change.

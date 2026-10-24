@@ -10,7 +10,7 @@ const usd = (micro: number) => toDollars(micro);
 
 /** Said to an agent that asked the hosted endpoint to buy from a seller that is paid on-chain. */
 export const SIGNER_HELP =
-  "This seller is paid on-chain, straight from YOUR Solana wallet to theirs: Rialto never holds your money, so the hosted endpoint cannot pay it. Use the local signer instead (it keeps your key on your machine): add the Rialto MCP server with `npm run mcp` from the repo and SOLANA_WALLET_KEY set (see the README, \"Connect your agent\"). Everything else (discover, compare, plan) works here.";
+  "This seller is paid on-chain, straight from YOUR Solana wallet to theirs: Rialto never holds your money. To let this agent pay, your owner opens the dashboard (Wallet → Pay from your wallet), connects Phantom, Solflare or any Solana wallet and approves a spending limit once; then this same tool pays from that wallet. (Or use the local signer, `npm run mcp` with SOLANA_WALLET_KEY, which keeps a key on your machine.) Everything else (discover, compare, plan) works here.";
 
 /** What the caller pinned down: a capability, a provider, or both. A provider alone brings its capability. */
 export function resolveRoute(args: { capability?: CapabilityId; provider?: string }, candidates: Candidate[]): Route {

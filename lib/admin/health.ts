@@ -8,6 +8,8 @@ import type { Clock } from "@/lib/types";
 import { liveStatus, type LiveStatus } from "@/lib/x402/status";
 import { explorerAddress, isSolanaAddress, NETWORK, usdcBalance } from "@/lib/x402/solana";
 import { superadminEmails } from "./auth";
+import { createSolanaRpc, address } from "@solana/kit";
+import { spender } from "@/lib/wallet/allowance";
 
 export interface Check {
   label: string;
@@ -85,6 +87,9 @@ export async function operatorHealth(prisma: PrismaClient, clock: Clock): Promis
     prisma.provider.findMany({ where: { slug: { in: BUILT_IN_INTEGRATIONS.map((i) => i.slug) }, isDemo: false }, select: { status: true } }),
     facilitatorServesMainnet(onMainnet ? process.env.X402_FACILITATOR_URL?.trim() || NETWORK.defaultFacilitatorUrl : "https://facilitator.payai.network"),
   ]);
+  const spenderSigner = await spender();
+  const spenderLamports = spenderSigner ? await createSolanaRpc(rpcUrl).getBalance(address(spenderSigner.address)).send().then((r) => Number(r.value), () => null) : null;
+  const linkedWallets = await prisma.user.count({ where: { payWallet: { not: null } } });
   const online = providers.filter((p) => p.status !== "offline").length;
   const cap = operatorDailyCapMicro();
 
@@ -93,6 +98,13 @@ export async function operatorHealth(prisma: PrismaClient, clock: Clock): Promis
     { label: "Commission wallet can receive", ok: commission.usdcMicro !== null, detail: commission.address ? (commission.usdcMicro === null ? "No USDC account on this network yet: send it any amount of USDC once." : `${usd(commission.usdcMicro)} USDC on ${NETWORK.name}`) : "Not set." },
     { label: "Integrations wallet can receive", ok: integrationsWallet.usdcMicro !== null, detail: integrationsWallet.address ? (integrationsWallet.usdcMicro === null ? "No USDC account on this network yet: send it any amount of USDC once." : `${usd(integrationsWallet.usdcMicro)} USDC on ${NETWORK.name}`) : "Not set: Rialto's integrations are paid on the simulation only." },
     { label: "fal.ai key", ok: fal.ok === true, detail: fal.detail },
+    {
+      label: "Pay from an existing wallet (spender)",
+      ok: Boolean(spenderSigner) && (spenderLamports ?? 0) >= 2_000_000,
+      detail: spenderSigner
+        ? `${spenderSigner.address} · ${spenderLamports === null ? "SOL balance unknown" : `${(spenderLamports / 1e9).toFixed(4)} SOL`} (pays ~0.000005 SOL per approval; keep 0.01+) · ${linkedWallets} wallet${linkedWallets === 1 ? "" : "s"} linked`
+        : "No spender key: buyers cannot pay from Phantom & co. Generate one in Keys & wallets.",
+    },
     { label: "Integrations online", ok: online > 0, detail: `${online} of ${BUILT_IN_INTEGRATIONS.length}` },
     { label: "Daily limit", ok: sold < cap, detail: `${usd(sold)} sold of ${usd(cap)} in the last 24 h` },
     { label: "Admins", ok: superadminEmails().size > 0 || (await prisma.user.count({ where: { role: "admin" } })) > 0, detail: "Who can open this page." },

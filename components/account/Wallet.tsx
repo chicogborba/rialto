@@ -7,6 +7,7 @@ import { api } from "@/lib/client/api";
 import { useAccount } from "@/lib/client/account";
 import { formatUsd } from "@/lib/money";
 import { Field, inputCls, Notice, Stat } from "./ui";
+import { PayWallet } from "./PayWallet";
 
 type Msg = { tone: "ok" | "error"; text: string } | null;
 
@@ -52,6 +53,8 @@ export function Wallet() {
         <Stat label="Test credit" value={formatUsd(user.balanceMicro)} hint="Play money for the simulated providers" />
       </div>
 
+      <PayWallet />
+
       <Panel title="Where you get paid" bodyClassName="space-y-4">
         {user.wallet ? (
           <div className="space-y-3">
@@ -78,10 +81,10 @@ export function Wallet() {
         {live ? (
           <>
             <p className="text-sm">
-              Your agent signs each payment with <b>its own Solana wallet</b>, on your machine. The key never reaches this server. Put USDC ({netName.toLowerCase()}) in that wallet, then connect with the local signer: the command is in <b>Agents</b>.
+              The easy way is <b>Pay from your wallet</b> above: your agents pay from the wallet you already use, within the limit you approved. Developers can instead keep a wallet key on their own machine with the local signer (the command is in <b>Agents</b>).
             </p>
             <p className="font-mono text-[11px] text-muted">
-              Each call is two transfers from that wallet: the seller&apos;s price to the seller, and Rialto&apos;s small fee to Rialto. The facilitator pays the network fees, so the wallet needs USDC and no SOL.
+              Either way, each call is two transfers from that wallet: the seller&apos;s price to the seller, and Rialto&apos;s small fee to Rialto. The facilitator pays the network fees, so the wallet needs USDC and no SOL.
               {testMoney ? " Free test USDC: faucet.circle.com (choose Solana Devnet)." : ""}
             </p>
           </>

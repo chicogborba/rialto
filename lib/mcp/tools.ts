@@ -14,6 +14,13 @@ import { noProviderMessage, resolveRoute, SIGNER_HELP, ToolError } from "./route
 import { PresetSchema, WeightsShape, type GoalArgs } from "./schemas";
 import { NoQualifiedProviderError, type Candidate, type CapabilityId, type ExecutionPlan, type ScoredCandidate } from "@/lib/types";
 import { currentMode, getRail } from "@/lib/x402";
+import { prisma } from "@/lib/db/client";
+import { AGENT_HEADER } from "@/lib/security/internal";
+import { payerForAgent } from "@/lib/wallet/allowance";
+import { DelegatePaymentRail } from "@/lib/x402/delegate";
+import { NETWORK } from "@/lib/x402/solana";
+import type { Executor, RunDeps } from "@/lib/agent/run";
+import type { WalletState } from "@/lib/types";
 
 /** Who is calling and where the platform lives. */
 export interface ToolCtx {
@@ -30,7 +37,7 @@ function summarizeScored(s: ScoredCandidate) {
     serviceId: s.candidate.service.id,
     capability: s.candidate.service.capability,
     priceUsd: usd(s.candidate.service.priceMicro),
-    paidWith: s.candidate.provider.settlement === "live" ? "your own Solana wallet, through the local signer" : "test credit (simulated)",
+    paidWith: s.candidate.provider.settlement === "live" ? "your owner's Solana wallet (linked in the dashboard) or the local signer" : "test credit (simulated)",
     quality: s.candidate.provider.qualityScore,
     latencyMs: s.candidate.provider.latencyMs,
     reputation: s.candidate.provider.reputationScore,
@@ -88,7 +95,7 @@ export async function discoverServices(args: { capability?: CapabilityId; maxPri
       status: c.provider.status,
       x402Enabled: c.provider.x402Enabled,
       network: c.provider.network,
-      paidWith: c.provider.settlement === "live" ? "your own Solana wallet, through the local signer (USDC straight to the seller)" : "test credit (simulated)",
+      paidWith: c.provider.settlement === "live" ? "your owner's Solana wallet, USDC straight to the seller (link it in the dashboard, or use the local signer)" : "test credit (simulated)",
       priceUsd: usd(c.service.priceMicro),
       priceMicro: c.service.priceMicro,
       quality: c.provider.qualityScore,
@@ -149,14 +156,70 @@ export async function planExecution(args: GoalArgs, ctx: ToolCtx) {
   }
 }
 
+/**
+ * Buys from sellers paid on-chain with the wallet the agent's owner linked in the dashboard: each
+ * payment is an x402 transfer from that wallet's USDC account, signed by Rialto's spender within the
+ * allowance the owner approved. The agent's limits (per call, per session) apply on top.
+ */
+async function executeFromAllowance(args: GoalArgs, ctx: ToolCtx, payer: NonNullable<Awaited<ReturnType<typeof payerForAgent>>>, candidates: Candidate[]) {
+  const route = resolveRoute(args, candidates);
+  const w = await getWallet(ctx.agentId);
+  const constraints = resolveConstraints({ goal: args.goal, policy: w.policy, budgetMicro: args.budgetUsd === undefined ? undefined : toMicro(args.budgetUsd), preset: args.preset });
+  let spendable = payer.spendableMicro;
+  let session = w.sessionSpendMicro;
+  const wallet = (): WalletState => ({ balanceMicro: spendable, sessionSpendMicro: session, policy: w.policy });
+  const http = createHttpExecutor(ctx.baseUrl);
+  const executor: Executor = { call: (service, body, headers) => http.call(service, body, { ...headers, [AGENT_HEADER]: ctx.agentId }) };
+  const clock = realClock(0);
+  const deps: RunDeps = {
+    planner: new DemoAgentPlanner(route),
+    rail: new DelegatePaymentRail(payer.spender, payer.wallet, payer.rpcUrl),
+    clock,
+    executor,
+    registry: { listCandidates: () => Promise.resolve(candidates), history: getHistory },
+    wallet: {
+      get: () => Promise.resolve(wallet()),
+      debit: async (amount) => {
+        spendable -= amount;
+        session += amount;
+        await prisma.agent.update({ where: { id: ctx.agentId }, data: { sessionSpendMicro: { increment: amount } } }).catch(() => undefined);
+        return wallet();
+      },
+    },
+  };
+  const names = new Map(candidates.map((c) => [c.provider.id, c.provider.name]));
+  const paid: { provider: string; amountUsd: number; txRef: string; explorerUrl: string | null }[] = [];
+  let last;
+  for await (const e of runAgent({ goal: args.goal, constraints, runId: clock.id("run") }, deps)) {
+    last = e;
+    if (e.type === "payment.settled") paid.push({ provider: names.get(e.providerId) ?? e.providerId, amountUsd: usd(e.amountMicro), txRef: e.txRef, explorerUrl: e.explorerUrl });
+  }
+  if (last?.type === "run.failed" && last.capability && last.rejected && last.stepId === null) {
+    throw new ToolError(spendable <= 0 ? `The wallet ${payer.wallet} has no allowance left for Rialto (or no USDC). Your owner can raise the limit in the dashboard: Wallet → Pay from your wallet.` : noProviderMessage(last.capability, last.rejected, w.policy.maxPerRequestMicro));
+  }
+  if (!last || last.type === "run.failed") {
+    const reason = last?.type === "run.failed" ? last.error : "Run produced no events";
+    throw new ToolError(/insufficient|payment_rejected|simulation/i.test(reason) ? `${reason}. The wallet ${payer.wallet} needs USDC on ${NETWORK.name} and enough allowance left for Rialto (dashboard → Wallet).` : reason);
+  }
+  if (last.type !== "run.completed") throw new ToolError("Run ended unexpectedly");
+  return { mode: "live" as const, network: NETWORK.name, testMoney: NETWORK.testMoney, paidFrom: payer.wallet, totalCostUsd: usd(last.totalCostMicro), allowanceLeftUsd: usd(Math.max(0, spendable)), transactions: paid, result: last.result };
+}
+
 export async function executeService(args: GoalArgs, ctx: ToolCtx) {
   const base = ctx.baseUrl;
   const wallet = await getWallet(ctx.agentId);
   const constraints = resolveConstraints({ goal: args.goal, policy: wallet.policy, budgetMicro: args.budgetUsd === undefined ? undefined : toMicro(args.budgetUsd), preset: args.preset });
-  // a seller paid on-chain is paid by the buyer's own wallet: this endpoint holds none
   const everything = await listCandidates();
   const route = resolveRoute(args, everything);
   const paidOnChain = (c: Candidate) => c.provider.settlement === "live";
+  // the owner linked a wallet with an allowance: buy for real, from it, whenever an on-chain seller fits
+  const payer = await payerForAgent(ctx.agentId);
+  if (payer) {
+    const onChain = everything.filter(paidOnChain);
+    const fits = route.providerId ? onChain.some((c) => c.provider.id === route.providerId) : route.capability ? onChain.some((c) => c.service.capability === route.capability) : onChain.length > 0;
+    if (fits) return executeFromAllowance(args, ctx, payer, onChain);
+  }
+  // otherwise a seller paid on-chain needs the owner's wallet, which this endpoint does not have
   if (route.providerId ? everything.some((c) => c.provider.id === route.providerId && paidOnChain(c)) : route.capability && everything.some((c) => c.service.capability === route.capability && paidOnChain(c)) && !everything.some((c) => c.service.capability === route.capability && !paidOnChain(c))) {
     throw new ToolError(SIGNER_HELP);
   }
@@ -180,13 +243,17 @@ export async function getTransactions(args: { limit?: number }, ctx: ToolCtx) {
 
 export async function getWalletStatus(ctx: ToolCtx) {
   const w = await getWallet(ctx.agentId);
+  const payer = await payerForAgent(ctx.agentId);
   return {
+    payingWallet: payer
+      ? { address: payer.wallet, network: NETWORK.name, testMoney: NETWORK.testMoney, allowanceLeftUsd: usd(payer.spendableMicro), note: "Sellers paid on-chain are paid from this wallet, within the limit your owner approved." }
+      : { address: null, note: "No wallet linked: sellers paid on-chain cannot be bought here until your owner connects one in the dashboard (Wallet → Pay from your wallet)." },
     balanceUsd: usd(w.balanceMicro),
     sessionSpendUsd: usd(w.sessionSpendMicro),
     withinPolicy: w.sessionSpendMicro <= w.policy.sessionBudgetMicro,
     // what this hosted wallet pays with: test credit, on the simulation
     mode: "simulated" as const,
-    realPayments: currentMode() === "live" ? "Sellers paid on-chain are paid by your own Solana wallet, through the local signer. This hosted wallet only holds test credit." : "off",
+    realPayments: currentMode() === "live" ? (payer ? "On: from the linked wallet above." : "Sellers paid on-chain are paid from your owner's wallet once linked in the dashboard, or through the local signer. This hosted balance only holds test credit.") : "off",
     policy: {
       maxPerRequestUsd: usd(w.policy.maxPerRequestMicro),
       sessionBudgetUsd: usd(w.policy.sessionBudgetMicro),

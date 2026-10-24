@@ -22,9 +22,10 @@ Where Rialto stands on 2026-10-24 and what is left before real people pay real m
 - [ ] Set the daily limit of integration sales (`/admin` → Prices and limits, today $5/day) to what we are willing to spend on fal per day.
 
 ### Buying must be easy
-- [ ] Today a buyer who pays on-chain runs the local signer (`npm run mcp`) with their own wallet key; the hosted MCP only buys simulated APIs. Pick one:
-  - [ ] a one-command package (`npx rialto-mcp`) that sets up the signer and a spending limit, or
-  - [ ] pay from a browser wallet (Phantom, Solflare) in the dashboard, still non-custodial.
+- [x] Pay from an existing wallet (Phantom, Solflare, Backpack…): Dashboard → Wallet → *Pay from your wallet*. The owner approves a spending limit once (SPL `ApproveChecked` to Rialto's spender, which pays the SOL fee); the hosted MCP then pays on-chain sellers from that wallet with x402, no pop-up per call. Code: `lib/x402/delegate.ts`, `lib/wallet/allowance.ts`, `components/account/PayWallet.tsx`.
+- [ ] Run `npm run delegate:check` on devnet (needs a little devnet SOL on the spender) and then on mainnet, and confirm PayAI's mainnet facilitator accepts delegate-signed transfers as the reference facilitator does.
+- [ ] In `/admin` → Keys & wallets: generate the spender key and send it ~0.01 SOL.
+- [ ] Try it with Phantom on desktop and on a phone (Phantom's in-app browser).
 
 ### Account security
 - [ ] Email verification on sign-up.

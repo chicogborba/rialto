@@ -27,7 +27,7 @@ const PROMPTS = [
 function InstallTabs({ apiKey }: { apiKey: string }) {
   const { account } = useAccount();
   const live = account?.mode === "live";
-  const [tab, setTab] = useState<Client>(live ? "signer" : "claude");
+  const [tab, setTab] = useState<Client>("claude");
   const [origin, setOrigin] = useState("");
   useEffect(() => {
     let alive = true;
@@ -49,8 +49,8 @@ function InstallTabs({ apiKey }: { apiKey: string }) {
       <SegTabs label="Tool" tabs={tabs} value={tab} onChange={setTab} />
       <CopyBlock value={value} display={mask(value)} />
       <p className="font-mono text-[11px] text-muted">
-        {tab === "signer" && "Real sellers are paid from your own wallet, in USDC, straight to them: the key stays on your machine and Rialto never holds your money. The wallet needs USDC and no SOL."}
-        {tab === "claude" && (live ? "The hosted endpoint buys only from simulated providers, with test credit. Use \"Pay from your wallet\" for real sellers." : "Run it once in your terminal. Then start claude and type /mcp to see rialto connected.")}
+        {tab === "signer" && "For developers who prefer to keep a wallet key on their own machine instead of approving a limit in Wallet. The wallet needs USDC and no SOL."}
+        {tab === "claude" && (live ? "Run it once in your terminal. Real sellers are paid from the wallet you connect in Wallet → Pay from your wallet (Phantom, Solflare…), within the limit you approve." : "Run it once in your terminal. Then start claude and type /mcp to see rialto connected.")}
         {tab === "codex" && "Codex reads the token from an environment variable, so the key never sits in the config file."}
         {tab === "json" && "Works with any MCP client that supports remote (streamable HTTP) servers. Claude Code reads this as .mcp.json in your project."}
       </p>

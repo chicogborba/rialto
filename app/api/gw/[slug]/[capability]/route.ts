@@ -10,7 +10,7 @@ import { callUpstream, isTripoTaskEndpoint, timeoutFor, UpstreamError } from "@/
 import { handleSimCall } from "@/lib/providers/sim-provider";
 import { outcomeOf, updateReputation } from "@/lib/reputation/update";
 import { allow } from "@/lib/security/rate-limit";
-import { isInternal } from "@/lib/security/internal";
+import { AGENT_HEADER, isInternal } from "@/lib/security/internal";
 import { getRail, liveGateway } from "@/lib/x402";
 import { RUN_ID_HEADER } from "@/lib/x402/sim-protocol";
 import { isSolanaAddress } from "@/lib/x402/solana";
@@ -71,8 +71,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
     const headers = Object.fromEntries(req.headers.entries());
     const provider = toProvider(row);
 
+    // Rialto's hosted endpoint buying for one of its agents (paying from that agent's owner's allowance)
+    const internalAgent = isInternal(req) ? req.headers.get(AGENT_HEADER)?.trim() || null : null;
+
     if (live) {
-      const caller = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+      const caller = internalAgent ? `agent:${internalAgent}` : (req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local");
       if (!allow(`gw:${caller}`, 60, 1)) throw new HttpError(429, "rate_limited", "Too many calls from this address. Slow down.");
       const out = await handleLiveCall({ gateway, provider, service, sellerMicro: svcRow.sellerPriceMicro, payTo: row.payTo, resourceUrl: new URL(new URL(req.url).pathname, process.env.NEXT_PUBLIC_APP_URL ?? req.url).toString(), headers, body, produce });
       if (out.outcome) {
@@ -81,8 +84,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
         const rep = updateReputation(provider, o.status === "settled" ? outcomeOf(true, o.latencyMs, provider.latencyMs) : 0);
         await applyReputation(provider.id, rep).catch(() => undefined);
         // whose activity this is: the agent whose key came with the call, else the paying wallet
-        const buyer = await buyerFromRequest(req).catch(() => null);
-        const agentId = buyer?.authed ? buyer.agentId : `wallet:${o.payer}`;
+        const buyer = internalAgent ? null : await buyerFromRequest(req).catch(() => null);
+        const agentId = internalAgent ?? (buyer?.authed ? buyer.agentId : `wallet:${o.payer}`);
         const runId = headers[RUN_ID_HEADER] ?? clock.id("run");
         await prisma.run.upsert({
           where: { id: runId },

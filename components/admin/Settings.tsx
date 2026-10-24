@@ -35,10 +35,10 @@ export function AdminSettings() {
 
   const changed = useMemo(() => Object.keys(draft).filter((k) => draft[k] !== undefined), [draft]);
 
-  const save = async (changes: Record<string, string>) => {
+  const save = async (changes: Record<string, string>, generate?: string) => {
     setBusy(true);
     setMessage(null);
-    const r = await api<{ saved: string[]; integrations: string[]; repriced: number; settings: SettingView[] }>("/api/admin/settings", { method: "PUT", json: { changes } });
+    const r = await api<{ saved: string[]; integrations: string[]; repriced: number; settings: SettingView[] }>("/api/admin/settings", { method: "PUT", json: { changes, ...(generate ? { generate } : {}) } });
     setBusy(false);
     if (!r.ok || !r.data) {
       setMessage({ tone: "error", text: r.error ?? "Could not save." });
@@ -111,6 +111,11 @@ export function AdminSettings() {
                           <button type="button" onClick={() => setDraft(({ [s.key]: _, ...rest }) => rest)} className="text-muted underline hover:text-paper">Cancel</button>
                         ) : (
                           <button type="button" onClick={() => setDraft((d) => ({ ...d, [s.key]: s.secret ? "" : s.value }))} className="text-signal underline">{s.value ? "Change" : "Set"}</button>
+                        )}
+                        {s.key === "RIALTO_SPENDER_KEY" && !editing && (
+                          <button type="button" disabled={busy} onClick={() => window.confirm(s.value ? "Make a new spender key? Every allowance buyers gave to the current one stops working until they approve again." : "Make a spender key on the server? Then send it a little SOL (0.01) for the approval fees.") && void save({}, "RIALTO_SPENDER_KEY")} className="text-signal underline">
+                            {s.value ? "Generate a new one" : "Generate"}
+                          </button>
                         )}
                         {s.source === "admin" && !editing && (
                           <button type="button" disabled={busy} onClick={() => window.confirm(`Clear ${s.label}? The server's environment value (if any) applies again.`) && void save({ [s.key]: "" })} className="text-muted underline hover:text-fail">
