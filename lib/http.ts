@@ -1,3 +1,5 @@
+import { RpcBusyError } from "@/lib/x402/rpc-busy";
+
 /** Small helpers so every API route answers errors the same way: { error: { code, message } }. */
 export class HttpError extends Error {
   constructor(
@@ -10,6 +12,8 @@ export class HttpError extends Error {
 }
 
 export function errorResponse(e: unknown): Response {
+  // the Solana RPC is rate limiting this server: say so, with a wait, instead of a bare 500
+  if (e instanceof RpcBusyError) return Response.json({ error: { code: "solana_busy", message: e.message } }, { status: 503, headers: { "retry-after": "10" } });
   if (e instanceof HttpError) return Response.json({ error: { code: e.code, message: e.message } }, { status: e.status });
   console.error("[api] unhandled", e);
   return Response.json({ error: { code: "internal", message: "Something went wrong" } }, { status: 500 });

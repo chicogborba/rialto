@@ -4,7 +4,6 @@ import {
   address,
   appendTransactionMessageInstructions,
   createNoopSigner,
-  createSolanaRpc,
   createTransactionMessage,
   getBase64EncodedWireTransaction,
   partiallySignTransactionMessageWithSigners,
@@ -19,6 +18,7 @@ import { encodePaymentSignatureHeader } from "@x402/core/http";
 import type { PaymentPayload, PaymentRequirements as X402Requirements } from "@x402/core/types";
 import type { WalletState } from "@/lib/types";
 import { X402_VERSION } from "./live-server";
+import { solanaRpc } from "./solana";
 import type { PaymentAuthorization, PaymentRail, PaymentRequirements, Settlement, VerifyResult, X402Leg } from "./rail";
 import { FEE_PAYMENT_HEADER } from "./sim-protocol";
 
@@ -56,7 +56,7 @@ export interface Allowance {
 
 export async function readAllowance(rpcUrl: string, owner: string, mint: string): Promise<Allowance> {
   const account = await usdcAccountOf(owner, mint);
-  const rpc = createSolanaRpc(rpcUrl);
+  const rpc = solanaRpc(rpcUrl);
   const res = await rpc.getAccountInfo(address(account), { encoding: "jsonParsed" }).send();
   const data = res.value?.data as { parsed?: { info?: { tokenAmount?: { amount: string }; delegate?: string; delegatedAmount?: { amount: string } } } } | undefined;
   const info = data?.parsed?.info;
@@ -76,7 +76,7 @@ export async function readAllowance(rpcUrl: string, owner: string, mint: string)
  * Returns the wire transaction, base64, still missing the owner's signature.
  */
 export async function buildApproveTransaction(opts: { rpcUrl: string; owner: string; mint: string; spender: KeyPairSigner; amountMicro: number }): Promise<string> {
-  const rpc = createSolanaRpc(opts.rpcUrl);
+  const rpc = solanaRpc(opts.rpcUrl);
   const owner = createNoopSigner(address(opts.owner));
   const source = address(await usdcAccountOf(opts.owner, opts.mint));
   const approve = getApproveCheckedInstruction({ source, mint: address(opts.mint), delegate: opts.spender.address, owner, amount: BigInt(opts.amountMicro), decimals: USDC_DECIMALS });
@@ -85,13 +85,13 @@ export async function buildApproveTransaction(opts: { rpcUrl: string; owner: str
 
 /** The transaction that takes the allowance back (`Revoke`), built the same way. */
 export async function buildRevokeTransaction(opts: { rpcUrl: string; owner: string; mint: string; spender: KeyPairSigner }): Promise<string> {
-  const rpc = createSolanaRpc(opts.rpcUrl);
+  const rpc = solanaRpc(opts.rpcUrl);
   const owner = createNoopSigner(address(opts.owner));
   const source = address(await usdcAccountOf(opts.owner, opts.mint));
   return feePaidBySpender(rpc, opts.spender, [getRevokeInstruction({ source, owner })]);
 }
 
-async function feePaidBySpender(rpc: ReturnType<typeof createSolanaRpc>, spender: KeyPairSigner, instructions: Parameters<typeof appendTransactionMessageInstructions>[0]): Promise<string> {
+async function feePaidBySpender(rpc: ReturnType<typeof solanaRpc>, spender: KeyPairSigner, instructions: Parameters<typeof appendTransactionMessageInstructions>[0]): Promise<string> {
   const { value: blockhash } = await rpc.getLatestBlockhash().send();
   const message = pipe(
     createTransactionMessage({ version: 0 }),
@@ -127,7 +127,7 @@ export class DelegatePaymentRail implements PaymentRail {
     const accepted = leg as X402Requirements;
     const feePayer = accepted.extra?.feePayer;
     if (typeof feePayer !== "string") throw new Error("the 402 named no fee payer");
-    const rpc = createSolanaRpc(this.rpcUrl);
+    const rpc = solanaRpc(this.rpcUrl);
     const source = address(await usdcAccountOf(this.owner, accepted.asset));
     const destination = address(await usdcAccountOf(accepted.payTo, accepted.asset));
     const transfer = getTransferCheckedInstruction({ source, mint: address(accepted.asset), destination, authority: this.spender, amount: BigInt(accepted.amount), decimals: USDC_DECIMALS });

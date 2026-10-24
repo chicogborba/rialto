@@ -1,4 +1,5 @@
-import { address, createSolanaRpc } from "@solana/kit";
+import { address, createDefaultRpcTransport, createSolanaRpcFromTransport, isSolanaError, SOLANA_ERROR__RPC__TRANSPORT_HTTP_ERROR, type RpcTransport } from "@solana/kit";
+import { RpcBusyError } from "./rpc-busy";
 import { SOLANA_DEVNET_CAIP2, SOLANA_MAINNET_CAIP2, USDC_DEVNET_ADDRESS, USDC_MAINNET_ADDRESS } from "@x402/svm";
 
 /**
@@ -92,9 +93,43 @@ export function liveConfig(env: Record<string, string | undefined> = process.env
   };
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/** The most one request waits for a busy RPC before giving up and telling the person to try again. */
+const MAX_WAIT_MS = 10_000;
+
+/**
+ * The public Solana RPC allows about 100 requests per 10 seconds per server and answers 429 beyond
+ * that. Instead of failing at once, a request waits (as long as the RPC asks, or 1 s, 2 s, 4 s) and
+ * tries again, for up to 10 seconds in all; then it fails with a message that says to wait.
+ */
+function patientTransport(url: string): RpcTransport {
+  const inner = createDefaultRpcTransport({ url }) as RpcTransport;
+  return (async (config: Parameters<RpcTransport>[0]) => {
+    let waited = 0;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await inner(config);
+      } catch (e) {
+        if (!isSolanaError(e, SOLANA_ERROR__RPC__TRANSPORT_HTTP_ERROR)) throw e;
+        const status = e.context.statusCode;
+        if (status === 403) throw new RpcBusyError(403);
+        if (status !== 429) throw e;
+        const asked = Number(e.context.headers.get("retry-after"));
+        const ms = Math.min(Number.isFinite(asked) && asked > 0 ? asked * 1000 : 1000 * 2 ** attempt, MAX_WAIT_MS - waited);
+        if (ms <= 0) throw new RpcBusyError(429);
+        waited += ms;
+        await sleep(ms);
+      }
+    }
+  }) as RpcTransport;
+}
+
+/** A Solana RPC client that waits out "too many requests" instead of failing. Use it for every call. */
+export const solanaRpc = (url: string) => createSolanaRpcFromTransport(patientTransport(url));
+
 /** USDC held by `owner`, in micro-USDC; null when it has no USDC account at all. */
 export async function usdcBalance(rpcUrl: string, owner: string, mint: string = LIVE_ASSET): Promise<number | null> {
-  const rpc = createSolanaRpc(rpcUrl);
+  const rpc = solanaRpc(rpcUrl);
   const res = await rpc.getTokenAccountsByOwner(address(owner), { mint: address(mint) }, { encoding: "jsonParsed" }).send();
   if (res.value.length === 0) return null;
   return res.value.reduce((sum, acc) => sum + Number(acc.account.data.parsed.info.tokenAmount.amount), 0);

@@ -6,9 +6,9 @@ import { OPERATOR_SELLER, operatorDailyCapMicro, operatorMarginPct } from "@/lib
 import { feeConfigFromEnv } from "@/lib/billing/fees";
 import type { Clock } from "@/lib/types";
 import { liveStatus, type LiveStatus } from "@/lib/x402/status";
-import { explorerAddress, isSolanaAddress, NETWORK, usdcBalance } from "@/lib/x402/solana";
+import { explorerAddress, isSolanaAddress, NETWORK, solanaRpc, usdcBalance } from "@/lib/x402/solana";
 import { superadminEmails } from "./auth";
-import { createSolanaRpc, address } from "@solana/kit";
+import { address } from "@solana/kit";
 import { spender } from "@/lib/wallet/allowance";
 
 export interface Check {
@@ -88,7 +88,7 @@ export async function operatorHealth(prisma: PrismaClient, clock: Clock): Promis
     facilitatorServesMainnet(onMainnet ? process.env.X402_FACILITATOR_URL?.trim() || NETWORK.defaultFacilitatorUrl : "https://facilitator.payai.network"),
   ]);
   const spenderSigner = await spender();
-  const spenderLamports = spenderSigner ? await createSolanaRpc(rpcUrl).getBalance(address(spenderSigner.address)).send().then((r) => Number(r.value), () => null) : null;
+  const spenderLamports = spenderSigner ? await solanaRpc(rpcUrl).getBalance(address(spenderSigner.address)).send().then((r) => Number(r.value), () => null) : null;
   const linkedWallets = await prisma.user.count({ where: { payWallet: { not: null } } });
   const online = providers.filter((p) => p.status !== "offline").length;
   const cap = operatorDailyCapMicro();

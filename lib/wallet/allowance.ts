@@ -1,5 +1,4 @@
 import {
-  createSolanaRpc,
   decompileTransactionMessage,
   getBase64Encoder,
   getBase64EncodedWireTransaction,
@@ -11,7 +10,7 @@ import {
 import { identifyTokenInstruction, TOKEN_PROGRAM_ADDRESS, TokenInstruction } from "@solana-program/token";
 import { prisma } from "@/lib/db/client";
 import { HttpError } from "@/lib/http";
-import { liveConfig, NETWORK, isSolanaAddress, type LiveConfig } from "@/lib/x402/solana";
+import { liveConfig, NETWORK, isSolanaAddress, solanaRpc, type LiveConfig } from "@/lib/x402/solana";
 import { buildApproveTransaction, buildRevokeTransaction, readAllowance, usdcAccountOf, type Allowance } from "@/lib/x402/delegate";
 import { signerFromSecret } from "@/lib/x402/live-client";
 
@@ -124,7 +123,7 @@ export async function submit(userId: string, wallet: string, signedBase64: strin
   } catch {
     throw new HttpError(400, "bad_transaction", "That is not the approval Rialto prepared. Start again.");
   }
-  const rpc = createSolanaRpc(cfg.rpcUrl);
+  const rpc = solanaRpc(cfg.rpcUrl);
   let sig: Signature;
   try {
     const tx = getTransactionDecoder().decode(getBase64Encoder().encode(signedBase64));
