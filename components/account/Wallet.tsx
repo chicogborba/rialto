@@ -49,10 +49,10 @@ export function Wallet() {
         <p className="mt-4 max-w-2xl text-lg font-medium">Rialto never holds your money. Agents pay from their own wallet, straight to the seller; sellers are paid straight into theirs.</p>
       </header>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+      <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${live ? "" : "sm:grid-cols-3"}`}>
         <Stat label="Payments" value={live ? netName : "Simulated"} hint={live ? (testMoney ? "Real transactions, test USDC" : "Real USDC, settled on-chain") : "Play money, no blockchain"} />
         <Stat label="Held by Rialto" value="$0.000" hint={live ? "Nothing: payments go wallet to wallet" : "Only play money on this server"} />
-        <Stat label="Test credit" value={formatUsd(user.balanceMicro)} hint="Play money for the simulated providers" />
+        {!live && <Stat label="Test credit" value={formatUsd(user.balanceMicro)} hint="Play money for the simulated providers" />}
       </div>
 
       <PayWallet />

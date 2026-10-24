@@ -7,6 +7,7 @@ import { defaultPolicy } from "@/lib/wallet/policy";
 import { PolicySchema, parsePolicy } from "@/lib/wallet/policy-schema";
 import { prisma } from "./client";
 import { listTransactionsForAgents } from "./repo";
+import { liveConfig } from "@/lib/x402/solana";
 
 /** Test money every new account starts with, so the first call works before any deposit. */
 export const WELCOME_CREDIT_MICRO = Number(process.env.WELCOME_CREDIT_MICRO ?? process.env.TEST_CREDIT_MICRO ?? 1_000_000);
@@ -25,8 +26,10 @@ export async function createUser(input: z.infer<typeof SignupSchema>): Promise<{
   const passwordHash = await hashPassword(input.password);
   try {
     return await prisma.$transaction(async (db) => {
-      const user = await db.user.create({ data: { email, name: input.name, passwordHash, balanceMicro: WELCOME_CREDIT_MICRO, welcomeCreditAt: new Date() }, select: { id: true, email: true, name: true } });
-      await db.ledgerEntry.create({ data: { kind: "welcome_credit", userId: user.id, amountMicro: WELCOME_CREDIT_MICRO, note: "welcome test credit" } });
+      // play money only exists on the simulated rail: with real payments on, agents pay from real wallets
+      const credit = liveConfig() ? 0 : WELCOME_CREDIT_MICRO;
+      const user = await db.user.create({ data: { email, name: input.name, passwordHash, balanceMicro: credit, welcomeCreditAt: credit ? new Date() : null }, select: { id: true, email: true, name: true } });
+      if (credit) await db.ledgerEntry.create({ data: { kind: "welcome_credit", userId: user.id, amountMicro: credit, note: "welcome test credit" } });
       return user;
     });
   } catch (e) {
@@ -178,7 +181,7 @@ export async function ensureSellerFor(userId: string): Promise<string> {
 // ---------- the dashboard's view of an account ----------
 
 export interface AccountView {
-  user: { id: string; email: string; name: string; createdAt: string; balanceMicro: number; wallet: { address: string } | null };
+  user: { id: string; email: string; name: string; createdAt: string; balanceMicro: number; wallet: { address: string } | null; payWallet: string | null };
   agents: { id: string; name: string; keyPrefix: string | null; balanceMicro: number; sessionSpendMicro: number; policy: ReturnType<typeof parsePolicy>; createdAt: string }[];
   seller: { apis: number; online: number; balanceMicro: number; paidOutMicro: number } | null;
   sessions: { id: string; createdAt: string; lastUsedAt: string; userAgent: string | null; current: boolean }[];
@@ -205,6 +208,7 @@ export async function accountView(userId: string, currentSessionId: string): Pro
       createdAt: user.createdAt.toISOString(),
       balanceMicro: user.balanceMicro,
       wallet: user.walletAddress ? { address: user.walletAddress } : null,
+      payWallet: user.payWallet,
     },
     agents: user.agents.map((a) => ({ id: a.id, name: a.name, keyPrefix: a.keyPrefix, balanceMicro: a.balanceMicro, sessionSpendMicro: a.sessionSpendMicro, policy: parsePolicy(a.policy), createdAt: a.createdAt.toISOString() })),
     seller: user.seller ? { apis: user.seller.providers.length, online: user.seller.providers.filter((p) => p.status === "online").length, balanceMicro: user.seller.balanceMicro, paidOutMicro: user.seller.paidOutMicro } : null,

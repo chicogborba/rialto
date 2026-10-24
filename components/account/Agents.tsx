@@ -101,7 +101,9 @@ function KeyCard({ shown, onDone }: { shown: Shown; onDone: () => void }) {
 type Agent = AccountData["agents"][number];
 
 function AgentCard({ agent, balanceMicro, onKey }: { agent: Agent; balanceMicro: number; onKey: (s: Shown) => void }) {
-  const { refresh } = useAccount();
+  const { account, refresh } = useAccount();
+  // play money moved between the account and its agents: only on the simulated rail
+  const credits = account?.mode !== "live";
   const [amount, setAmount] = useState("0.50");
   const [limits, setLimits] = useState(false);
   const [f, setF] = useState({ perCall: String(agent.policy.maxPerRequestMicro / 1e6), session: String(agent.policy.sessionBudgetMicro / 1e6), quality: String(agent.policy.minQuality) });
@@ -140,11 +142,13 @@ function AgentCard({ agent, balanceMicro, onKey }: { agent: Agent; balanceMicro:
 
   return (
     <Panel title={agent.name} status={<span className="font-mono text-[10px] text-muted">{agent.keyPrefix}…</span>} bodyClassName="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div>
-          <Label>Balance</Label>
-          <p className="tnum mt-1 font-mono text-2xl font-bold">{formatUsd(agent.balanceMicro)}</p>
-        </div>
+      <div className={`grid gap-4 ${credits ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+        {credits && (
+          <div>
+            <Label>Balance</Label>
+            <p className="tnum mt-1 font-mono text-2xl font-bold">{formatUsd(agent.balanceMicro)}</p>
+          </div>
+        )}
         <div>
           <Label>Spent this session</Label>
           <p className="tnum mt-1 font-mono text-2xl font-bold">{formatUsd(agent.sessionSpendMicro)}</p>
@@ -160,6 +164,7 @@ function AgentCard({ agent, balanceMicro, onKey }: { agent: Agent; balanceMicro:
         </div>
       </div>
 
+      {credits && (
       <div className="flex flex-wrap items-end gap-3">
         <label className="block">
           <Label>Amount (USD)</Label>
@@ -173,6 +178,7 @@ function AgentCard({ agent, balanceMicro, onKey }: { agent: Agent; balanceMicro:
         </HardButton>
         <span className="font-mono text-[11px] text-muted">Account has {formatUsd(balanceMicro)}</span>
       </div>
+      )}
 
       {limits && (
         <div className="grid gap-4 border border-line bg-ink p-4 sm:grid-cols-3">

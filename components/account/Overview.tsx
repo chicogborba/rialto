@@ -13,11 +13,15 @@ import { Stat } from "./ui";
 function Checklist() {
   const { account } = useAccount();
   if (!account) return null;
-  const funded = account.agents.some((a) => a.balanceMicro > 0);
-  const used = account.ledger.some((l) => l.kind === "purchase");
+  const live = account.mode === "live";
+  // on the live rail agents pay from the owner's wallet; on the simulation, from play money moved to them
+  const funded = live ? Boolean(account.user.payWallet) : account.agents.some((a) => a.balanceMicro > 0);
+  const used = account.ledger.some((l) => l.kind === "purchase") || account.agents.some((a) => a.sessionSpendMicro > 0);
   const steps = [
     { done: account.agents.length > 0, title: "Create an agent", text: "A key for Claude Code, Codex or any MCP client.", href: "/dashboard/agents" },
-    { done: funded, title: "Give it some money", text: "Move part of your balance to the agent. It cannot spend more than that.", href: "/dashboard/agents" },
+    live
+      ? { done: funded, title: "Let it pay from your wallet", text: "Approve a spending limit once, in Phantom or any Solana wallet. Your money stays in your wallet.", href: "/dashboard/wallet" }
+      : { done: funded, title: "Give it some money", text: "Move part of your balance to the agent. It cannot spend more than that.", href: "/dashboard/agents" },
     { done: used, title: "Ask for something", text: "Paste the connect command in your terminal, then ask: “Use rialto to look up the Pokémon pikachu.”", href: "/dashboard/agents" },
     { done: account.user.wallet !== null, title: "Add your wallet", text: "Where you get paid when other agents use your APIs.", href: "/dashboard/wallet" },
     { done: (account.seller?.apis ?? 0) > 0, title: "Publish an API (optional)", text: "Let other agents hire yours and pay per call.", href: "/dashboard/apis" },
@@ -56,6 +60,8 @@ export function Overview() {
   }, []);
   if (!account) return null;
   const inAgents = account.agents.reduce((s, a) => s + a.balanceMicro, 0);
+  const live = account.mode === "live";
+  const spent = account.agents.reduce((s, a) => s + a.sessionSpendMicro, 0);
   return (
     <div className="space-y-8">
       <header>
@@ -64,8 +70,17 @@ export function Overview() {
       </header>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <Stat label="On your account" value={formatUsd(account.user.balanceMicro)} hint="Not given to an agent yet" />
-        <Stat label="In your agents" value={formatUsd(inAgents)} hint={`${account.agents.length} agent${account.agents.length === 1 ? "" : "s"}`} />
+        {live ? (
+          <>
+            <Stat label="Your agents" value={account.agents.length} hint={account.user.payWallet ? "Paying from your wallet" : "No wallet linked yet"} />
+            <Stat label="Spent by agents" value={formatUsd(spent)} hint="This session, from your wallet" />
+          </>
+        ) : (
+          <>
+            <Stat label="On your account" value={formatUsd(account.user.balanceMicro)} hint="Not given to an agent yet" />
+            <Stat label="In your agents" value={formatUsd(inAgents)} hint={`${account.agents.length} agent${account.agents.length === 1 ? "" : "s"}`} />
+          </>
+        )}
         <Stat label="Your APIs" value={account.seller ? `${account.seller.online}/${account.seller.apis}` : "0"} hint="Online / published" />
         <Stat label="Earned & paid out" value={formatUsd(account.seller ? account.seller.paidOutMicro + account.seller.balanceMicro : 0)} hint={account.mode === "live" ? "Paid to your wallet on each call" : "Simulated"} />
       </div>
