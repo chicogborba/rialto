@@ -107,6 +107,18 @@ curl https://DOMAIN/api/x402       # {"mode":"live","network":…,"feeWallet":�
 
 `GET /api/x402` states the network, the facilitator and the fee wallet, and names what keeps it from working (no USDC account on the fee wallet, a facilitator that does not serve the network). Then, from any machine with a funded buyer wallet, `E2E_BASE=https://DOMAIN npm run e2e:live` runs the whole flow.
 
+### The operator's panel (/admin)
+
+Accounts listed in `SUPERADMIN_EMAILS` (or promoted with `npm run user:admin -- promote <email>`, or from the panel itself) get an **Admin** link in the dashboard. `/admin` shows:
+
+- **Overview**: profit (commission + margin − what the upstream APIs cost), what buyers paid, purchases and failures, active and new users, purchases per hour/day, peak hours and weekdays (in the viewer's time zone), top APIs and buyers, and two checklists: whether the money path works now, and what is left for Solana mainnet.
+- **Purchases**: every call with buyer, API, price, commission, upstream cost, profit and the explorer link.
+- **Users**: sign-up date, last seen, agents, purchases, spend; promote or demote admins.
+- **APIs & prices**: for each of Rialto's integrations the fal.ai cost, the seller price (cost + margin), what the buyer pays and what Rialto keeps; pause or resume any API.
+- **Keys & wallets**: the fal.ai / ElevenLabs / Tripo keys (stored encrypted with `SECRETS_KEY`, shown masked), the commission and integrations wallets, margin, commission, daily limit, RPC and facilitator. A value saved there overrides the environment variable of the same name and applies at once, without a restart; every API is re-priced. Clearing it brings the environment's value back.
+
+Every purchase records what the call cost upstream (`Transaction.costMicro`), so profit is computed from what really happened, not from today's prices.
+
 ### Going to mainnet
 
 Devnet and mainnet are the same code; one setting and a few facts about money change.

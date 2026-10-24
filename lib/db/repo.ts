@@ -217,7 +217,7 @@ export async function soldBySellerSinceMicro(sellerName: string, since: Date): P
 export async function recordTransaction(tx: TransactionRecord): Promise<void> {
   const [run, service, provider] = await Promise.all([
     prisma.run.findUnique({ where: { id: tx.runId }, select: { agentId: true } }),
-    prisma.service.findUnique({ where: { id: tx.serviceId }, select: { sellerPriceMicro: true } }),
+    prisma.service.findUnique({ where: { id: tx.serviceId }, select: { sellerPriceMicro: true, costMicro: true } }),
     prisma.provider.findUnique({ where: { id: tx.providerId }, select: { sellerId: true, payTo: true } }),
   ]);
   const agentId = run?.agentId ?? AGENT_ID;
@@ -242,6 +242,8 @@ export async function recordTransaction(tx: TransactionRecord): Promise<void> {
         sellerId,
         sellerMicro: split.sellerMicro,
         feeMicro: split.feeMicro,
+        // the upstream bill is paid whenever the API ran, which is what "settled" means here
+        costMicro: settled ? (service?.costMicro ?? 0) : 0,
         txRef: tx.txRef,
         explorerUrl: tx.explorerUrl,
         latencyMs: tx.latencyMs,

@@ -3,7 +3,8 @@ import { createHarness, collectRun } from "@/lib/agent/harness";
 import { feeConfigFromEnv, splitFromSellerPrice } from "@/lib/billing/fees";
 import { generateKey } from "@/lib/security/keys";
 import { encryptSecret } from "@/lib/security/secrets";
-import { isSolanaAddress } from "@/lib/x402/solana";
+import { isSolanaAddress, solanaNetwork } from "@/lib/x402/solana";
+import { operatorSellerPrice } from "@/lib/gateway/operator";
 import { GOAL_CHIPS } from "@/lib/agent/scenarios";
 import { PRESET_WEIGHTS } from "@/lib/routing/weights";
 import { defaultPolicy } from "@/lib/wallet/policy";
@@ -53,7 +54,7 @@ export async function ensurePokedex(prisma: PrismaClient): Promise<{ created: bo
   const payTo = isSolanaAddress(wanted) ? wanted : "TEST_SELLER_NO_WALLET";
   const existing = await prisma.provider.findUnique({ where: { slug: POKEDEX.slug }, select: { id: true, sellerId: true } });
   if (existing) {
-    await prisma.provider.update({ where: { id: existing.id }, data: { payTo } });
+    await prisma.provider.update({ where: { id: existing.id }, data: { payTo, network: solanaNetwork().name } });
     if (existing.sellerId) await prisma.seller.update({ where: { id: existing.sellerId }, data: { payoutAddress: payTo } });
     return { created: false, payTo };
   }
@@ -63,7 +64,7 @@ export async function ensurePokedex(prisma: PrismaClient): Promise<{ created: bo
   const seller = await prisma.seller.create({ data: { name: POKEDEX.seller, payoutAddress: payTo, keyHash: key.hash, keyPrefix: key.prefix } });
   await prisma.provider.create({
     data: {
-      slug: POKEDEX.slug, name: POKEDEX.name, description: POKEDEX.description, network: "solana-devnet",
+      slug: POKEDEX.slug, name: POKEDEX.name, description: POKEDEX.description, network: solanaNetwork().name,
       x402Enabled: true, status: "online", qualityScore: 95, reputationScore: 80, successRate: 100, latencyMs: 300,
       requestCount: 0, isDemo: false, payTo, sellerId: seller.id,
       services: {
@@ -79,17 +80,23 @@ export async function ensurePokedex(prisma: PrismaClient): Promise<{ created: bo
   return { created: true, payTo };
 }
 
-/** Add or refresh real integrations when their operator credentials are configured. */
+/**
+ * Add or refresh real integrations when their operator credentials are configured (in the
+ * environment or in /admin), at cost + margin; the ones whose key was removed go offline.
+ */
 export async function ensureBuiltInIntegrations(prisma: PrismaClient): Promise<string[]> {
   const wantedPayTo = process.env.SOLANA_PAY_TO?.trim() ?? "";
   const payTo = isSolanaAddress(wantedPayTo) ? wantedPayTo : "TEST_SELLER_NO_WALLET";
+  const network = solanaNetwork().name;
   const available = BUILT_IN_INTEGRATIONS.filter((integration) => Boolean(process.env[integration.envKey]?.trim()));
+  const missing = BUILT_IN_INTEGRATIONS.filter((integration) => !available.includes(integration)).map((integration) => integration.slug);
+  if (missing.length) await prisma.provider.updateMany({ where: { slug: { in: missing }, isDemo: false }, data: { status: "offline" } });
 
   for (const integration of available) {
     const apiKey = process.env[integration.envKey]?.trim();
     if (!apiKey) continue;
     const encryptedHeaders = encryptSecret(JSON.stringify({ [integration.headerName]: `${integration.authScheme}${apiKey}` }));
-    const split = splitFromSellerPrice(integration.sellerPriceMicro, feeConfigFromEnv());
+    const split = splitFromSellerPrice(operatorSellerPrice(integration.costMicro), feeConfigFromEnv());
     const existing = await prisma.provider.findUnique({ where: { slug: integration.slug }, select: { id: true, sellerId: true } });
 
     if (existing) {
@@ -101,6 +108,7 @@ export async function ensureBuiltInIntegrations(prisma: PrismaClient): Promise<s
           status: "online",
           qualityScore: integration.quality,
           latencyMs: integration.latencyMs,
+          network,
           payTo,
           seller: existing.sellerId ? { update: { payoutAddress: payTo } } : undefined,
           services: {
@@ -110,6 +118,7 @@ export async function ensureBuiltInIntegrations(prisma: PrismaClient): Promise<s
                 endpoint: `/api/gw/${integration.slug}/${integration.capability}`,
                 priceMicro: split.buyerMicro,
                 sellerPriceMicro: split.sellerMicro,
+                costMicro: integration.costMicro,
                 upstreamUrl: integration.upstreamUrl,
                 upstreamMethod: integration.upstreamMethod,
                 upstreamBody: integration.upstreamBody,
@@ -123,6 +132,7 @@ export async function ensureBuiltInIntegrations(prisma: PrismaClient): Promise<s
                 endpoint: `/api/gw/${integration.slug}/${integration.capability}`,
                 priceMicro: split.buyerMicro,
                 sellerPriceMicro: split.sellerMicro,
+                costMicro: integration.costMicro,
                 capabilityMatch: 1,
                 upstreamUrl: integration.upstreamUrl,
                 upstreamMethod: integration.upstreamMethod,
@@ -146,7 +156,7 @@ export async function ensureBuiltInIntegrations(prisma: PrismaClient): Promise<s
         slug: integration.slug,
         name: integration.name,
         description: integration.description,
-        network: "solana-devnet",
+        network,
         x402Enabled: true,
         status: "online",
         qualityScore: integration.quality,
@@ -163,6 +173,7 @@ export async function ensureBuiltInIntegrations(prisma: PrismaClient): Promise<s
             endpoint: `/api/gw/${integration.slug}/${integration.capability}`,
             priceMicro: split.buyerMicro,
             sellerPriceMicro: split.sellerMicro,
+            costMicro: integration.costMicro,
             capabilityMatch: 1,
             upstreamUrl: integration.upstreamUrl,
             upstreamMethod: integration.upstreamMethod,

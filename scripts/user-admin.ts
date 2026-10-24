@@ -42,6 +42,12 @@ async function main(): Promise<void> {
     const policy = { ...defaultPolicy(), maxPerRequestMicro: toMicro(Number(perCallUsd ?? 0.5)), sessionBudgetMicro: toMicro(Number(sessionUsd ?? 10)) };
     await updateAgent(user.id, agentId, { policy });
     console.log(`Agent "${name}" (${agentId}) for ${user.email}: up to $${Number(perCallUsd ?? 0.5)} per call, $${Number(sessionUsd ?? 10)} in total.\nKey, shown once: ${apiKey}`);
+  } else if ((command === "promote" || command === "demote") && arg) {
+    // promote: the account can open /admin (keys, wallets, prices, every user's activity)
+    const email = normalizeEmail(arg);
+    const user = await prisma.user.update({ where: { email }, data: { role: command === "promote" ? "admin" : "user" } }).catch(() => null);
+    if (!user) throw new Error(`No account with ${email}`);
+    console.log(`${email} is now ${user.role === "admin" ? "an admin: /admin is open to them" : "a regular user"}.`);
   } else if (command === "purge" && arg?.startsWith("@")) {
     const users = await prisma.user.findMany({ where: { email: { endsWith: arg.toLowerCase() } }, select: { id: true, seller: { select: { id: true } } } });
     const ids = users.map((u) => u.id);
@@ -61,7 +67,7 @@ async function main(): Promise<void> {
     ]);
     console.log(`Deleted ${ids.length} account(s) ending in ${arg}.`);
   } else {
-    console.log("Usage: user:admin list | reset-password <email> | create-agent <email> <name> [perCallUsd] [sessionUsd] | purge <@domain>");
+    console.log("Usage: user:admin list | reset-password <email> | promote <email> | demote <email> | create-agent <email> <name> [perCallUsd] [sessionUsd] | purge <@domain>");
     process.exitCode = 1;
   }
 }

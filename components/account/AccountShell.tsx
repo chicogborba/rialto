@@ -35,6 +35,11 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
             ) : (
               <span className="h-9 w-28 border border-line" aria-hidden />
             )}
+            {account?.isAdmin && (
+              <Link href="/admin" className="border border-signal px-3 py-2 font-bold uppercase tracking-wider text-signal hover:bg-signal hover:text-ink">
+                Admin
+              </Link>
+            )}
             <span className="hidden text-muted sm:inline">{account?.user.email}</span>
             <button type="button" onClick={() => signOut()} className="py-2 font-bold uppercase tracking-wider text-muted underline hover:text-signal">
               Sign out

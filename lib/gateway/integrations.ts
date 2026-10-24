@@ -21,7 +21,8 @@ export interface BuiltInIntegration {
   authScheme: string;
   /** the environment variable that holds the operator's key; the integration exists only when it is set */
   envKey: string;
-  sellerPriceMicro: number;
+  /** what one call of exactly this request costs Rialto upstream, in micro-USD */
+  costMicro: number;
   quality: number;
   latencyMs: number;
 }
@@ -31,12 +32,10 @@ export interface BuiltInIntegration {
  * an entry is the model's path, the body it takes and where its answer keeps the link.
  * `cost` is what fal charges for ONE call of exactly this request (its published unit price times what
  * the body asks for: megapixels, seconds, characters, a typical number of tokens), in dollars. The
- * seller price Rialto asks is that plus `MARGIN`, rounded up to a tenth of a cent, and the buyer pays
- * Rialto's commission on top. Prices checked against fal.ai on 2026-10-14; when fal changes a price,
- * change the number here and the next start updates the catalogue.
+ * seller price Rialto asks is that plus the operator's margin (`operatorSellerPrice`, set in /admin),
+ * and the buyer pays Rialto's commission on top. Prices checked against fal.ai on 2026-10-14; when fal
+ * changes a price, change the number here and the next start updates the catalogue.
  */
-const MARGIN = 1.15;
-const priceFor = (cost: number): number => Math.max(0.001, Math.ceil(cost * MARGIN * 1000) / 1000);
 function fal(
   slug: string, name: string, capability: CapabilityId, model: string, body: Record<string, unknown>, resultPick: string,
   cost: number, quality: number, latencyMs: number, description: string,
@@ -45,7 +44,7 @@ function fal(
     slug, name, seller: OPERATOR_SELLER, description, capability,
     upstreamUrl: `https://fal.run/${model}`, upstreamMethod: "POST", upstreamBody: JSON.stringify(body), resultPick,
     headerName: "Authorization", authScheme: "Key ", envKey: "FAL_KEY",
-    sellerPriceMicro: Math.round(priceFor(cost) * 1_000_000), quality, latencyMs,
+    costMicro: Math.round(cost * 1_000_000), quality, latencyMs,
   };
 }
 
@@ -191,8 +190,8 @@ export const BUILT_IN_INTEGRATIONS: BuiltInIntegration[] = [
     headerName: "xi-api-key",
     authScheme: "",
     envKey: "ELEVENLABS_API_KEY",
-    // ~200 characters at ElevenLabs' pay-as-you-go rate (about $0.22 per 1,000), plus the margin: an estimate, not a fal price
-    sellerPriceMicro: 58_000,
+    // ~200 characters at ElevenLabs' pay-as-you-go rate (about $0.22 per 1,000): an estimate, not a fal price
+    costMicro: 44_000,
     quality: 96,
     latencyMs: 1_200,
   },
@@ -210,7 +209,7 @@ export const BUILT_IN_INTEGRATIONS: BuiltInIntegration[] = [
     authScheme: "Bearer ",
     envKey: "TRIPO_API_KEY",
     // Tripo bills credits ($0.01 each); a textured text-to-3D model is about 30: an estimate, not a fal price
-    sellerPriceMicro: 350_000,
+    costMicro: 300_000,
     quality: 95,
     latencyMs: 45_000,
   },

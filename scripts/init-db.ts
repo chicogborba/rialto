@@ -3,12 +3,15 @@
 // Existing user-owned marketplace data is left untouched.
 import { existsSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
+import { applySettings } from "../lib/admin/settings";
 import { ensureBuiltInIntegrations, ensurePokedex, seedDatabase } from "../lib/db/seed";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
 const prisma = new PrismaClient();
 
 async function main(): Promise<void> {
+  // keys, wallets and prices saved in /admin win over the environment
+  await applySettings(prisma);
   if ((await prisma.provider.count()) === 0) {
     await seedDatabase(prisma);
     console.log("database was empty: seeded");

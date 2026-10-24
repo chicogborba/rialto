@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { isAdminUser } from "@/lib/admin/auth";
 import { requireUser } from "@/lib/auth/account";
+import { prisma } from "@/lib/db/client";
 import { accountView, renameUser, WELCOME_CREDIT_MICRO } from "@/lib/db/users";
 import { HttpError, handle, readJson } from "@/lib/http";
 import { currentMode } from "@/lib/x402";
@@ -12,8 +14,8 @@ export const runtime = "nodejs";
 export async function GET(req: Request): Promise<Response> {
   return handle(async () => {
     const { user, sessionId } = await requireUser(req);
-    const view = await accountView(user.id, sessionId);
-    return Response.json({ ...view, mode: currentMode(), network: NETWORK.name, testMoney: NETWORK.testMoney, welcomeCreditMicro: WELCOME_CREDIT_MICRO });
+    const [view, row] = await Promise.all([accountView(user.id, sessionId), prisma.user.findUnique({ where: { id: user.id }, select: { email: true, role: true } })]);
+    return Response.json({ ...view, isAdmin: row ? isAdminUser(row) : false, mode: currentMode(), network: NETWORK.name, testMoney: NETWORK.testMoney, welcomeCreditMicro: WELCOME_CREDIT_MICRO });
   });
 }
 

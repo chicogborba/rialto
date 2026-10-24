@@ -12,6 +12,8 @@ export type AccountData = AccountView & {
   /** true when the money on this network is test money */
   testMoney: boolean;
   welcomeCreditMicro: number;
+  /** an operator of Rialto: the dashboard links to /admin */
+  isAdmin?: boolean;
 };
 
 interface AccountContext {

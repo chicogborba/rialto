@@ -47,6 +47,8 @@ model Service {
   upstreamHeaders   String?
   /// "name,sprite=path.to.field" — what to return to the agent (empty = whole JSON, capped)
   resultPick        String?
+  /// what one call costs the seller upstream (Rialto's own integrations: the fal.ai price), micro-USD; 0 = unknown
+  costMicro         Int           @default(0)
   inputSchema       String
   outputSchema      String
   transactions      Transaction[]
@@ -70,6 +72,8 @@ model User {
   /// set when the user proved they hold this wallet by signing a message
   walletVerifiedAt DateTime?
   welcomeCreditAt  DateTime?
+  /// "user" or "admin"; admins see /admin (the operator's panel). Also granted by SUPERADMIN_EMAILS.
+  role             String    @default("user")
   createdAt        DateTime  @default(now())
   sessions         Session[]
   agents           Agent[]
@@ -222,6 +226,8 @@ model Transaction {
   sellerId     String?
   sellerMicro  Int      @default(0)
   feeMicro     Int      @default(0)
+  /// what the call cost upstream when the seller is Rialto itself (copied from Service.costMicro at the time)
+  costMicro    Int      @default(0)
   txRef        String?
   explorerUrl  String?
   latencyMs    Int?
@@ -231,4 +237,14 @@ model Transaction {
   createdAt    DateTime @default(now())
 
   @@index([createdAt])
+}
+
+/// Operator configuration edited in /admin: upstream API keys, payout addresses, prices. A row
+/// overrides the environment variable of the same name; secret values are AES-GCM encrypted.
+model Setting {
+  key       String   @id
+  value     String
+  secret    Boolean  @default(false)
+  updatedBy String?
+  updatedAt DateTime @updatedAt
 }
