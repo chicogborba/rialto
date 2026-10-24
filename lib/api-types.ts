@@ -15,7 +15,8 @@ export interface WalletResponse {
   agentName: string;
 }
 
-export type TxStatus = "settled" | "failed_not_charged" | "rejected_by_policy";
+/** unpaid_after_work: the API ran but the buyer's on-chain payment never landed (Rialto paid upstream for nothing) */
+export type TxStatus = "settled" | "failed_not_charged" | "rejected_by_policy" | "unpaid_after_work";
 
 export interface TransactionRow {
   id: string;

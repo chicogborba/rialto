@@ -202,10 +202,16 @@ export async function persistEvent(e: RunEvent): Promise<void> {
   }
 }
 
-/** What the sellers of this name sold since `since`, at seller price, in either payment mode. */
+/**
+ * What the sellers of this name sold since `since`, at seller price, in either payment mode, plus
+ * what their APIs cost upstream for work whose payment never landed (that is spent all the same).
+ */
 export async function soldBySellerSinceMicro(sellerName: string, since: Date): Promise<number> {
-  const sum = await prisma.transaction.aggregate({ where: { status: "settled", createdAt: { gte: since }, provider: { seller: { name: sellerName } } }, _sum: { sellerMicro: true } });
-  return sum._sum.sellerMicro ?? 0;
+  const [sold, lost] = await Promise.all([
+    prisma.transaction.aggregate({ where: { status: "settled", createdAt: { gte: since }, provider: { seller: { name: sellerName } } }, _sum: { sellerMicro: true } }),
+    prisma.transaction.aggregate({ where: { status: "unpaid_after_work", createdAt: { gte: since }, provider: { seller: { name: sellerName } } }, _sum: { costMicro: true } }),
+  ]);
+  return (sold._sum.sellerMicro ?? 0) + (lost._sum.costMicro ?? 0);
 }
 
 /**
@@ -243,7 +249,7 @@ export async function recordTransaction(tx: TransactionRecord): Promise<void> {
         sellerMicro: split.sellerMicro,
         feeMicro: split.feeMicro,
         // the upstream bill is paid whenever the API ran, which is what "settled" means here
-        costMicro: settled ? (service?.costMicro ?? 0) : 0,
+        costMicro: settled || tx.status === "unpaid_after_work" ? (service?.costMicro ?? 0) : 0,
         txRef: tx.txRef,
         explorerUrl: tx.explorerUrl,
         latencyMs: tx.latencyMs,

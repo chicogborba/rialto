@@ -11,6 +11,7 @@ import { TransactionDrawer } from "./TransactionDrawer";
 export function statusLabel(s: TransactionRow["status"]): { text: string; cls: string } {
   if (s === "settled") return { text: "SETTLED", cls: "text-signal" };
   if (s === "failed_not_charged") return { text: "FAILED · NOT CHARGED", cls: "text-fail" };
+  if (s === "unpaid_after_work") return { text: "UNPAID · NOT DELIVERED", cls: "text-fail" };
   return { text: "REJECTED BY POLICY", cls: "text-pay" };
 }
 

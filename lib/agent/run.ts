@@ -46,7 +46,7 @@ export interface TransactionRecord {
   capability: Service["capability"];
   amountMicro: MicroUsdc;
   network: Provider["network"];
-  status: "settled" | "failed_not_charged" | "rejected_by_policy";
+  status: "settled" | "failed_not_charged" | "rejected_by_policy" | "unpaid_after_work";
   mode: "simulated" | "live";
   txRef: string | null;
   explorerUrl: string | null;

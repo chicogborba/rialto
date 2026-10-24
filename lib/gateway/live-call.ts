@@ -23,7 +23,8 @@ export interface LiveCallArgs {
 }
 
 interface LiveOutcome {
-  status: "settled" | "failed_not_charged";
+  /** unpaid_after_work: the API ran (and was paid for upstream) but the buyer's payment did not land */
+  status: "settled" | "failed_not_charged" | "unpaid_after_work";
   payer: string;
   seller?: Settlement;
   fee?: Settlement | null;
@@ -58,6 +59,24 @@ declare global {
  */
 const held = (globalThis.__rialtoHeldResults ??= new Map<string, { result: unknown; at: number }>());
 const HOLD_MS = 10 * 60_000;
+
+/**
+ * Payers whose payment failed to land after the API had already run (and been paid for upstream).
+ * Twice in an hour and they are refused before any work is done: otherwise a wallet that empties
+ * itself between "verify" and "settle" gets Rialto to pay fal again and again for nothing.
+ */
+const STRIKE_MS = 60 * 60_000;
+const MAX_STRIKES = 2;
+declare global {
+  var __rialtoUnpaidStrikes: Map<string, number[]> | undefined;
+}
+const strikes = (globalThis.__rialtoUnpaidStrikes ??= new Map<string, number[]>());
+function strikesOf(payer: string, now = Date.now()): number[] {
+  const recent = (strikes.get(payer) ?? []).filter((at) => now - at < STRIKE_MS);
+  if (recent.length) strikes.set(payer, recent);
+  else strikes.delete(payer);
+  return recent;
+}
 const holdKey = (payer: string, a: LiveCallArgs): string => createHash("sha256").update([payer, a.service.id, a.headers[RUN_ID_HEADER] ?? "", JSON.stringify(a.body ?? null)].join("|")).digest("hex");
 
 /** True when this exact signed payment was already used a moment ago. */
@@ -115,10 +134,11 @@ export async function handleLiveCall(a: LiveCallArgs): Promise<LiveResponse> {
   if (fee && !fee.ok) return unpaid(`fee_${fee.reason}`);
   if (fee?.ok && fee.payer !== seller.payer) return unpaid("payments_from_different_wallets");
   const payer = seller.payer;
-
   const started = Date.now();
   const key = holdKey(payer, a);
   for (const [k, v] of held) if (started - v.at > HOLD_MS) held.delete(k);
+  // paying for work already done costs nothing upstream: only new work is refused to a repeat offender
+  if (!held.has(key) && strikesOf(payer).length >= MAX_STRIKES) return unpaid("too_many_unsettled_payments: this wallet left payments unsettled twice in the last hour; try again later");
   let result: unknown;
   try {
     const kept = held.get(key);
@@ -137,7 +157,10 @@ export async function handleLiveCall(a: LiveCallArgs): Promise<LiveResponse> {
     // the payment did not land (expired, underfunded, facilitator down): no result without it. The
     // work is done, though: keep it for the payment the buyer signs next.
     held.set(key, { result, at: Date.now() });
-    return unpaid(e instanceof Error ? `settlement_failed: ${e.message}`.slice(0, 160) : "settlement_failed");
+    strikes.set(payer, [...strikesOf(payer), Date.now()]);
+    const error = e instanceof Error ? `settlement_failed: ${e.message}`.slice(0, 160) : "settlement_failed";
+    // recorded, so the upstream cost counts against the operator's daily limit and shows in /admin
+    return { ...unpaid(error), outcome: { status: "unpaid_after_work", payer, error, latencyMs, requirements } };
   }
   // the seller is paid; a commission that does not land is Rialto's loss, never the buyer's problem
   const feeSettlement = legs.fee ? await a.gateway.settleLeg(feePay as string, legs.fee).catch((e: unknown) => {

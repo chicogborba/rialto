@@ -81,8 +81,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
       if (out.outcome) {
         const o = out.outcome;
         // judged only on what happened after a payment checked out: a refused payment is the buyer's problem
-        const rep = updateReputation(provider, o.status === "settled" ? outcomeOf(true, o.latencyMs, provider.latencyMs) : 0);
-        await applyReputation(provider.id, rep).catch(() => undefined);
+        // an unpaid call is the buyer's doing, not the seller's: it does not touch the seller's reputation
+        if (o.status !== "unpaid_after_work") {
+          const rep = updateReputation(provider, o.status === "settled" ? outcomeOf(true, o.latencyMs, provider.latencyMs) : 0);
+          await applyReputation(provider.id, rep).catch(() => undefined);
+        }
         // whose activity this is: the agent whose key came with the call, else the paying wallet
         const buyer = internalAgent ? null : await buyerFromRequest(req).catch(() => null);
         const agentId = internalAgent ?? (buyer?.authed ? buyer.agentId : `wallet:${o.payer}`);

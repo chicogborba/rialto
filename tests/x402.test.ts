@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { handleLiveCall, type LiveCallArgs } from "@/lib/gateway/live-call";
 import { handleSimCall } from "@/lib/providers/sim-provider";
 import { DemoPaymentRail } from "@/lib/x402/demo-rail";
@@ -150,6 +150,8 @@ const call = (gw: FakeGateway, headers: Record<string, string>, produce: LiveCal
 const pay = (payer = "BUYER") => ({ [X402_PAYMENT_HEADER]: `ok:${payer}:${++nonce}`, [FEE_PAYMENT_HEADER]: `ok:${payer}:fee${nonce}` });
 
 describe("a real seller's gateway call on the live rail", () => {
+  // the same fake wallet pays in every test: forget its unsettled payments between them
+  beforeEach(() => globalThis.__rialtoUnpaidStrikes?.clear());
   it("answers 402 with both payments: the seller's price to the seller, the commission to Rialto", async () => {
     const out = await call(new FakeGateway(), {});
     expect(out.status).toBe(402);
@@ -210,6 +212,19 @@ describe("a real seller's gateway call on the live rail", () => {
     expect(out.json).toMatchObject({ reason: "settlement_failed: blockhash_expired" });
     expect(JSON.stringify(out.json)).not.toContain("pikachu");
     expect(gw.settled).toEqual([]);
+  });
+  it("refuses new work to a wallet that left two payments unsettled within the hour", async () => {
+    const gw = new FakeGateway();
+    let calls = 0;
+    const work = () => ((calls += 1), Promise.resolve({ ok: true }));
+    gw.failSeller = true;
+    await call(gw, { ...pay(), "x-run-id": `run_${++nonce}` }, work);
+    await call(gw, { ...pay(), "x-run-id": `run_${++nonce}` }, work);
+    gw.failSeller = false;
+    const third = await call(gw, { ...pay(), "x-run-id": `run_${++nonce}` }, work);
+    expect(third.status).toBe(402);
+    expect(JSON.stringify(third.json)).toContain("too_many_unsettled_payments");
+    expect(calls).toBe(2);
   });
   it("keeps a finished result when the payment expired meanwhile, and hands it over for the next payment", async () => {
     const gw = new FakeGateway();
