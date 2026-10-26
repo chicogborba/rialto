@@ -4,6 +4,8 @@ import type { NextConfig } from "next";
 const isStatic = process.env.STATIC_EXPORT === "1";
 
 const nextConfig: NextConfig = {
+  // no "x-powered-by: Next.js" header: it only tells scanners what to try
+  poweredByHeader: false,
   // A stray package-lock.json may exist in a parent directory; pin the workspace root to this repo.
   turbopack: { root: import.meta.dirname },
   ...(isStatic
