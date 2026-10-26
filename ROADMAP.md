@@ -38,7 +38,7 @@ Where Rialto stands on 2026-10-24 and what is left before real people pay real m
 - [ ] Firewall on (`ufw`: only 22, 80, 443). Today it is off.
 - [ ] SSH: keys only, password login off. Today password login is on.
 - [ ] Off-server backups (Backblaze B2 or S3, encrypted). Today the nightly backup lives on the same disk as the database.
-- [ ] Automatic rollout from GitHub Actions: repository variables `VPS_HOST=169.58.108.100`, `VPS_USER=deploy` and secret `VPS_SSH_KEY`. Today a push only builds the image; rollout is by hand.
+- [ ] **owner** Automatic rollout from GitHub Actions: the workflow and the server are ready (backup, health check, automatic rollback). Add repository variables `VPS_HOST=169.58.108.100`, `VPS_USER=deploy` and the secret `VPS_SSH_KEY` (contents of `~/.ssh/rialto_deploy`).
 
 ### Legal
 - [ ] **owner** Terms of use and privacy policy on the site (none today); drafts can be written here, a lawyer should read them.

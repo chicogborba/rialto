@@ -84,7 +84,7 @@ jobs:
           fi
       - name: Copy the compose file
         run: scp -i ~/.ssh/id_deploy -P "$PORT" deploy/docker-compose.yml "$USER_NAME@$HOST:$DIR/docker-compose.yml"
-      - name: Pull the new image and restart
+      - name: Back up, switch to the new image, roll back if it is not healthy
         env:
           GHCR_USER: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -93,18 +93,47 @@ jobs:
             "DIR='$DIR' IMAGE='$IMAGE:$TAG' GHCR_USER='$GHCR_USER' GHCR_TOKEN='$GHCR_TOKEN' bash -s" <<'REMOTE'
           set -euo pipefail
           cd "$DIR"
-          # the job's token can pull the image for as long as this job runs
+          previous=$(grep '^IMAGE=' .env | cut -d= -f2- || true)
+          echo "now: ${previous:-none}  next: $IMAGE"
+          # a copy of the database before anything changes (kept with the nightly ones)
+          docker compose exec -T app npm run -s db:backup | tail -1 || echo "no running app to back up"
           echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin >/dev/null
-          export IMAGE
-          docker compose pull --quiet
-          docker compose up -d --remove-orphans
+          docker pull --quiet "$IMAGE" >/dev/null
           docker logout ghcr.io >/dev/null
-          # wait for the app to report healthy; show its log if it does not
-          for _ in $(seq 1 40); do
-            status=$(docker inspect -f '{{.State.Health.Status}}' "$(docker compose ps -q app)" 2>/dev/null || echo starting)
-            [ "$status" = healthy ] && { echo "app is healthy"; docker image prune -f >/dev/null; exit 0; }
-            sleep 3
-          done
+          set_image() {
+            if grep -q '^IMAGE=' .env; then sed -i "s|^IMAGE=.*|IMAGE=$1|" .env; else echo "IMAGE=$1" >> .env; fi
+            chmod 600 .env
+          }
+          healthy() {
+            for _ in $(seq 1 40); do
+              status=$(docker inspect -f '{{.State.Health.Status}}' "$(docker compose ps -q app)" 2>/dev/null || echo starting)
+              [ "$status" = healthy ] && return 0
+              sleep 3
+            done
+            return 1
+          }
+          # the image is recorded in .env, so a later `docker compose up` keeps running this version
+          set_image "$IMAGE"
+          docker compose up -d --remove-orphans
+          if healthy; then
+            echo "app is healthy on $IMAGE"
+            docker image prune -f >/dev/null
+            exit 0
+          fi
+          echo "the new version did not become healthy: its log, then back to $previous"
           docker compose logs --tail 80 app
+          if [ -n "$previous" ]; then
+            set_image "$previous"
+            docker compose up -d --remove-orphans
+            healthy && echo "rolled back to $previous" || echo "ROLLBACK DID NOT BECOME HEALTHY EITHER"
+          fi
           exit 1
           REMOTE
+      - name: Check the public site
+        run: |
+          for _ in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://galleriarialto.com/api/health || true)
+            [ "$code" = 200 ] && { echo "galleriarialto.com answers 200"; exit 0; }
+            sleep 3
+          done
+          echo "galleriarialto.com did not answer 200"; exit 1
