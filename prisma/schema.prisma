@@ -75,6 +75,9 @@ model User {
   /// the wallet this user's agents pay from, through the allowance it gave Rialto's spender (Phantom, Solflare…)
   payWallet        String?
   payWalletAt      DateTime?
+  /// which Terms of Service / Privacy Policy version the user accepted at sign-up, and when
+  termsVersion     String?
+  termsAcceptedAt  DateTime?
   /// "user" or "admin"; admins see /admin (the operator's panel). Also granted by SUPERADMIN_EMAILS.
   role             String    @default("user")
   createdAt        DateTime  @default(now())

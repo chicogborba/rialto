@@ -16,6 +16,11 @@ export function PageShell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
       <main className="mx-auto flex w-full max-w-6xl flex-1 items-start justify-center px-5 pb-16 pt-4 md:items-center md:px-8 md:pt-0">{children}</main>
+      <footer className="mx-auto flex w-full max-w-6xl flex-wrap gap-x-5 gap-y-1 px-5 pb-6 text-sm text-coal/55 md:px-8">
+        <Link href="/terms" className="hover:text-coal">Terms</Link>
+        <Link href="/privacy" className="hover:text-coal">Privacy</Link>
+        <a href="https://x.com/GalleriaRialto" target="_blank" rel="noreferrer" className="hover:text-coal">@GalleriaRialto</a>
+      </footer>
     </div>
   );
 }

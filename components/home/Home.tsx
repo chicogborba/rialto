@@ -194,8 +194,10 @@ export function Footer() {
         <p className="flex items-center gap-2">
           <Image src={asset("/brand/rialto-mark.svg")} alt="" width={100} height={100} unoptimized className="size-7" /> {FOOTER_NOTE}
         </p>
-        <div className="flex items-center gap-5 font-medium text-coal">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-medium text-coal">
           <a href={X_URL} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 hover:underline"><XMark className="size-4" /> @GalleriaRialto</a>
+          <Link href="/terms" className="hover:underline">Terms</Link>
+          <Link href="/privacy" className="hover:underline">Privacy</Link>
           <a href={REPO_URL} className="hover:underline">GitHub ↗</a>
         </div>
       </div>

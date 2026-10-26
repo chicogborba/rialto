@@ -56,6 +56,8 @@ export function AppFrame({ tabs, root, badge, right, children, wide = false }: {
           <span>Rialto · agents that hire</span>
           <span className="flex gap-4">
             <Link href="/catalog" className="hover:text-coal">Catalog</Link>
+            <Link href="/terms" className="hover:text-coal">Terms</Link>
+            <Link href="/privacy" className="hover:text-coal">Privacy</Link>
             <a href="https://x.com/GalleriaRialto" target="_blank" rel="noreferrer" className="hover:text-coal">@GalleriaRialto</a>
           </span>
         </div>

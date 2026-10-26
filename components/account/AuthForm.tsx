@@ -106,6 +106,14 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           {busy ? "One moment…" : signup ? "Create account →" : "Sign in →"}
         </button>
 
+        {signup && (
+          <p className="mt-3 text-center text-xs leading-relaxed text-coal/55">
+            By creating an account you agree to our{" "}
+            <Link href="/terms" target="_blank" className="font-bold text-coal underline decoration-coal/30 underline-offset-2 hover:decoration-coal">Terms of Service</Link> and{" "}
+            <Link href="/privacy" target="_blank" className="font-bold text-coal underline decoration-coal/30 underline-offset-2 hover:decoration-coal">Privacy Policy</Link>, and confirm you are 18 or older.
+          </p>
+        )}
+
         <p className="mt-5 text-center text-coal/70">
           {signup ? "Already have an account?" : "New here?"}{" "}
           <Link href={other} className="font-bold text-coal underline decoration-lime decoration-4 underline-offset-4 hover:decoration-coal">
