@@ -73,27 +73,6 @@ export function textTexture(text: string, fg: string, bg: string | null, width =
   return texture;
 }
 
-/** A chequered flag pattern, kept crisp. */
-export function checkerTexture(cols: number, rows: number): THREE.CanvasTexture {
-  const canvas = document.createElement("canvas");
-  canvas.width = cols;
-  canvas.height = rows;
-  const ctx = canvas.getContext("2d");
-  if (ctx) {
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        ctx.fillStyle = (x + y) % 2 ? "#fffdf7" : "#17120f";
-        ctx.fillRect(x, y, 1, 1);
-      }
-    }
-  }
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.magFilter = THREE.NearestFilter;
-  texture.minFilter = THREE.NearestFilter;
-  return texture;
-}
-
 /** A round patch of colour that fades out at the rim: ground with no edge to crop. */
 export function softDisc(radius: number, color: string, solid = 0.5): THREE.Mesh {
   const canvas = document.createElement("canvas");
@@ -191,75 +170,6 @@ export function buildCoin(): THREE.Mesh {
     new THREE.MeshBasicMaterial({ color: 0xffd23f }),
     new THREE.MeshBasicMaterial({ color: 0xffd23f }),
   ]);
-}
-
-const BODY = { w: 1.9, h: 1.25, d: 0.85 };
-const LEG = 0.46;
-
-/**
- * A small critter with the mascot's proportions and a simple walk cycle. `bands` are its colours
- * from top to bottom: one for a plain critter, three for the Solana stripes. The group's origin is
- * the body centre, so at scale 1 the feet are on GROUND.
- */
-export class MiniCritter {
-  readonly group = new THREE.Group();
-  private readonly body = new THREE.Group();
-  private readonly legs: THREE.Mesh[] = [];
-  private readonly parcels: THREE.Group[] = [];
-  private readonly legBase = -(BODY.h / 2 + LEG / 2) + 0.02;
-
-  constructor(bands: number[], parcels = 0) {
-    const bandHeight = BODY.h / bands.length;
-    bands.forEach((hex, i) => {
-      const band = shadedBox(BODY.w, bandHeight, BODY.d, hex);
-      band.position.y = BODY.h / 2 - bandHeight / 2 - i * bandHeight;
-      this.body.add(band);
-    });
-    const mid = bands[Math.floor(bands.length / 2)];
-    for (const side of [-1, 1]) {
-      const eye = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.4, 0.06), new THREE.MeshBasicMaterial({ color: INK }));
-      eye.position.set(side * 0.47, 0.13, BODY.d / 2 + 0.03);
-      const arm = shadedBox(0.3, 0.4, 0.5, mid);
-      arm.position.set(side * (BODY.w / 2 + 0.15), 0.02, -0.08);
-      this.body.add(eye, arm);
-    }
-    for (const z of [0.3, -0.3]) {
-      for (const x of [-0.72, -0.44, 0.44, 0.72]) {
-        const leg = shadedBox(0.17, LEG, 0.17, bands[bands.length - 1]);
-        leg.position.set(x, this.legBase, z);
-        this.legs.push(leg);
-        this.group.add(leg);
-      }
-    }
-    for (let k = 0; k < parcels; k++) {
-      const parcel = buildParcel();
-      parcel.position.y = BODY.h / 2 + 0.3 + k * 0.54;
-      parcel.rotation.y = k * 0.5;
-      parcel.visible = false;
-      this.parcels.push(parcel);
-      this.body.add(parcel);
-    }
-    this.group.add(this.body);
-  }
-
-  /** `walk` 0..1 is how hard it is walking, `hop` lifts it, `pace` speeds the cycle up for running. */
-  update(time: number, walk: number, hop = 0, pace = 1): void {
-    const cycle = time * 9 * pace;
-    this.body.position.y = Math.abs(Math.sin(cycle)) * 0.09 * walk + hop;
-    this.body.rotation.z = Math.sin(cycle) * 0.05 * walk;
-    this.body.rotation.x = 0.1 * walk;
-    this.legs.forEach((leg, i) => {
-      leg.position.y = this.legBase + Math.max(0, Math.sin(cycle * 2 + (i % 2) * Math.PI + (i > 3 ? 1.2 : 0))) * 0.17 * walk + hop * 0.92;
-    });
-  }
-
-  /** shows the first `count` parcels on its head; `pop` (0..1) scales the newest one in */
-  setParcels(count: number, pop = 1): void {
-    this.parcels.forEach((parcel, k) => {
-      parcel.visible = k < count;
-      parcel.scale.setScalar(k === count - 1 ? Math.max(0.0001, pop) : 1);
-    });
-  }
 }
 
 export function disposeScene(scene: THREE.Scene, renderer: THREE.WebGLRenderer): void {

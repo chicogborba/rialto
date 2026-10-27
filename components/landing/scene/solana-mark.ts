@@ -14,18 +14,3 @@ export const SOLANA_MARK = {
   /** bottom-left to top-right */
   gradient: ["#00ffa3", "#dc1fff"],
 } as const;
-
-/** The mark drawn on a canvas 2D context, fitted into a box whose left edge is `x`, vertically centred on `cy`. */
-export function drawSolanaMark(ctx: CanvasRenderingContext2D, x: number, cy: number, height: number): number {
-  const scale = height / SOLANA_MARK.height;
-  const gradient = ctx.createLinearGradient(x, cy + height / 2, x + SOLANA_MARK.width * scale, cy - height / 2);
-  gradient.addColorStop(0, SOLANA_MARK.gradient[0]);
-  gradient.addColorStop(1, SOLANA_MARK.gradient[1]);
-  ctx.save();
-  ctx.translate(x, cy - height / 2);
-  ctx.scale(scale, scale);
-  ctx.fillStyle = gradient;
-  for (const d of SOLANA_MARK.paths) ctx.fill(new Path2D(d));
-  ctx.restore();
-  return SOLANA_MARK.width * scale;
-}

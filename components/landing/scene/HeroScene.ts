@@ -131,7 +131,7 @@ export class HeroScene {
     const height = Math.max(1, h);
     this.camera.aspect = width / height;
     // what must stay in frame, in world units: his left arm to the stall's far edge
-    const left = -1.25;
+    const left = wide ? -1.25 : -1.6;
     const right = STALL.x + 1.1;
     const [from, to] = wide ? [0.6, 0.975] : [0.05, 0.97];
     // pull back until that span fits its share of the width

@@ -5,7 +5,7 @@ import { Mascot } from "./mascot";
  * The pitch as one scroll-driven scene, in the video's low-poly style. A pure function of scroll
  * progress `p` (0..1); time only adds idle motion. The beat boundaries match story-beats.ts.
  *
- *   0.00  SCRATCH   he stacks a tower by hand; it falls over
+ *   0.00  SCRATCH   he carves a statue by hand, mallet on stone; it comes out wonky and splits
  *   0.14  BLOCKED   three stalls appear and a gate slams on each: sign-up, card, key
  *   0.28  RIALTO    the gates fly off, the sign drops in, the whole market pops up
  *   0.42  FIND      he scans it; the ones that cannot do the job fade back
@@ -19,11 +19,22 @@ import { Mascot } from "./mascot";
 const GROUND = -1.085; // the mascot's feet
 const GREY = new THREE.Color(0xcfc6b4);
 const STALL_COLORS = [0x5ce1e6, 0xffd23f, 0x9945ff, 0x14f195, 0xff8fb3, 0xc6ff3d, 0x5ce1e6];
-const TOWER_COLORS = [0x5ce1e6, 0xffd23f, 0xff4d4d, 0xc6ff3d, 0x9945ff, 0xffffff];
 const GATES = ["SIGN UP", "CARD", "API KEY"];
 const WOOD = 0xb98a5a;
 const WOOD_DARK = 0x8d6540;
-const TOWER_X = 2.3;
+// the statue, as in the pitch video: a block of stone on a wooden stand
+const STATUE_X = 2.3;
+const STONE = 0xbcc0c8;
+const STONE_DARK = 0x7b808c;
+const STAND_TOP = GROUND + 0.2;
+const PLINTH_TOP = STAND_TOP + 0.32;
+const HEAD_Y = PLINTH_TOP + 0.3;
+/** where on the scroll each blow of the mallet lands */
+const STRIKES = [0.03, 0.045, 0.06, 0.075];
+const CARVED = 0.083;
+const BLOCK = { w: 1.15, h: 1.3, d: 0.95 };
+const STATUE_SCALE = 1.25;
+const CORE = { w: 0.8, h: 0.92, d: 0.62 };
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 const seg = (p: number, a: number, b: number) => clamp01((p - a) / (b - a));
@@ -106,7 +117,15 @@ export class MarketScene {
   private readonly camera = new THREE.PerspectiveCamera(32, 1, 0.1, 80);
   private readonly mascot = new Mascot();
   private readonly stalls: Stall[] = [];
-  private readonly tower: { mesh: THREE.Mesh; size: number; rest: number; land: number }[] = [];
+  private readonly statue = new THREE.Group();
+  private readonly block: THREE.Mesh;
+  private readonly plinth: THREE.Mesh;
+  private readonly halves: THREE.Group[] = [];
+  private readonly antenna = new THREE.Group();
+  private readonly crack: THREE.Mesh;
+  private readonly mallet = new THREE.Group();
+  private readonly chips: { mesh: THREE.Mesh; at: number; v: V3; size: number }[] = [];
+  private readonly mobile: boolean;
   private readonly sign = new THREE.Group();
   private readonly pulse: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
   private readonly ring: THREE.Mesh;
@@ -121,22 +140,65 @@ export class MarketScene {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, mobile ? 1.5 : 2));
     this.renderer.setClearColor(0x000000, 0);
     this.scene.add(this.mascot.group);
+    this.mobile = mobile;
 
-    // ---- the tower he builds by hand
-    let top = GROUND;
-    TOWER_COLORS.forEach((hex, i) => {
-      const size = 0.62 - i * 0.04;
-      const mesh = this.box(size, size * 0.9, size, hex).mesh;
-      this.tower.push({ mesh, size, rest: top + size * 0.45, land: 0.45 + i * 0.09 });
-      top += size * 0.9;
-      this.scene.add(mesh);
-    });
+    // ---- the statue he carves by hand: a stand, a block, and what comes out of it
+    const place = (mesh: THREE.Object3D, x: number, y: number, z: number, parent: THREE.Object3D = this.statue) => {
+      mesh.position.set(x, y, z);
+      parent.add(mesh);
+      return mesh;
+    };
+    place(this.box(1.5, 0.12, 1.2, WOOD_DARK).mesh, 0, GROUND + 0.06, 0);
+    place(this.box(1.3, 0.08, 1.0, WOOD).mesh, 0, GROUND + 0.16, 0);
+    this.block = place(this.box(1, 1, 1, STONE).mesh, 0, 0, 0) as THREE.Mesh;
+    this.plinth = place(this.box(0.62, 0.32, 0.55, STONE).mesh, 0, STAND_TOP + 0.16, 0) as THREE.Mesh;
+    // the head comes out lopsided and cross-eyed, in two halves that will part along a crack
+    for (const side of [-1, 1]) {
+      const half = new THREE.Group();
+      half.add(this.box(0.4, 0.6, CORE.d, STONE).mesh);
+      this.halves.push(place(half, side * 0.2, HEAD_Y, 0) as THREE.Group);
+    }
+    const face = (w: number, h: number, x: number, y: number, rot: number, half: THREE.Group) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.04), new THREE.MeshBasicMaterial({ color: STONE_DARK }));
+      m.position.set(x, y, CORE.d / 2 + 0.005);
+      m.rotation.z = rot;
+      half.add(m);
+    };
+    face(0.13, 0.25, 0, 0.05, 0, this.halves[0]);
+    face(0.13, 0.15, -0.04, -0.02, 0.3, this.halves[1]);
+    face(0.3, 0.05, -0.18, -0.19, -0.16, this.halves[1]);
+    place(this.box(0.07, 0.3, 0.07, STONE).mesh, 0, 0.15, 0, this.antenna);
+    const tip = new THREE.Mesh(new THREE.IcosahedronGeometry(0.1, 0), new THREE.MeshBasicMaterial({ color: 0xa9aeb9 }));
+    place(tip, 0, 0.36, 0, this.antenna);
+    this.antenna.rotation.z = -0.18;
+    place(this.antenna, -0.12, 0.3, 0, this.halves[1]);
+    this.crack = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.62, 0.04), new THREE.MeshBasicMaterial({ color: 0x3a3f48 }));
+    place(this.crack, 0, HEAD_Y, CORE.d / 2 + 0.01);
+    for (let i = 0; i < STRIKES.length * 5; i++) {
+      const size = 0.07 + rnd(i, 1) * 0.1;
+      const mesh = this.box(size, size * 0.8, size, i % 3 ? STONE : 0xa9aeb9).mesh;
+      const k = Math.floor(i / 5);
+      this.chips.push({ mesh, at: STRIKES[k], size, v: [-0.6 + rnd(i, 2) * 2.4, 1.6 + rnd(i, 3) * 2.6, (rnd(i, 4) - 0.3) * 2.4] });
+      this.statue.add(mesh);
+    }
+    this.statue.position.set(STATUE_X, 0, 0.2);
+    this.scene.add(this.statue);
+
+    // his mallet: the grip by his right hand, the head swinging down onto the block
+    const handle = this.box(0.62, 0.09, 0.09, WOOD_DARK).mesh;
+    handle.position.x = 0.28;
+    const malletHead = this.box(0.26, 0.4, 0.26, 0xe0b070).mesh;
+    malletHead.position.x = 0.62;
+    this.mallet.add(handle, malletHead);
+    this.mallet.position.set(1.05, GROUND + 1.05, 0.45);
+    this.scene.add(this.mallet);
 
     // ---- the market
     const count = mobile ? 5 : 7;
     const radius = mobile ? 4.1 : 5.6;
     const spread = ((mobile ? 52 : 62) * Math.PI) / 180;
-    const finalists = mobile ? [0, 2, 4] : [1, 3, 5];
+    // on a phone the winner is an inner stall, so it stays in the narrow frame
+    const finalists = mobile ? [0, 4, 3] : [1, 3, 5];
     for (let i = 0; i < count; i++) {
       const a = -spread + (2 * spread * i) / (count - 1);
       const stall = this.buildStall(STALL_COLORS[i % STALL_COLORS.length]);
@@ -266,8 +328,10 @@ export class MarketScene {
     const a = CAMERA[k];
     const b = CAMERA[k + 1];
     const t = smooth(seg(p, a.p, b.p));
-    this.camera.position.set(a.pos[0] + (b.pos[0] - a.pos[0]) * t, a.pos[1] + (b.pos[1] - a.pos[1]) * t, (a.pos[2] + (b.pos[2] - a.pos[2]) * t) * this.fit);
-    this.look.set(a.look[0] + (b.look[0] - a.look[0]) * t, a.look[1] + (b.look[1] - a.look[1]) * t, a.look[2] + (b.look[2] - a.look[2]) * t);
+    // on a phone the frame is narrow: swing less to the sides so nothing slides off its edges
+    const side = this.mobile ? 0.45 : 1;
+    this.camera.position.set((a.pos[0] + (b.pos[0] - a.pos[0]) * t) * side, a.pos[1] + (b.pos[1] - a.pos[1]) * t, (a.pos[2] + (b.pos[2] - a.pos[2]) * t) * this.fit);
+    this.look.set((a.look[0] + (b.look[0] - a.look[0]) * t) * (this.mobile && p < 0.14 ? 1 : side), a.look[1] + (b.look[1] - a.look[1]) * t, a.look[2] + (b.look[2] - a.look[2]) * t);
     this.camera.lookAt(this.look);
 
     // ---- the agent
@@ -284,25 +348,59 @@ export class MarketScene {
       party: seg(p, 0.92, 0.96),
     });
 
-    // ---- SCRATCH: the tower goes up cube by cube, then over
-    const fall = seg(p, 0.095, 0.135);
+    // ---- SCRATCH: blow by blow the block becomes a head, a lopsided one, then it splits
+    const blows = STRIKES.reduce((n, at) => n + backOut(seg(p, at, at + 0.006)), 0) / STRIKES.length;
+    const carved = p >= CARVED;
+    const split = smooth(seg(p, 0.095, 0.13));
     const cleared = seg(p, 0.145, 0.165);
-    const placedCount = this.tower.filter((_, i) => p > 0.012 + i * 0.013).length;
-    this.tower.forEach((c, i) => {
-      const placed = seg(p, 0.012 + i * 0.013, 0.026 + i * 0.013);
-      c.mesh.visible = placed > 0 && cleared < 1;
-      if (!c.mesh.visible) return;
-      const down = clamp01(fall / c.land);
-      const sway = fall > 0 ? 0 : sin(time * 3.2) * 0.012 * Math.pow(placedCount, 1.3) * (c.rest - GROUND);
-      const dir = rnd(i, 1) - 0.3;
-      c.mesh.position.set(
-        TOWER_X + (rnd(i, 2) - 0.5) * 0.1 + sway + dir * (1 + i * 0.45) * down,
-        c.rest + (1 - bounce(placed)) * 2.6 + (GROUND + c.size * 0.45 - c.rest) * down * down,
-        0.3 + (rnd(i, 3) - 0.4) * (0.8 + i * 0.3) * down,
-      );
-      c.mesh.rotation.set(down * (1.5 + rnd(i, 4) * 3), rnd(i, 5) * 0.5 + down * 2, down * (rnd(i, 6) - 0.5) * 4);
-      c.mesh.scale.setScalar(Math.max(0.0001, 1 - cleared));
+    this.statue.visible = cleared < 1;
+    // a bit bigger than life next to him; it grows and shrinks from the ground up
+    const size = Math.max(0.0001, STATUE_SCALE * (1 - cleared) * backOut(seg(p, 0, 0.012)));
+    this.statue.scale.setScalar(size);
+    this.statue.position.y = GROUND * (1 - size);
+    const bw = BLOCK.w + (CORE.w - BLOCK.w) * blows;
+    const bh = BLOCK.h + (CORE.h - BLOCK.h) * blows;
+    this.block.visible = !carved;
+    this.block.scale.set(bw, bh, BLOCK.d + (CORE.d - BLOCK.d) * blows);
+    this.block.position.y = STAND_TOP + bh / 2;
+    this.plinth.visible = carved;
+    const shiver = carved && split === 0 ? sin(time * 40) * 0.006 * seg(p, 0.088, 0.095) : 0;
+    this.halves.forEach((h, i) => {
+      const side = i === 0 ? -1 : 1;
+      h.visible = carved;
+      // each half falls outward off the plinth and lands on its side
+      h.position.set(side * (0.2 + 0.55 * split) + shiver, HEAD_Y - (HEAD_Y - (GROUND + 0.22)) * bounce(split), 0.05 * split);
+      h.rotation.set(0, side * 0.3 * split, -side * 1.35 * split);
     });
+    this.crack.visible = carved && p > 0.088 && split === 0;
+    this.crack.scale.y = seg(p, 0.088, 0.094);
+    // the antenna snaps off first
+    const snap = seg(p, 0.09, 0.105);
+    this.antenna.rotation.z = -0.18 - snap * 1.4;
+    this.antenna.position.set(-0.12 + snap * 0.25, 0.3 - snap * 0.25, 0);
+    this.chips.forEach((c, i) => {
+      const tt = (p - c.at) * 40;
+      c.mesh.visible = tt > 0;
+      if (tt <= 0) return;
+      const ox = -BLOCK.w / 2 + 0.1;
+      const oy = STAND_TOP + BLOCK.h * 0.75;
+      const floor = GROUND + c.size * 0.4;
+      const land = (c.v[1] + Math.sqrt(c.v[1] * c.v[1] + 19.6 * (oy - floor))) / 9.8;
+      const t2 = Math.min(tt, land);
+      c.mesh.position.set(ox + c.v[0] * t2, Math.max(floor, oy + c.v[1] * t2 - 4.9 * t2 * t2), 0.3 + c.v[2] * t2);
+      c.mesh.rotation.set(t2 * (4 + rnd(i, 5) * 6), rnd(i, 6) * 3, t2 * (rnd(i, 7) - 0.5) * 10);
+    });
+    // the mallet: wind up, come down on the block at each strike, rest between
+    let swing = 0.35;
+    for (const at of STRIKES) {
+      if (p > at - 0.011 && p <= at) swing = 0.35 + 0.95 * smooth(seg(p, at - 0.011, at - 0.004)) - 1.45 * seg(p, at - 0.004, at);
+      else if (p > at && p < at + 0.005) swing = -0.15 + 0.5 * seg(p, at, at + 0.005);
+    }
+    const dropped = seg(p, 0.1, 0.12);
+    this.mallet.visible = cleared < 1;
+    this.mallet.rotation.z = swing * (1 - dropped) - dropped * 1.3;
+    this.mallet.position.y = GROUND + 1.05 - dropped * 0.95;
+    this.mallet.scale.setScalar(Math.max(0.0001, 1.15 * (1 - cleared)));
 
     // ---- stalls: the three he wants first, the rest when Rialto arrives
     const lifted = seg(p, 0.285, 0.31);

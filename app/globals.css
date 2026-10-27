@@ -368,3 +368,8 @@
   .sy-card:hover, .sy-card:hover .sy-card-critter { transform: none; }
   .sy-confetti::before, .sy-confetti::after { display: none; }
 }
+
+/* the slow rails in the Solana race: a tiny shuffle on the start line, going nowhere */
+@keyframes sy-idle { 0%, 100% { transform: translate(0, -50%); } 50% { transform: translate(2px, -50%); } }
+.sy-idle { animation: sy-idle 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .sy-idle { animation: none; } }

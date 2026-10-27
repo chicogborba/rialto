@@ -56,6 +56,8 @@ export function HeroMarket({ className }: { className?: string }) {
       kick();
     };
     const move = (e: PointerEvent) => {
+      // only a real mouse steers the camera: on a phone, pointermove is the finger scrolling the page
+      if (e.pointerType !== "mouse") return;
       mouse.tx = (e.clientX / window.innerWidth) * 2 - 1;
       mouse.ty = (e.clientY / window.innerHeight) * 2 - 1;
     };
