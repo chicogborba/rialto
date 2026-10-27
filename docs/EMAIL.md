@@ -80,3 +80,18 @@ and a mocked Resend HTTP API. No real messages are sent by those tests.
 server, set `E2E_EMAIL` to an inbox you control that supports plus aliases; the
 account checks prompt for each real confirmation code. The same confirmation
 helper is used by `e2e:live`, which still performs real on-chain payments.
+
+## Live verification — 26 October 2026
+
+Production revision `826b1a1cc9e7b43a53278c2fdc6c57ac883f2630` was verified
+through an operator-controlled Gmail test account:
+
+- Confirmation and password-reset messages both arrived in the inbox.
+- The confirmation message passed SPF, DKIM, and DMARC checks.
+- Signup created no session until the email code was confirmed; login then worked.
+- Password recovery revoked both existing test sessions, rejected the old password,
+  and allowed login with the new password.
+- Reusing either code was refused. Test sessions were signed out afterwards.
+
+The [deployment run](https://github.com/chicogborba/rialto/actions/runs/40436597921)
+also checked the revision served by the public health endpoint.
