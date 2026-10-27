@@ -91,9 +91,9 @@ export async function buildRevokeTransaction(opts: { rpcUrl: string; owner: stri
   return feePaidBySpender(solanaRpc(opts.rpcUrl), opts.spender.address, [getRevokeInstruction({ source, owner })]);
 }
 
-/** Compute units the approval needs (it uses ~500) and the most account data it may load (the token program is ~134 KB). */
-export const APPROVAL_COMPUTE_UNITS = 10_000;
-export const APPROVAL_LOADED_BYTES = 512 * 1024;
+/** Leave room for wallet-added safety checks such as Phantom's Lighthouse program, as well as SPL Token. */
+export const APPROVAL_COMPUTE_UNITS = 20_000;
+export const APPROVAL_LOADED_BYTES = 1024 * 1024;
 
 async function feePaidBySpender(rpc: ReturnType<typeof solanaRpc>, spender: Address, instructions: Parameters<typeof appendTransactionMessageInstructions>[0]): Promise<string> {
   const { value: blockhash } = await rpc.getLatestBlockhash({ commitment: "confirmed" }).send();

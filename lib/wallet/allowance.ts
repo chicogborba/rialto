@@ -16,6 +16,7 @@ import { HttpError } from "@/lib/http";
 import { liveConfig, NETWORK, isSolanaAddress, solanaRpc, type LiveConfig } from "@/lib/x402/solana";
 import { buildApproveTransaction, buildRevokeTransaction, readAllowance, usdcAccountOf, type Allowance } from "@/lib/x402/delegate";
 import { signerFromSecret } from "@/lib/x402/live-client";
+import { RpcBusyError } from "@/lib/x402/rpc-busy";
 
 /**
  * "Pay from your wallet": a user lets their agents spend from the wallet they already have, through
@@ -119,15 +120,21 @@ export async function submit(userId: string, wallet: string, signedBase64: strin
   try {
     sig = await rpc.sendTransaction(getBase64EncodedWireTransaction(signed), { encoding: "base64", preflightCommitment: "confirmed" }).send();
   } catch (e) {
+    if (e instanceof RpcBusyError) throw e;
     throw new HttpError(400, "send_failed", explainSendFailure(e));
   }
+  let confirmed = false;
   for (let i = 0; i < 40; i++) {
     const { value } = await rpc.getSignatureStatuses([sig]).send();
     const st = value[0];
     if (st?.err) throw new HttpError(400, "failed", "The approval failed on-chain. Start again.");
-    if (st?.confirmationStatus === "confirmed" || st?.confirmationStatus === "finalized") break;
+    if (st?.confirmationStatus === "confirmed" || st?.confirmationStatus === "finalized") {
+      confirmed = true;
+      break;
+    }
     await new Promise((r) => setTimeout(r, 750));
   }
+  if (!confirmed) throw new HttpError(504, "confirmation_timeout", "Solana has not confirmed the approval yet. Wait a moment, then try again.");
   await prisma.user.update({ where: { id: userId }, data: kind === "approve" ? { payWallet: wallet, payWalletAt: new Date() } : { payWallet: null, payWalletAt: null } });
   return payWalletView(userId);
 }
@@ -178,9 +185,11 @@ export async function checkApproval(tx: Transaction, wallet: string, spenderAddr
 
 /** What the network's refusal means, in words a person can act on. */
 function explainSendFailure(e: unknown): string {
-  const text = `${e instanceof Error ? e.message : String(e)} ${JSON.stringify((e as { context?: unknown })?.context ?? {})} ${(e as { cause?: Error })?.cause?.message ?? ""}`;
+  const context = JSON.stringify((e as { context?: unknown })?.context ?? {}, (_key, value) => typeof value === "bigint" ? value.toString() : value);
+  const text = `${e instanceof Error ? e.message : String(e)} ${context} ${(e as { cause?: Error })?.cause?.message ?? ""}`;
   console.warn("[allowance] send failed:", text.slice(0, 600));
   if (/blockhash/i.test(text)) return "It took more than a minute in the wallet, so Solana let it expire. Click Approve again and confirm within a minute.";
+  if (/MaxLoadedAccountsDataSizeExceeded|ComputationalBudgetExceeded/i.test(text)) return "The wallet's safety checks exceeded the approval's transaction limits. Click Approve again to prepare a fresh transaction.";
   if (/insufficient|no record of a prior credit|debit/i.test(text)) return "Rialto's spender is out of SOL for the network fee. Tell the operator; nothing was charged.";
   if (/signature/i.test(text)) return "The wallet changed the transaction after signing. Try again, or with another wallet.";
   return "Solana refused the approval. Nothing was charged. Try again in a moment.";
