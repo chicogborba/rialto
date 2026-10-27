@@ -4,7 +4,7 @@
 //   npm run seed:pokedex
 import { existsSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
-import { ensurePokedex, POKEDEX } from "../lib/db/seed";
+import { ensurePokedex, POKEDEX } from "../../lib/db/seed";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
 const prisma = new PrismaClient();

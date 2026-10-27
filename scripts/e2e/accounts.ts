@@ -12,7 +12,7 @@ import { existsSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { generateKeyPairSigner } from "@solana/kit";
-import { checkEmailTestSetup, e2eEmail, readEmailCode } from "./e2e-email";
+import { checkEmailTestSetup, e2eEmail, readEmailCode } from "./inbox";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
 const base = (process.env.E2E_BASE ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/+$/, "");

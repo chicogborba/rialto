@@ -9,7 +9,7 @@ An **autonomous service procurement layer for AI agents**. Give it a goal and a 
 **Honesty first**
 
 - There are two kinds of provider. **Real sellers** are APIs somebody published through the gateway: the first-party integrations (fal.ai, ElevenLabs, Tripo, when the operator's keys are set), the PokéDex test seller, and whatever users publish. **Demo providers** are 25 fictional ones from the seed, labelled `DEMO PROVIDER`, there so the decision engine has a market to choose from.
-- With `PAYMENT_MODE=live`, real sellers are paid with a real x402 v2 exchange settled in USDC on Solana, **by the buyer's own wallet, directly**: Rialto's server holds no key and no funds. The network (devnet, test money, or mainnet) is `SOLANA_NETWORK`; the public demo runs on devnet.
+- With `PAYMENT_MODE=live`, real sellers are paid with a real x402 v2 exchange settled in USDC on Solana, **by the buyer's own wallet, directly**: Rialto's server holds no funds. A buyer either approves a spending limit for Rialto's spender once in their own wallet (an SPL allowance, used by the hosted MCP endpoint) or runs the local signer with their own key. The network (devnet, test money, or mainnet) is `SOLANA_NETWORK`; galleriarialto.com runs on mainnet.
 - Demo providers are always paid on the **simulation**: a real HTTP 402 exchange against local routes, with `X-Sim-*` headers (deliberately not the x402 header names), `sim_…` references and no explorer link. The UI shows `SIMULATED` on each of them. With `PAYMENT_MODE=simulated` (the default) everything runs this way.
 - We did not invent x402 and we are not the first x402 marketplace. x402 is the payment rail; Rialto is the decision layer on top.
 
@@ -142,14 +142,14 @@ Both servers register the same tools (`lib/mcp/register.ts`). Config for the std
 - **Demo page (`/demo`)** — two games Claude Code built from one request, served untouched from `public/demo/games/`, and the purchases the agent made for the second one (`lib/demo/game-demo.ts`), each linked to its devnet transaction.
 - **Seed data** lives only in `prisma/seed-data.ts` (25 demo providers). Seeding also generates 12 historical simulated runs over the previous 48 hours by running the real engine against a test clock. First-party integrations are declared in `lib/gateway/integrations.ts` and exist only when their key is configured.
 
-Layout: `app/` routes · `components/{home,landing,demo,catalog,account,agent,visualizations,marketplace,providers,transactions,reputation,settings,dashboard,shell,site,primitives,ui}` · `lib/{agent,routing,wallet,billing,x402,gateway,providers,reputation,auth,security,db,mcp,client,demo}` · `prisma/` · `mcp/` · `scripts/` · `tests/`.
+Layout: `app/` routes · `components/{home,landing,demo,catalog,account,admin,agents,agent,visualizations,marketplace,providers,transactions,reputation,settings,dashboard,shell,site,primitives,ui}` · `lib/{agent,routing,wallet,billing,x402,gateway,providers,reputation,admin,auth,security,email,db,mcp,client,demo}` · `prisma/` · `mcp/` · `scripts/` (start and backups at the top, then `e2e/`, `x402/`, `admin/`, `video/`) · `tests/`.
 
 Design tokens live in `app/globals.css`. Motion maps to run state; everything honours `prefers-reduced-motion`.
 
 ## Limitations
 
-- Real payments need the buyer's own wallet through the local signer; the hosted endpoint cannot make them. Demo providers are fictional and paid on the simulation; their reputation and quality figures are seed data.
-- The public demo runs on devnet. The mainnet path is the same code with `SOLANA_NETWORK=mainnet`, and has not been exercised with real funds by this project.
+- Real payments come from the buyer's own wallet: through the allowance they approved (hosted endpoint) or the local signer. Demo providers are fictional and paid on the simulation; their reputation and quality figures are seed data. Real providers' reputation moves with automatic outcomes and agents' 1–5 ratings (`rate_purchase`).
+- galleriarialto.com runs on mainnet since 2026-10-26; a local checkout defaults to devnet. Both are the same code.
 - The planner is rule-based. Goals outside its scenarios use a generic search → analysis plan with capped confidence, and the input for a seller's API is derived from the goal heuristically (`{goal}`, `{query}`, `{url}`, `{text}` in `lib/gateway/template.ts`). An LLM planner would build typed input from each service's schema.
 - Generic x402 clients that know only the standard header cannot buy: the commission needs the second payment, which only Rialto-aware clients (the signer, or anything that reads `accepts[0].x402`) make.
 - One instance: SQLite, an in-memory rate limiter and the internal gateway token assume it. Balances are Prisma `Int`, capping at about $2,147 per account.

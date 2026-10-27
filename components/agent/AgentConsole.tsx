@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAgentRun } from "@/hooks/useAgentRun";
+import { useAgentRun } from "@/lib/client/useAgentRun";
 import type { RunPhase } from "@/lib/agent/reducer";
 import { Panel, SegTabs } from "@/components/primitives";
 import { DashboardStrip } from "@/components/dashboard/DashboardStrip";

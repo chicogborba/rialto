@@ -7,12 +7,12 @@
 //   npm run delegate:check
 import { existsSync } from "node:fs";
 import { createSolanaRpc, getBase64Encoder, getTransactionDecoder, getBase64EncodedWireTransaction, partiallySignTransaction, type KeyPairSigner, type Signature } from "@solana/kit";
-import { realClock } from "../lib/agent/clock";
-import { liveGateway } from "../lib/x402";
-import { buildApproveTransaction, buildRevokeTransaction, DelegatePaymentRail, readAllowance } from "../lib/x402/delegate";
-import { secretBytes, signerFromSecret } from "../lib/x402/live-client";
-import type { PaymentRequirements } from "../lib/x402/rail";
-import { isSolanaAddress, liveConfig } from "../lib/x402/solana";
+import { realClock } from "../../lib/agent/clock";
+import { liveGateway } from "../../lib/x402";
+import { buildApproveTransaction, buildRevokeTransaction, DelegatePaymentRail, readAllowance } from "../../lib/x402/delegate";
+import { secretBytes, signerFromSecret } from "../../lib/x402/live-client";
+import type { PaymentRequirements } from "../../lib/x402/rail";
+import { isSolanaAddress, liveConfig } from "../../lib/x402/solana";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
 

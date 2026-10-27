@@ -10,11 +10,11 @@ import { existsSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { BuyerPaymentRail, signerFromSecret } from "../lib/x402/live-client";
-import type { PaymentRequirements } from "../lib/x402/rail";
-import { parsePaymentRequired } from "../lib/x402/sim-protocol";
-import { usdcBalance } from "../lib/x402/solana";
-import { checkEmailTestSetup, e2eEmail, readEmailCode } from "./e2e-email";
+import { BuyerPaymentRail, signerFromSecret } from "../../lib/x402/live-client";
+import type { PaymentRequirements } from "../../lib/x402/rail";
+import { parsePaymentRequired } from "../../lib/x402/sim-protocol";
+import { usdcBalance } from "../../lib/x402/solana";
+import { checkEmailTestSetup, e2eEmail, readEmailCode } from "./inbox";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
 const base = (process.env.E2E_BASE ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/+$/, "");

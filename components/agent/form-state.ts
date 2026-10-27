@@ -1,7 +1,7 @@
 import { GOAL_CHIPS } from "@/lib/agent/scenarios";
 import { toMicro } from "@/lib/money";
 import type { PriorityPreset, Weights } from "@/lib/types";
-import type { StartRunInput } from "@/hooks/useAgentRun";
+import type { StartRunInput } from "@/lib/client/useAgentRun";
 
 export type PresetChoice = PriorityPreset | "auto";
 

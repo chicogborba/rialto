@@ -11,10 +11,10 @@
 import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
-import { hashPassword, normalizeEmail } from "../lib/auth/password";
-import { createAgentFor, updateAgent } from "../lib/db/users";
-import { toMicro } from "../lib/money";
-import { defaultPolicy } from "../lib/wallet/policy";
+import { hashPassword, normalizeEmail } from "../../lib/auth/password";
+import { createAgentFor, updateAgent } from "../../lib/db/users";
+import { toMicro } from "../../lib/money";
+import { defaultPolicy } from "../../lib/wallet/policy";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
 const prisma = new PrismaClient();

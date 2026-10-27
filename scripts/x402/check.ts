@@ -6,11 +6,11 @@
 //   npm run x402:check            wallets, balances, facilitator
 //   npm run x402:check -- --pay   also pay once and print the explorer links
 import { existsSync } from "node:fs";
-import { realClock } from "../lib/agent/clock";
-import { liveGateway } from "../lib/x402";
-import { BuyerPaymentRail, signerFromSecret } from "../lib/x402/live-client";
-import type { PaymentRequirements } from "../lib/x402/rail";
-import { explorerAddress, isSolanaAddress, liveConfig, usdcBalance } from "../lib/x402/solana";
+import { realClock } from "../../lib/agent/clock";
+import { liveGateway } from "../../lib/x402";
+import { BuyerPaymentRail, signerFromSecret } from "../../lib/x402/live-client";
+import type { PaymentRequirements } from "../../lib/x402/rail";
+import { explorerAddress, isSolanaAddress, liveConfig, usdcBalance } from "../../lib/x402/solana";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
 const usd = (micro: number | null): string => (micro === null ? "no USDC account" : `${(micro / 1_000_000).toFixed(6)} USDC`);

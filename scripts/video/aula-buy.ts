@@ -1,15 +1,15 @@
 // Buys the assets of the "Sistema Nervoso" lesson video from Rialto, with the buyer's own wallet:
 // the narration, a 3D brain, stickers, a paper texture, music and a few sound effects.
 //
-//   npx tsx scripts/aula-buy.ts            (from the repo root, with RIALTO_KEY and SOLANA_WALLET_KEY in .env)
+//   npx tsx scripts/video/aula-buy.ts            (from the repo root, with RIALTO_KEY and SOLANA_WALLET_KEY in .env)
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { createBuyer, walletSecretFromEnv } from "../lib/client/buyer";
+import { createBuyer, walletSecretFromEnv } from "../../lib/client/buyer";
 
-const envFile = path.resolve(import.meta.dirname, "../.env");
+const envFile = path.resolve(import.meta.dirname, "../../.env");
 if (existsSync(envFile)) process.loadEnvFile(envFile);
-const out = path.resolve(import.meta.dirname, "../video/public/aula");
+const out = path.resolve(import.meta.dirname, "../../video/public/aula");
 mkdirSync(path.join(out, "stickers"), { recursive: true });
 mkdirSync(path.join(out, "sfx"), { recursive: true });
 
@@ -102,7 +102,7 @@ function assembleVoice(): void {
 async function main(): Promise<void> {
   const key = process.env.RIALTO_KEY?.trim();
   const secret = walletSecretFromEnv();
-  if (!key || !secret) throw new Error("RIALTO_KEY and SOLANA_WALLET_KEY are needed (../.env)");
+  if (!key || !secret) throw new Error("RIALTO_KEY and SOLANA_WALLET_KEY are needed (.env)");
   const buyer = await createBuyer({ baseUrl: process.env.RIALTO_URL ?? "https://galleriarialto.com", rialtoKey: key, walletSecret: secret, totalLimitUsd: Number(process.env.RIALTO_TOTAL_LIMIT_USD ?? 10) });
   const get = async (url: string, file: string) => {
     const res = await fetch(url, { signal: AbortSignal.timeout(120_000) });

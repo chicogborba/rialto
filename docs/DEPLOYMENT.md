@@ -97,7 +97,7 @@ All from `/opt/rialto` on the server.
 | Reset the demo data | `curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" https://DOMAIN/api/reset` |
 | Roll back | `IMAGE=ghcr.io/<owner>/rialto:sha-<older> docker compose up -d` |
 
-**Live payments** on the server. Rialto's server holds **no key and no funds** on this rail: buyers sign their own payments. All it needs is an address for its commission:
+**Live payments** on the server. Rialto's server holds **no funds** on this rail: every purchase moves USDC from the buyer's wallet. It needs an address for its commission and, for buyers who pay from their wallet, a spender key (below):
 
 ```bash
 # in /opt/rialto/.env
