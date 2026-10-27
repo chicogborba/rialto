@@ -21,6 +21,15 @@ export function signupAllowed(ip: string): boolean {
   return process.env.NODE_ENV === "production" ? allow(`signup:${ip}`, 5, 1 / 60) : allow(`signup:${ip}`, 200, 5);
 }
 
+/** Email sending and code guessing are throttled even during development. */
+export function emailRequestAllowed(ip: string, email: string): boolean {
+  return allow(`email-request-ip:${ip}`, 10, 1 / 60) && allow(`email-request:${email.trim().toLowerCase()}`, 3, 1 / 1200);
+}
+
+export function emailCodeAllowed(ip: string, email: string): boolean {
+  return allow(`email-code-ip:${ip}`, 30, 1 / 2) && allow(`email-code:${email.trim().toLowerCase()}`, 10, 1 / 6);
+}
+
 /**
  * Runs without a key use the shared demo agent (the public console). Throttled per address in
  * production so one visitor cannot burn through it: a burst of 12, then one run every 10 seconds.

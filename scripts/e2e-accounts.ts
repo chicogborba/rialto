@@ -12,10 +12,13 @@ import { existsSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { generateKeyPairSigner } from "@solana/kit";
+import { checkEmailTestSetup, e2eEmail, readEmailCode } from "./e2e-email";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
 const base = (process.env.E2E_BASE ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/+$/, "");
 const run = Date.now().toString(36);
+const aliceEmail = e2eEmail("alice", run);
+const bobEmail = e2eEmail("bob", run);
 let failed = 0;
 const check = (name: string, ok: boolean, detail = "") => {
   if (!ok) failed++;
@@ -44,20 +47,24 @@ interface CatalogResponse {
 }
 const PASSWORD = `correct horse ${run} battery`;
 async function main() {
+  checkEmailTestSetup(base);
   console.log(`E2E against ${base}\n`);
   const alice = new Browser(); // publishes an API
   const bob = new Browser(); // uses it
 
   // ---- accounts
-  const weak = await alice.call("/api/auth/signup", { json: { email: `alice-${run}@example.com`, password: "password123", name: "Alice" } });
+  const weak = await alice.call("/api/auth/signup", { json: { email: aliceEmail, password: "password123", name: "Alice" } });
   check("a weak password is refused", weak.status === 400 && weak.body?.error?.code === "weak_password", weak.body?.error?.message);
-  const signup = await alice.call("/api/auth/signup", { json: { email: `Alice-${run}@Example.com`, password: PASSWORD, name: "Alice Seller" } });
-  check("sign up creates the account and signs in", signup.status === 201 && signup.body?.user?.email === `alice-${run}@example.com`);
+  const pending = await alice.call("/api/auth/signup", { json: { email: aliceEmail.toUpperCase(), password: PASSWORD, name: "Alice Seller" } });
+  check("sign up requires email confirmation and creates no session", pending.status === 202 && !pending.setCookie);
+  if (pending.status !== 202) throw new Error(pending.body?.error?.message ?? "Could not request signup code.");
+  const signup = await alice.call("/api/auth/verify-email", { json: { email: aliceEmail, code: await readEmailCode(aliceEmail) } });
+  check("confirmation creates the account and signs in", signup.status === 201 && signup.body?.user?.email === aliceEmail.toLowerCase());
   check("the session cookie is HttpOnly and SameSite", /HttpOnly/i.test(signup.setCookie ?? "") && /SameSite=Lax/i.test(signup.setCookie ?? ""), signup.setCookie?.replace(/=[^;]+/, "=…") ?? "");
-  const dup = await new Browser().call("/api/auth/signup", { json: { email: `alice-${run}@example.com`, password: PASSWORD, name: "Again" } });
+  const dup = await new Browser().call("/api/auth/signup", { json: { email: aliceEmail, password: PASSWORD, name: "Again" } });
   check("the same email cannot sign up twice", dup.status === 409);
   check("signed-out visitors get 401 from the account", (await new Browser().call("/api/account")).status === 401);
-  const bad = await new Browser().call("/api/auth/login", { json: { email: `alice-${run}@example.com`, password: "wrong wrong wrong" } });
+  const bad = await new Browser().call("/api/auth/login", { json: { email: aliceEmail, password: "wrong wrong wrong" } });
   const unknown = await new Browser().call("/api/auth/login", { json: { email: `nobody-${run}@example.com`, password: "wrong wrong wrong" } });
   check("a wrong password and an unknown email look the same", bad.status === 401 && unknown.status === 401 && bad.body?.error?.message === unknown.body?.error?.message);
 
@@ -93,7 +100,9 @@ async function main() {
   check("demo providers are listed apart, never among the live ones", cat.demo.length > 0 && cat.demo.every((e) => e.demo && e.settlement === "simulated") && cat.live.every((e) => !e.demo));
 
   // ---- Bob: agent, money, limits, Claude
-  const bobUp = await bob.call("/api/auth/signup", { json: { email: `bob-${run}@example.com`, password: PASSWORD, name: "Bob Buyer" } });
+  const bobPending = await bob.call("/api/auth/signup", { json: { email: bobEmail, password: PASSWORD, name: "Bob Buyer" } });
+  if (bobPending.status !== 202) throw new Error(bobPending.body?.error?.message ?? "Could not request signup code.");
+  const bobUp = await bob.call("/api/auth/verify-email", { json: { email: bobEmail, code: await readEmailCode(bobEmail) } });
   check("Bob signs up", bobUp.status === 201);
   const agent = await bob.call("/api/account/agents", { json: { name: "Bob's Claude Code" } });
   const key = String(agent.body?.apiKey);
@@ -161,13 +170,13 @@ async function main() {
 
   // ---- password and sessions
   const second = new Browser();
-  await second.call("/api/auth/login", { json: { email: `alice-${run}@example.com`, password: PASSWORD } });
+  await second.call("/api/auth/login", { json: { email: aliceEmail, password: PASSWORD } });
   check("Alice signs in from a second device", (await second.call("/api/account")).status === 200 && (await alice.call("/api/account")).body?.sessions?.length === 2);
   const wrongNow = await alice.call("/api/auth/password", { json: { current: "not my password", next: `${PASSWORD} new` } });
   check("changing the password needs the current one", wrongNow.status === 400 && wrongNow.body?.error?.code === "wrong_password");
   const changed = await alice.call("/api/auth/password", { json: { current: PASSWORD, next: `${PASSWORD} new` } });
   check("a password change signs out the other devices", changed.status === 200 && (await second.call("/api/account")).status === 401 && (await alice.call("/api/account")).status === 200);
-  check("the old password no longer works, the new one does", (await new Browser().call("/api/auth/login", { json: { email: `alice-${run}@example.com`, password: PASSWORD } })).status === 401 && (await new Browser().call("/api/auth/login", { json: { email: `alice-${run}@example.com`, password: `${PASSWORD} new` } })).status === 200);
+  check("the old password no longer works, the new one does", (await new Browser().call("/api/auth/login", { json: { email: aliceEmail, password: PASSWORD } })).status === 401 && (await new Browser().call("/api/auth/login", { json: { email: aliceEmail, password: `${PASSWORD} new` } })).status === 200);
   await alice.call("/api/auth/logout", { json: {} });
   check("signing out ends the session", (await alice.call("/api/account")).status === 401);
   const anon = await fetch(`${base}/api/agents`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "anon" }) });

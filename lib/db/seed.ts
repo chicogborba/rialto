@@ -204,6 +204,7 @@ export async function seedDatabase(prisma: PrismaClient, now: Date = new Date())
   await prisma.agent.deleteMany();
   await prisma.deposit.deleteMany();
   await prisma.session.deleteMany();
+  await prisma.emailChallenge.deleteMany();
   await prisma.user.deleteMany();
 
   for (const p of SEED_PROVIDERS) {

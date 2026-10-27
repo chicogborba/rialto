@@ -53,3 +53,6 @@ out/
 
 # database backups made by npm run db:backup
 prisma/backups/
+
+# Local email previews contain confirmation/reset codes.
+.local/

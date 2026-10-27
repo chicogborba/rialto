@@ -25,6 +25,8 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [code, setCode] = useState("");
 
   // someone who is already signed in has nothing to do here
   useEffect(() => {
@@ -39,12 +41,26 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const r = await api(signup ? "/api/auth/signup" : "/api/auth/login", { json: signup ? { email, password, name: name.trim() || email.split("@")[0] } : { email, password } });
+    const r = await api(verifying ? "/api/auth/verify-email" : signup ? "/api/auth/signup" : "/api/auth/login", { json: verifying ? { email, code } : signup ? { email, password, name: name.trim() || email.split("@")[0] } : { email, password } });
     if (!r.ok) {
       setBusy(false);
       return setError(r.error);
     }
+    if (signup && !verifying) {
+      setVerifying(true);
+      setBusy(false);
+      return;
+    }
     router.replace(next);
+  };
+
+  const resend = async () => {
+    setBusy(true);
+    setError(null);
+    const r = await api("/api/auth/signup", { json: { email, password, name: name.trim() || email.split("@")[0] } });
+    if (!r.ok) setError(r.error);
+    else setCode("");
+    setBusy(false);
   };
 
   const other = `${signup ? "/login" : "/signup"}${params.get("next") ? `?next=${encodeURIComponent(next)}` : ""}`;
@@ -66,10 +82,18 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       </div>
 
       <form onSubmit={submit} className="w-full border-2 border-coal bg-[#fffdf7] p-6 shadow-[8px_8px_0_var(--color-coal)] md:p-8">
-        <h2 className="text-3xl font-bold tracking-[-0.04em] md:text-[2rem]">{signup ? "Create your account" : "Sign in"}</h2>
-        <p className="mt-1.5 text-coal/60">{signup ? "Free. Takes 20 seconds." : "Good to see you again."}</p>
+        <h2 className="text-3xl font-bold tracking-[-0.04em] md:text-[2rem]">{verifying ? "Check your email" : signup ? "Create your account" : "Sign in"}</h2>
+        <p className="mt-1.5 break-words text-coal/60">{verifying ? `We sent a six-digit code to ${email}.` : signup ? "Free. Confirm your email to get started." : "Good to see you again."}</p>
 
-        <div className="mt-6 space-y-4">
+        {verifying ? (
+          <div className="mt-6">
+            <label className="block">
+              <span className="text-sm font-bold">Confirmation code</span>
+              <input className={cn(input, "text-center font-mono text-2xl tracking-[0.35em]")} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} autoFocus placeholder="000000" required />
+            </label>
+            <p className="mt-3 text-sm text-coal/60">The code expires in 10 minutes. Check your spam folder too.</p>
+          </div>
+        ) : <div className="mt-6 space-y-4">
           <label className="block">
             <span className="text-sm font-bold">Email</span>
             <input className={input} type="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete={signup ? "email" : "username"} autoFocus placeholder="you@example.com" required />
@@ -94,7 +118,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               </button>
             </span>
           </label>
-        </div>
+        </div>}
 
         {error && (
           <p role="alert" className="mt-4 border-2 border-fail bg-fail/5 px-3 py-2 text-sm font-medium text-fail">
@@ -102,9 +126,15 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           </p>
         )}
 
-        <button type="submit" disabled={busy || !email || !password || tooShort} className="home-btn home-btn-ink mt-6 w-full justify-center text-[17px] disabled:pointer-events-none disabled:opacity-40">
-          {busy ? "One moment…" : signup ? "Create account →" : "Sign in →"}
+        <button type="submit" disabled={busy || (verifying ? code.length !== 6 : !email || !password || tooShort)} className="home-btn home-btn-ink mt-6 w-full justify-center text-[17px] disabled:pointer-events-none disabled:opacity-40">
+          {busy ? "One moment…" : verifying ? "Confirm email →" : signup ? "Send confirmation code →" : "Sign in →"}
         </button>
+
+        {verifying && <div className="mt-4 flex flex-wrap justify-between gap-3 text-sm font-bold">
+          <button type="button" disabled={busy} onClick={() => void resend()} className="underline underline-offset-4 disabled:opacity-40">Resend code</button>
+          <button type="button" disabled={busy} onClick={() => { setVerifying(false); setCode(""); setError(null); }} className="underline underline-offset-4 disabled:opacity-40">Change email</button>
+          <p className="w-full text-center text-xs font-normal text-coal/50">Wait a minute before requesting another code.</p>
+        </div>}
 
         {signup && (
           <p className="mt-3 text-center text-xs leading-relaxed text-coal/55">
@@ -120,7 +150,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             {signup ? "Sign in" : "Create an account"}
           </Link>
         </p>
-        {!signup && <p className="mt-3 text-center text-xs text-coal/45">Forgot your password? Write to us on X, @GalleriaRialto, and we will reset it.</p>}
+        {!signup && <p className="mt-4 text-center text-sm"><Link href="/forgot-password" className="font-bold text-coal/70 underline underline-offset-4 hover:text-coal">Forgot your password?</Link></p>}
       </form>
     </div>
   );

@@ -220,4 +220,10 @@ People sign up with an email and a password (`/signup`) and then work in the das
 | Sellers | An account becomes a seller the first time it publishes, paid at the payout address it registered. The same `/api/sellers/me/*` routes serve a seller key (scripts) and a signed-in account (dashboard). A seller on the live rail is paid per call, on-chain; nothing accrues. |
 | Wallet | A payout address is only an address: Rialto pays *into* it and never asks for a signature from it. It must hold a USDC account, which exists once it has received USDC. |
 
-Not built: email verification, password recovery, 2FA, a hosted wallet that pays for you (that would be custody).
+Signup requires a six-digit email code before an account or session is created.
+Password recovery uses a separate code and revokes all sessions on success.
+`EmailChallenge` stores HMAC code hashes, expiry and failed-attempt counts; codes
+expire after 10 minutes and lock after five guesses. Resend handles sending only.
+Existing accounts retain access. Configuration and local previews: [EMAIL.md](EMAIL.md).
+
+Not built: 2FA, a hosted wallet that holds buyers' private keys.

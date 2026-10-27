@@ -84,6 +84,44 @@ jobs:
           fi
       - name: Copy the compose file
         run: scp -i ~/.ssh/id_deploy -P "$PORT" deploy/docker-compose.yml "$USER_NAME@$HOST:$DIR/docker-compose.yml"
+      - name: Configure account email when a sending key is supplied
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ vars.EMAIL_FROM || 'Rialto <no-reply@galleriarialto.com>' }}
+        run: |
+          set -euo pipefail
+          if [ -z "$RESEND_API_KEY" ]; then
+            echo "No email secret supplied; keeping the server's existing email settings."
+            exit 0
+          fi
+          config=$(mktemp)
+          trap 'rm -f "$config"' EXIT
+          chmod 600 "$config"
+          python3 - "$config" <<'PY'
+          import json, os, sys
+          with open(sys.argv[1], "w") as f:
+              json.dump({"RESEND_API_KEY": os.environ["RESEND_API_KEY"], "EMAIL_FROM": os.environ["EMAIL_FROM"], "EMAIL_TRANSPORT": "resend"}, f)
+          PY
+          scp -p -i ~/.ssh/id_deploy -P "$PORT" "$config" "$USER_NAME@$HOST:$DIR/.email-runtime.json"
+          ssh -i ~/.ssh/id_deploy -p "$PORT" "$USER_NAME@$HOST" "DIR='$DIR' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd "$DIR"
+          trap 'rm -f .email-runtime.json' EXIT
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          updates = json.loads(Path(".email-runtime.json").read_text())
+          env = Path(".env")
+          lines = env.read_text().splitlines()
+          kept = [line for line in lines if line.split("=", 1)[0].strip() not in updates]
+          staged = Path(".env.email-next")
+          fd = os.open(staged, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+          with os.fdopen(fd, "w") as f:
+              f.write("\n".join(kept + [key + "=" + json.dumps(value) for key, value in updates.items()]) + "\n")
+          os.chmod(staged, 0o600)
+          os.replace(staged, env)
+          PY
+          REMOTE
       - name: Back up, switch to the new image, roll back if it is not healthy
         env:
           GHCR_USER: ${{ github.actor }}

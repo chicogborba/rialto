@@ -14,6 +14,7 @@ import { BuyerPaymentRail, signerFromSecret } from "../lib/x402/live-client";
 import type { PaymentRequirements } from "../lib/x402/rail";
 import { parsePaymentRequired } from "../lib/x402/sim-protocol";
 import { usdcBalance } from "../lib/x402/solana";
+import { checkEmailTestSetup, e2eEmail, readEmailCode } from "./e2e-email";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
 const base = (process.env.E2E_BASE ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/+$/, "");
@@ -36,6 +37,7 @@ class Browser {
 }
 
 async function main(): Promise<void> {
+  checkEmailTestSetup(base);
   const secret = process.env.SOLANA_WALLET_KEY?.trim();
   const sellerAddress = process.env.SOLANA_PAY_TO?.trim();
   if (!secret || !sellerAddress) throw new Error("SOLANA_WALLET_KEY and SOLANA_PAY_TO are needed (npm run x402:keys).");
@@ -58,7 +60,11 @@ async function main(): Promise<void> {
   // ---- a seller publishes, paid at SOLANA_PAY_TO
   const alice = new Browser();
   const bob = new Browser();
-  await alice.call("/api/auth/signup", { email: `alice-${run}@example.com`, password: PASSWORD, name: "Alice Seller" });
+  const aliceEmail = e2eEmail("alice", run);
+  const aliceSignup = await alice.call("/api/auth/signup", { email: aliceEmail, password: PASSWORD, name: "Alice Seller" });
+  if (aliceSignup.status !== 202) throw new Error(aliceSignup.body?.error?.message ?? "Could not request signup code.");
+  const aliceVerified = await alice.call("/api/auth/verify-email", { email: aliceEmail, code: await readEmailCode(aliceEmail) });
+  if (aliceVerified.status !== 201) throw new Error("Seller email confirmation failed.");
   const reg = await alice.call("/api/account/wallet", { address: sellerAddress }, "PUT");
   check("the seller registers the wallet she is paid at", reg.status === 200, reg.body?.error?.message ?? "");
   const pub = await alice.call("/api/sellers/me/apis", { name: `PokeAPI ${run}`, description: "Pokémon data from the public PokéAPI.", capability: "data.lookup", upstreamUrl: "https://pokeapi.co/api/v2/pokemon/{query}", resultPick: "name,id,sprite=sprites.front_default", priceUsd: 0.002, upstreamMethod: "GET" });
@@ -67,7 +73,11 @@ async function main(): Promise<void> {
   const url = `${base}/api/gw/${slug}/data.lookup`;
 
   // ---- a buyer, with a key only so the call shows up in their activity
-  await bob.call("/api/auth/signup", { email: `bob-${run}@example.com`, password: PASSWORD, name: "Bob Buyer" });
+  const bobEmail = e2eEmail("bob", run);
+  const bobSignup = await bob.call("/api/auth/signup", { email: bobEmail, password: PASSWORD, name: "Bob Buyer" });
+  if (bobSignup.status !== 202) throw new Error(bobSignup.body?.error?.message ?? "Could not request signup code.");
+  const bobVerified = await bob.call("/api/auth/verify-email", { email: bobEmail, code: await readEmailCode(bobEmail) });
+  if (bobVerified.status !== 201) throw new Error("Buyer email confirmation failed.");
   const agent = await bob.call("/api/account/agents", { name: "Bob's signer" });
   const key = String(agent.body?.apiKey);
   const post = (headers: Record<string, string>, goal: string) => fetch(url, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${key}`, ...headers }, body: JSON.stringify({ goal, stepId: "s1", inputs: {} }) });

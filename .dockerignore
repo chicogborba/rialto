@@ -11,6 +11,7 @@ deploy
 .claude
 .agents
 .pages-stash
+.local
 .env
 .env.*
 !.env.example

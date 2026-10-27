@@ -50,6 +50,7 @@ export default function PrivacyPage() {
           <li><strong>The API you buy from.</strong> Your agent&apos;s request goes to the seller of that API, or, for Rialto&apos;s own integrations, to the AI provider that runs the model (for example fal.ai, ElevenLabs or Tripo). They process it under their own privacy policies. Do not send personal data you do not want them to receive.</li>
           <li><strong>Payment infrastructure.</strong> Payment transactions and wallet addresses go to the x402 facilitator that settles them (PayAI), to our Solana RPC provider (Helius), and to the public Solana blockchain.</li>
           <li><strong>Hosting.</strong> Our servers and backups run on a rented cloud server (Contabo). Code is hosted on GitHub; it contains no user data.</li>
+          <li><strong>Account email.</strong> Resend receives your email address and the message content to deliver confirmation and password-reset codes. We do not use these messages for marketing.</li>
           <li><strong>Authorities,</strong> when the law requires it.</li>
         </ul>
         <p>Some of these providers are outside your country. We choose providers that protect data adequately and only share what each one needs.</p>
@@ -65,6 +66,7 @@ export default function PrivacyPage() {
         <ul>
           <li>Account, agents and purchase records: while your account exists, and afterwards only as long as the law requires us to keep transaction records.</li>
           <li>Sessions: until they expire (about 30 days without use) or you sign out.</li>
+          <li>Email confirmation and reset codes: valid for 10 minutes; pending records older than one day are removed when another code is issued. Used codes are removed immediately.</li>
           <li>Backups: the database is backed up daily and the last 14 copies are kept, so deleted data disappears from backups within about two weeks.</li>
           <li>On-chain payments: permanent on the Solana blockchain. Nobody, including us, can delete them.</li>
         </ul>

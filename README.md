@@ -222,6 +222,11 @@ npm run setup               # creates the SQLite database and seeds the demo mar
 npm run dev                 # http://localhost:3000
 ```
 
+For local signup and password recovery without sending mail, use
+`EMAIL_TRANSPORT=preview npm run dev`; confirmation codes are saved in private
+JSON files under `.local/emails/`. Real delivery uses Resend:
+[sending-only email setup](docs/EMAIL.md).
+
 | URL | What |
 |---|---|
 | `/` | Landing page: the 3D story, the pitch video, the Solana race |
@@ -268,11 +273,11 @@ The simulated providers use play money: a test credit on the account, debited an
 |---|---|
 | Non-custodial x402 v2 payments in USDC on Solana: the buyer's wallet signs the seller's price and the fee, a facilitator verifies and settles them after the call | Payments to the 25 fictional demo providers (`sim_…` references, never an explorer link) |
 | Devnet and mainnet from one setting, with the right chain, mint, explorer and facilitator for each | Mainnet has not been run with real funds by this project: the code path is the same, the demo is on devnet |
-| A signer that runs on the buyer's machine and keeps their key there | Email verification, password recovery, 2FA |
+| A signer that runs on the buyer's machine and keeps their key there | 2FA |
 | Seller gateway that calls the seller's real HTTPS API, SSRF-guarded, secrets encrypted at rest; each signed payment is single-use | The planner is rule-based: it reads the goal with keyword scenarios, not an LLM |
 | 50+ first-party integrations (fal.ai, ElevenLabs, Tripo) and a public test seller (PokéAPI) | Reputation and quality are self-reported and start at 50 |
 | Decision engine: qualify → score → plan → explain, multi-step plans, fallback, budget | A hosted wallet that pays on-chain for you (that would need custody; the signer is the answer) |
-| Accounts, hashed API keys, spending policy, ledger, hosted MCP endpoint, dashboard, visual console, 3D landing page | Rate limiting is in memory (one instance) |
+| Accounts, email-code signup and password recovery (Resend configuration required), hashed API keys, spending policy, ledger, hosted MCP endpoint, dashboard, visual console, 3D landing page | Request rate limiting is in memory (one instance); code attempts persist in SQLite |
 
 The ~800-cube "market" in the landing animation is illustrative; the demo registry holds 25 providers, all fictional.
 
@@ -398,6 +403,7 @@ docs/                architecture, deployment, credits
 - [ROADMAP.md](ROADMAP.md): what is left before Rialto opens to the public on Solana mainnet
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the decision engine, the ranking formula, how x402 fits, accounts, the security model, limitations
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md): running the platform on a server (Docker, Traefik, GitHub Actions) and the static landing page
+- [docs/EMAIL.md](docs/EMAIL.md): sending-only Resend setup, GoDaddy DNS, signup confirmation, password recovery, and local email previews
 - [docs/CREDITS.md](docs/CREDITS.md): third-party assets and licences
 - [video/README.md](video/README.md): how the pitch and demo videos are made
 

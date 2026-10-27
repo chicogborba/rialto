@@ -28,8 +28,8 @@ Where Rialto stands on 2026-10-24 and what is left before real people pay real m
 - [ ] Try it with Phantom on desktop and on a phone (Phantom's in-app browser).
 
 ### Account security
-- [ ] Email verification on sign-up.
-- [ ] Password recovery by email (today only the operator can reset one, from the server).
+- [ ] Activate email verification on sign-up (implemented; Resend domain verified in `us-east-1` and sending tested; production deployment and inbox check remain).
+- [ ] Activate password recovery by email (implemented; shares the same Resend setup; production deployment remains, see `docs/EMAIL.md`).
 - [ ] Two-factor authentication, required for admins (`/admin` can change the wallet the commission goes to).
 - [ ] Email the admins whenever a payout wallet or an upstream key is changed; confirm before applying a wallet change.
 - [ ] Sellers: confirm a payout address before publishing (a typo is a lost payment); show the explorer link.

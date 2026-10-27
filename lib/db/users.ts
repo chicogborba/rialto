@@ -7,8 +7,6 @@ import { defaultPolicy } from "@/lib/wallet/policy";
 import { PolicySchema, parsePolicy } from "@/lib/wallet/policy-schema";
 import { prisma } from "./client";
 import { listTransactionsForAgents } from "./repo";
-import { liveConfig } from "@/lib/x402/solana";
-import { LEGAL_VERSION } from "@/lib/legal";
 
 /** Test money every new account starts with, so the first call works before any deposit. */
 export const WELCOME_CREDIT_MICRO = Number(process.env.WELCOME_CREDIT_MICRO ?? process.env.TEST_CREDIT_MICRO ?? 1_000_000);
@@ -19,25 +17,6 @@ export const SignupSchema = z.object({ email: EMAIL, password: z.string().max(20
 export const LoginSchema = z.object({ email: EMAIL, password: z.string().max(200) });
 
 // ---------- people ----------
-
-export async function createUser(input: z.infer<typeof SignupSchema>): Promise<{ id: string; email: string; name: string }> {
-  const email = normalizeEmail(input.email);
-  const problem = passwordProblem(input.password, email);
-  if (problem) throw new HttpError(400, "weak_password", problem);
-  const passwordHash = await hashPassword(input.password);
-  try {
-    return await prisma.$transaction(async (db) => {
-      // play money only exists on the simulated rail: with real payments on, agents pay from real wallets
-      const credit = liveConfig() ? 0 : WELCOME_CREDIT_MICRO;
-      const user = await db.user.create({ data: { email, name: input.name, passwordHash, balanceMicro: credit, welcomeCreditAt: credit ? new Date() : null, termsVersion: LEGAL_VERSION, termsAcceptedAt: new Date() }, select: { id: true, email: true, name: true } });
-      if (credit) await db.ledgerEntry.create({ data: { kind: "welcome_credit", userId: user.id, amountMicro: credit, note: "welcome test credit" } });
-      return user;
-    });
-  } catch (e) {
-    if (typeof e === "object" && e !== null && "code" in e && e.code === "P2002") throw new HttpError(409, "email_taken", "There is already an account with that email. Sign in instead.");
-    throw e;
-  }
-}
 
 /** The user for these credentials, or null. Takes the same time whether or not the email exists. */
 export async function authenticate(emailInput: string, password: string): Promise<{ id: string; email: string; name: string } | null> {

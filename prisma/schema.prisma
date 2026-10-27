@@ -65,6 +65,8 @@ model User {
   name             String
   /// scrypt$N$r$p$salt$hash
   passwordHash     String
+  /// Set for accounts created through the email-code confirmation flow; older accounts keep working.
+  emailVerifiedAt  DateTime?
   /// money the user holds on Rialto and has not given to an agent; micro-USDC
   balanceMicro     Int       @default(0)
   /// payouts go here, and deposits are accepted from here once it is verified
@@ -85,6 +87,29 @@ model User {
   agents           Agent[]
   seller           Seller?
   deposits         Deposit[]
+  emailChallenges  EmailChallenge[]
+}
+
+/// Short-lived, single-use email codes. A signup is pending here until its email is confirmed.
+model EmailChallenge {
+  id             String   @id @default(cuid())
+  email          String
+  /// signup | password_reset
+  purpose        String
+  codeHash       String
+  attempts       Int      @default(0)
+  expiresAt      DateTime
+  sentAt         DateTime @default(now())
+  name           String?
+  passwordHash   String?
+  termsVersion   String?
+  termsAcceptedAt DateTime?
+  /// For resets, bind the code to the account and password that requested it.
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([email, purpose])
+  @@index([expiresAt])
 }
 
 model Session {

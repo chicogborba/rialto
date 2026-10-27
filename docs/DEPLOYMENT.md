@@ -136,14 +136,17 @@ Devnet and mainnet are the same code; one setting and a few facts about money ch
 5. **An RPC.** The public `api.mainnet-beta.solana.com` rate-limits. Set `SOLANA_RPC_URL` to a private one for the server, and tell buyers to do the same for the signer.
 6. **Check before you announce.** `npm run x402:check -- --pay` with `SOLANA_NETWORK=mainnet` makes one real purchase of a tenth of a cent through the facilitator and prints both explorer links; `npm run e2e:live` runs the rest.
 
-Things that stay true on mainnet and are worth knowing before you point real money at it: the platform still has no email verification, no password recovery and no 2FA; reputation and quality are self-reported by sellers; and a seller's price is paid out to whatever address they registered, so a typo is a lost payment. Rialto holding no funds removes custody risk, not these.
+Account confirmation and password recovery require the sending provider setup in
+[EMAIL.md](EMAIL.md). The platform still has no 2FA; reputation and quality are
+self-reported by sellers; and a seller's price is paid out to whatever address
+they registered, so a typo is a lost payment.
 
 ### What a public server changes
 
 - `POST /api/reset` needs `ADMIN_TOKEN`. Without it nobody can wipe the data, and the app's *Reset demo* button says so. It wipes **everything**, accounts included.
 - Keys without an account (`POST /api/agents`, `POST /api/sellers`) are off: people sign up, and the account owns the agents and the seller profile. `ALLOW_ANONYMOUS_KEYS=1` turns them back on.
 - The gateway's live path is open to anyone who pays (it is rate limited per address, and a signed payment is accepted once). Sellers on the simulation can only be called by Rialto's own agent.
-- Accounts: email + password (scrypt), a 30-day HttpOnly session cookie, requests that started on another site are refused, sign-in attempts are rate limited per address and per email. There is **no email verification and no password recovery**; the operator resets one with `docker compose exec app npm run -s user:admin -- reset-password <email>` (`list` shows the accounts).
+- Accounts: email + password (scrypt), email-code confirmation for new accounts, password recovery, a 30-day HttpOnly session cookie, requests that started on another site are refused, sign-in attempts are rate limited per address and per email. Configure `RESEND_API_KEY` and `EMAIL_FROM` before deploying these account flows; see [EMAIL.md](EMAIL.md). An operator can still reset a password with `docker compose exec app npm run -s user:admin -- reset-password <email>` (`list` shows the accounts).
 - Behind Traefik the client address comes from `X-Forwarded-For`, which Traefik sets itself and does not accept from clients.
 - Runs without a key use the shared demo agent; in production they are throttled per address.
 - The first-party integrations spend the operator's upstream keys, so what they may sell per 24 hours is capped (`OPERATOR_DAILY_CAP_USD`, default 5), whoever pays.
