@@ -12,7 +12,9 @@ import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
 const stash = path.join(root, ".pages-stash");
-const MOVE = ["app/api", "app/app", "app/connect", "app/publish", "app/dashboard", "app/login", "app/signup", "app/forgot-password"];
+// Tests can import the API routes moved below. CI checks them in the full platform build;
+// leave them out of this static-only build, then restore them with the routes.
+const MOVE = ["app/api", "app/app", "app/connect", "app/publish", "app/dashboard", "app/login", "app/signup", "app/forgot-password", "tests"];
 const moved = [];
 
 function restore() {
