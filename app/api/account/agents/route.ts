@@ -11,7 +11,7 @@ export async function POST(req: Request): Promise<Response> {
     const { user } = await requireUser(req);
     const parsed = AgentNameSchema.safeParse(await readJson(req));
     if (!parsed.success) throw new HttpError(400, "invalid_body", "Give the agent a name (1 to 40 characters).");
-    const created = await createAgentFor(user.id, parsed.data.name);
+    const created = await createAgentFor(user.id, parsed.data.name, { look: parsed.data.look, appetite: parsed.data.appetite });
     return Response.json({ ...created, note: "Save this key now; it is shown only once." }, { status: 201 });
   });
 }

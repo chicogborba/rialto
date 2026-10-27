@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LookPartsSchema } from "@/lib/agent/look";
 import { requireUser } from "@/lib/auth/account";
 import { revokeAgent, updateAgent } from "@/lib/db/users";
 import { HttpError, handle, readJson } from "@/lib/http";
@@ -7,9 +8,9 @@ import { PolicySchema } from "@/lib/wallet/policy-schema";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const Patch = z.object({ name: z.string().trim().min(1).max(40).optional(), policy: PolicySchema.optional() });
+const Patch = z.object({ name: z.string().trim().min(1).max(40).optional(), policy: PolicySchema.optional(), look: LookPartsSchema.optional(), appetite: z.number().int().min(1).max(5).optional() });
 
-/** Rename an agent or change what it may spend. */
+/** Rename an agent, change what it may spend, how keen it is to buy, or how it looks. */
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }): Promise<Response> {
   return handle(async () => {
     const { user } = await requireUser(req);

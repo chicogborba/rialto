@@ -3,6 +3,8 @@ import { z } from "zod";
 import { hashPassword, normalizeEmail, passwordProblem, spendLoginTime, verifyPassword } from "@/lib/auth/password";
 import { HttpError } from "@/lib/http";
 import { generateKey } from "@/lib/security/keys";
+import { appetite } from "@/lib/agent/appetite";
+import { LookPartsSchema, partsOf, type LookParts } from "@/lib/agent/look";
 import { defaultPolicy } from "@/lib/wallet/policy";
 import { PolicySchema, parsePolicy } from "@/lib/wallet/policy-schema";
 import { prisma } from "./client";
@@ -44,14 +46,21 @@ export async function renameUser(userId: string, name: string): Promise<void> {
 
 // ---------- agents (buyer keys) ----------
 
-export const AgentNameSchema = z.object({ name: z.string().trim().min(1).max(40).default("My agent") });
+export const AgentNameSchema = z.object({ name: z.string().trim().min(1).max(40).default("My agent"), look: LookPartsSchema.optional(), appetite: z.number().int().min(1).max(5).optional() });
 
-export async function createAgentFor(userId: string, name: string): Promise<{ agentId: string; apiKey: string }> {
+/** The default limits, raised or lowered to suit how keen the agent is to buy. */
+function policyFor(level: number) {
+  const a = appetite(level);
+  return { ...defaultPolicy(), maxPerRequestMicro: a.perCallMicro, sessionBudgetMicro: a.sessionMicro };
+}
+
+export async function createAgentFor(userId: string, name: string, opts: { look?: LookParts; appetite?: number } = {}): Promise<{ agentId: string; apiKey: string }> {
   const count = await prisma.agent.count({ where: { userId, revokedAt: null } });
   if (count >= MAX_AGENTS_PER_USER) throw new HttpError(400, "limit", `You can have up to ${MAX_AGENTS_PER_USER} agents. Revoke one you no longer use.`);
   const k = generateKey("buyer");
   const agentId = `agent_${randomBytes(8).toString("hex")}`;
-  await prisma.agent.create({ data: { id: agentId, name, balanceMicro: 0, policy: JSON.stringify(defaultPolicy()), keyHash: k.hash, keyPrefix: k.prefix, userId } });
+  const level = appetite(opts.appetite).level;
+  await prisma.agent.create({ data: { id: agentId, name, balanceMicro: 0, policy: JSON.stringify(policyFor(level)), keyHash: k.hash, keyPrefix: k.prefix, userId, appetite: level, look: opts.look ? JSON.stringify(opts.look) : null } });
   return { agentId, apiKey: k.key };
 }
 
@@ -68,9 +77,17 @@ export async function rotateAgentKey(userId: string, agentId: string): Promise<{
   return { apiKey: k.key };
 }
 
-export async function updateAgent(userId: string, agentId: string, patch: { name?: string; policy?: z.infer<typeof PolicySchema> }): Promise<void> {
+export async function updateAgent(userId: string, agentId: string, patch: { name?: string; policy?: z.infer<typeof PolicySchema>; look?: LookParts; appetite?: number }): Promise<void> {
   await ownedAgent(userId, agentId);
-  await prisma.agent.update({ where: { id: agentId }, data: { ...(patch.name ? { name: patch.name } : {}), ...(patch.policy ? { policy: JSON.stringify(PolicySchema.parse(patch.policy)) } : {}) } });
+  await prisma.agent.update({
+    where: { id: agentId },
+    data: {
+      ...(patch.name ? { name: patch.name } : {}),
+      ...(patch.policy ? { policy: JSON.stringify(PolicySchema.parse(patch.policy)) } : {}),
+      ...(patch.look ? { look: JSON.stringify(LookPartsSchema.parse(patch.look)) } : {}),
+      ...(patch.appetite ? { appetite: appetite(patch.appetite).level } : {}),
+    },
+  });
 }
 
 /** Retires the key and gives whatever the agent still holds back to the account. */
@@ -162,7 +179,7 @@ export async function ensureSellerFor(userId: string): Promise<string> {
 
 export interface AccountView {
   user: { id: string; email: string; name: string; createdAt: string; balanceMicro: number; wallet: { address: string } | null; payWallet: string | null };
-  agents: { id: string; name: string; keyPrefix: string | null; balanceMicro: number; sessionSpendMicro: number; policy: ReturnType<typeof parsePolicy>; createdAt: string }[];
+  agents: { id: string; name: string; keyPrefix: string | null; balanceMicro: number; sessionSpendMicro: number; policy: ReturnType<typeof parsePolicy>; createdAt: string; look: LookParts; appetite: number }[];
   seller: { apis: number; online: number; balanceMicro: number; paidOutMicro: number } | null;
   sessions: { id: string; createdAt: string; lastUsedAt: string; userAgent: string | null; current: boolean }[];
   ledger: { id: number; at: string; kind: string; amountMicro: number; note: string | null }[];
@@ -190,7 +207,7 @@ export async function accountView(userId: string, currentSessionId: string): Pro
       wallet: user.walletAddress ? { address: user.walletAddress } : null,
       payWallet: user.payWallet,
     },
-    agents: user.agents.map((a) => ({ id: a.id, name: a.name, keyPrefix: a.keyPrefix, balanceMicro: a.balanceMicro, sessionSpendMicro: a.sessionSpendMicro, policy: parsePolicy(a.policy), createdAt: a.createdAt.toISOString() })),
+    agents: user.agents.map((a) => ({ id: a.id, name: a.name, keyPrefix: a.keyPrefix, balanceMicro: a.balanceMicro, sessionSpendMicro: a.sessionSpendMicro, policy: parsePolicy(a.policy), createdAt: a.createdAt.toISOString(), look: partsOf(a.look, a.id), appetite: appetite(a.appetite).level })),
     seller: user.seller ? { apis: user.seller.providers.length, online: user.seller.providers.filter((p) => p.status === "online").length, balanceMicro: user.seller.balanceMicro, paidOutMicro: user.seller.paidOutMicro } : null,
     sessions: user.sessions.map((s) => ({ id: s.id, createdAt: s.createdAt.toISOString(), lastUsedAt: s.lastUsedAt.toISOString(), userAgent: s.userAgent, current: s.id === currentSessionId })),
     ledger: ledger.map((l) => ({ id: l.id, at: l.createdAt.toISOString(), kind: l.kind, amountMicro: l.amountMicro, note: l.note })),

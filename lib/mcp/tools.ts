@@ -4,6 +4,7 @@ import { realClock } from "@/lib/agent/clock";
 import { resolveConstraints } from "@/lib/agent/constraints";
 import { DemoAgentPlanner } from "@/lib/agent/demo-planner";
 import { runAgent } from "@/lib/agent/run";
+import type { Preset } from "@/lib/agent/appetite";
 import { createRun, getHistory, getWallet, listCandidates, listTransactions, persistentDepsFor, recentOutcomes } from "@/lib/db/repo";
 import { explain } from "@/lib/routing/explain";
 import { scoreCandidates } from "@/lib/routing/score";
@@ -26,6 +27,8 @@ import type { WalletState } from "@/lib/types";
 export interface ToolCtx {
   agentId: string;
   baseUrl: string;
+  /** the provider choice to lean to when the agent names none, from how keen its owner set it to buy */
+  preset?: Preset;
 }
 
 const usd = (micro: number) => toDollars(micro);
@@ -143,7 +146,7 @@ export async function getProviderReputation(args: { provider: string }) {
 
 export async function planExecution(args: GoalArgs, ctx: ToolCtx) {
   const wallet = await getWallet(ctx.agentId);
-  const constraints = resolveConstraints({ goal: args.goal, policy: wallet.policy, budgetMicro: args.budgetUsd === undefined ? undefined : toMicro(args.budgetUsd), preset: args.preset });
+  const constraints = resolveConstraints({ goal: args.goal, policy: wallet.policy, budgetMicro: args.budgetUsd === undefined ? undefined : toMicro(args.budgetUsd), preset: args.preset ?? ctx.preset });
   try {
     const candidates = await listCandidates();
     const plan = await new DemoAgentPlanner(resolveRoute(args, candidates)).plan(args.goal, constraints, candidates, await getHistory());
@@ -164,7 +167,7 @@ export async function planExecution(args: GoalArgs, ctx: ToolCtx) {
 async function executeFromAllowance(args: GoalArgs, ctx: ToolCtx, payer: NonNullable<Awaited<ReturnType<typeof payerForAgent>>>, candidates: Candidate[]) {
   const route = resolveRoute(args, candidates);
   const w = await getWallet(ctx.agentId);
-  const constraints = resolveConstraints({ goal: args.goal, policy: w.policy, budgetMicro: args.budgetUsd === undefined ? undefined : toMicro(args.budgetUsd), preset: args.preset });
+  const constraints = resolveConstraints({ goal: args.goal, policy: w.policy, budgetMicro: args.budgetUsd === undefined ? undefined : toMicro(args.budgetUsd), preset: args.preset ?? ctx.preset });
   let spendable = payer.spendableMicro;
   let session = w.sessionSpendMicro;
   const wallet = (): WalletState => ({ balanceMicro: spendable, sessionSpendMicro: session, policy: w.policy });
@@ -208,7 +211,7 @@ async function executeFromAllowance(args: GoalArgs, ctx: ToolCtx, payer: NonNull
 export async function executeService(args: GoalArgs, ctx: ToolCtx) {
   const base = ctx.baseUrl;
   const wallet = await getWallet(ctx.agentId);
-  const constraints = resolveConstraints({ goal: args.goal, policy: wallet.policy, budgetMicro: args.budgetUsd === undefined ? undefined : toMicro(args.budgetUsd), preset: args.preset });
+  const constraints = resolveConstraints({ goal: args.goal, policy: wallet.policy, budgetMicro: args.budgetUsd === undefined ? undefined : toMicro(args.budgetUsd), preset: args.preset ?? ctx.preset });
   const everything = await listCandidates();
   const route = resolveRoute(args, everything);
   const paidOnChain = (c: Candidate) => c.provider.settlement === "live";

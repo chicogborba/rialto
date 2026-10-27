@@ -154,6 +154,10 @@ model Agent {
   user              User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   revokedAt         DateTime?
   createdAt         DateTime  @default(now())
+  /// the critter its owner dressed it in: JSON of option indexes (lib/agent/look.ts); null = rolled from the id
+  look              String?
+  /// 1 (frugal) to 5 (all-in): how keen it is to buy on Rialto (lib/agent/appetite.ts)
+  appetite          Int       @default(3)
 
   @@index([userId])
 }

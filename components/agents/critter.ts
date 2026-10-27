@@ -1,52 +1,15 @@
 import * as THREE from "three";
+import type { Look } from "@/lib/agent/look";
 
 /**
- * Every agent gets its own critter: the landing's boxy mascot, rolled from the agent's id. The same
- * id always gives the same colour, body, eyes, hat, glasses and extra, so an agent looks the same on
- * every screen and every device without storing anything.
+ * Every agent gets its own critter: the landing's boxy mascot in the look its owner picked (or one
+ * rolled from its id), built from boxes in three.js.
  *
  * Flat-shaded like the landing (each box face a different shade, no lights), so a critter drops into
  * any scene and renders the same in a snapshot or a live canvas.
  */
 
-export interface Look {
-  color: { name: string; hex: number };
-  accent: { name: string; hex: number };
-  body: "classic" | "chunky" | "tall" | "tiny";
-  eyes: "tall" | "round" | "wide" | "sleepy" | "googly";
-  hat: "none" | "cap" | "top hat" | "beanie" | "crown" | "party hat" | "cowboy hat" | "propeller" | "headphones" | "antenna";
-  glasses: "none" | "square" | "round" | "shades" | "monocle" | "visor" | "3D";
-  extra: "none" | "blush" | "mustache" | "bow tie" | "scarf" | "backpack";
-}
-
-const COLORS = [
-  { name: "Tangerine", hex: 0xee7a35 },
-  { name: "Lime", hex: 0x9fd62b },
-  { name: "Teal", hex: 0x26b3a8 },
-  { name: "Sky", hex: 0x5aa9e6 },
-  { name: "Bubblegum", hex: 0xff8fb3 },
-  { name: "Grape", hex: 0x9b7bff },
-  { name: "Mustard", hex: 0xf2b630 },
-  { name: "Tomato", hex: 0xe5533d },
-  { name: "Mint", hex: 0x7ed6a5 },
-  { name: "Slate", hex: 0x6c7a89 },
-  { name: "Sand", hex: 0xd9b98a },
-  { name: "Cocoa", hex: 0x9a6a4a },
-];
-const ACCENTS = [
-  { name: "coal", hex: 0x2a2420 },
-  { name: "lime", hex: 0xc6ff3d },
-  { name: "cream", hex: 0xf6efe0 },
-  { name: "red", hex: 0xe5533d },
-  { name: "blue", hex: 0x3f6fd8 },
-  { name: "yellow", hex: 0xffd23f },
-  { name: "pink", hex: 0xff8fb3 },
-];
-const BODIES: Look["body"][] = ["classic", "classic", "chunky", "tall", "tiny"];
-const EYES: Look["eyes"][] = ["tall", "tall", "round", "wide", "sleepy", "googly"];
-const HATS: Look["hat"][] = ["none", "none", "cap", "top hat", "beanie", "crown", "party hat", "cowboy hat", "propeller", "headphones", "antenna"];
-const GLASSES: Look["glasses"][] = ["none", "none", "none", "square", "round", "shades", "monocle", "visor", "3D"];
-const EXTRAS: Look["extra"][] = ["none", "none", "blush", "mustache", "bow tie", "scarf", "backpack"];
+export type { Look } from "@/lib/agent/look";
 
 const SIZES: Record<Look["body"], { w: number; h: number; d: number; leg: number }> = {
   classic: { w: 1.9, h: 1.25, d: 0.85, leg: 0.46 },
@@ -58,28 +21,6 @@ const SIZES: Record<Look["body"], { w: number; h: number; d: number; leg: number
 const INK = 0x17120f;
 const WHITE = 0xfffdf7;
 const GOLD = 0xffc83d;
-
-/** 32-bit FNV-1a, then mulberry32: a small, stable generator per id. */
-function rng(seed: string): () => number {
-  let h = 2166136261;
-  for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
-  let a = h >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-export function lookFor(seed: string): Look {
-  const r = rng(seed);
-  const pick = <T,>(list: readonly T[]): T => list[Math.floor(r() * list.length)];
-  const color = pick(COLORS);
-  let accent = pick(ACCENTS);
-  if (accent.hex === color.hex) accent = ACCENTS[0];
-  return { color, accent, body: pick(BODIES), eyes: pick(EYES), hat: pick(HATS), glasses: pick(GLASSES), extra: pick(EXTRAS) };
-}
 
 /** The look in a few words, for the card and for screen readers. */
 export function describeLook(look: Look): string {

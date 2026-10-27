@@ -1,9 +1,12 @@
 "use client";
 
-import { Gauge, KeyRound, Plus, SlidersHorizontal, Trash2, Wallet } from "lucide-react";
+import { Gauge, KeyRound, Plus, Shirt, SlidersHorizontal, Trash2, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AgentAvatar } from "@/components/agents/AgentAvatar";
-import { cssHex, describeLook, lookFor } from "@/components/agents/critter";
+import { cssHex, describeLook } from "@/components/agents/critter";
+import { AppetiteSlider, DiceButton, LookEditor } from "@/components/agents/CritterEditor";
+import { appetite, DEFAULT_APPETITE } from "@/lib/agent/appetite";
+import { lookFromParts, lookKey, rollParts, type LookParts } from "@/lib/agent/look";
 import { HardButton, SegTabs } from "@/components/primitives";
 import { Modal } from "@/components/shell/Modal";
 import { CopyBlock } from "@/components/site/CopyBlock";
@@ -32,7 +35,7 @@ interface Shown {
 }
 
 /** The tinted backdrop behind a critter: its own colour, washed into the cream. */
-const tint = (seed: string, pct = 20) => `color-mix(in oklab, ${cssHex(lookFor(seed).color.hex)} ${pct}%, #f6efe0)`;
+const tint = (parts: LookParts, pct = 20) => `color-mix(in oklab, ${cssHex(lookFromParts(parts).color.hex)} ${pct}%, #f6efe0)`;
 
 /** The commands that plug an agent's key into a tool. Only ever built from a key shown once on this screen. */
 function InstallTabs({ apiKey }: { apiKey: string }) {
@@ -109,23 +112,30 @@ function Step({ n, title }: { n: number; title: string }) {
   );
 }
 
-/** Create: name it, meet the critter it rolled, then connect it. */
+/** Create: dress it, name it, say how keen it is to buy; meet it; then connect it. */
 function CreateAgent({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { refresh } = useAccount();
   const [name, setName] = useState("");
+  const [parts, setParts] = useState<LookParts>(() => rollParts());
+  const [level, setLevel] = useState(DEFAULT_APPETITE);
+  const [spin, setSpin] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shown, setShown] = useState<Shown | null>(null);
-  const [stage, setStage] = useState<"name" | "meet" | "key">("name");
+  const [stage, setStage] = useState<"design" | "meet" | "key">("design");
 
   // a fresh flow each time it opens: the parent remounts it with a new key
   const close = onClose;
+  const roll = () => {
+    setParts(rollParts());
+    setSpin((n) => n + 1);
+  };
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
     const n = name.trim() || "My agent";
-    const r = await api<{ agentId: string; apiKey: string }>("/api/account/agents", { json: { name: n } });
+    const r = await api<{ agentId: string; apiKey: string }>("/api/account/agents", { json: { name: n, look: parts, appetite: level } });
     setBusy(false);
     if (!r.ok || !r.data) return setError(r.error);
     setShown({ agentId: r.data.agentId, agentName: n, apiKey: r.data.apiKey });
@@ -134,33 +144,42 @@ function CreateAgent({ open, onClose }: { open: boolean; onClose: () => void }) 
   };
 
   return (
-    <Modal open={open} onOpenChange={(o) => !o && close()} kicker={stage === "name" ? "New agent" : stage === "meet" ? "It's alive" : "Connect it"} title={stage === "name" ? "Name your agent" : shown?.agentName ?? ""} wide={stage === "key"}>
-      {stage === "name" && (
-        <form onSubmit={create} className="space-y-5">
-          <div className="grid place-items-center border-2 border-dashed border-coal/30 bg-sand/50 py-8">
-            <span aria-hidden className="grid size-28 place-items-center border-2 border-coal bg-surface font-mono text-5xl font-bold shadow-[4px_4px_0_var(--color-coal)]">?</span>
-            <p className="mt-4 text-sm font-medium text-coal/70">Every agent hatches with its own look.</p>
+    <Modal open={open} onOpenChange={(o) => !o && close()} kicker={stage === "design" ? "New agent" : stage === "meet" ? "It's alive" : "Connect it"} title={stage === "design" ? "Make your agent" : shown?.agentName ?? ""} wide={stage !== "meet"}>
+      {stage === "design" && (
+        <form onSubmit={create} className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+          <div className="space-y-3">
+            <div className="relative border-2 border-coal max-md:mx-auto max-md:max-w-[260px]" style={{ background: tint(parts) }}>
+              <div aria-hidden className="absolute inset-0 bg-[radial-gradient(rgb(23_18_15/0.09)_1px,transparent_1px)] [background-size:14px_14px]" />
+              <AgentAvatar parts={parts} live energy={level} spin={spin} className="relative w-full" />
+              <DiceButton onRoll={roll} className="absolute right-3 bottom-3" />
+            </div>
+            <LookEditor parts={parts} onChange={setParts} />
           </div>
-          <Field label="Name">
-            <input autoFocus className={inputCls} value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder="Game builder, Research bot…" />
-          </Field>
-          <p className="text-sm text-coal/70">An agent is a key for Claude Code, Codex or any MCP client, with its own spending limits.</p>
-          <div className="flex flex-wrap items-center gap-3">
-            <HardButton type="submit" disabled={busy}>
-              {busy ? "Hatching…" : "Create agent"}
-            </HardButton>
-            {error && <Notice tone="error">{error}</Notice>}
+          <div className="flex flex-col gap-6">
+            <Field label="Name">
+              <input autoFocus className={inputCls} value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder="Game builder, Research bot…" />
+            </Field>
+            <AppetiteSlider value={level} onChange={setLevel} />
+            <p className="text-sm text-coal/60">An agent is a key for Claude Code, Codex or any MCP client. You can change all of this later.</p>
+            <div className="mt-auto flex flex-wrap items-center gap-3">
+              <HardButton type="submit" disabled={busy}>
+                {busy ? "Hatching…" : "Create agent"}
+              </HardButton>
+              {error && <Notice tone="error">{error}</Notice>}
+            </div>
           </div>
         </form>
       )}
       {stage === "meet" && shown && (
         <div className="space-y-5 text-center">
-          <div className="sy-confetti relative mx-auto max-w-sm border-2 border-coal" style={{ background: tint(shown.agentId) }}>
-            <AgentAvatar seed={shown.agentId} live reveal className="w-full" />
+          <div className="sy-confetti relative mx-auto max-w-sm border-2 border-coal" style={{ background: tint(parts) }}>
+            <AgentAvatar parts={parts} live reveal energy={level} className="w-full" />
           </div>
           <div>
             <p className="text-2xl font-bold tracking-[-0.03em]">Meet {shown.agentName}.</p>
-            <p className="mt-1 text-sm text-coal/70">A {describeLook(lookFor(shown.agentId))}.</p>
+            <p className="mt-1 text-sm text-coal/70">
+              A {describeLook(lookFromParts(parts))}. {appetite(level).name}: {appetite(level).line.toLowerCase()}
+            </p>
           </div>
           <HardButton onClick={() => setStage("key")}>Connect it</HardButton>
         </div>
@@ -175,7 +194,7 @@ function CreateAgent({ open, onClose }: { open: boolean; onClose: () => void }) 
   );
 }
 
-type Tab = "overview" | "limits" | "key" | "remove";
+type Tab = "overview" | "look" | "limits" | "key" | "remove";
 
 /** One agent, opened: how it is spending, its limits, its key, and the way out. */
 function AgentSheet({ agent, onClose }: { agent: Agent | null; onClose: () => void }) {
@@ -199,7 +218,9 @@ function AgentBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
   const [shown, setShown] = useState<Shown | null>(null);
   const [msg, setMsg] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const look = lookFor(agent.id);
+  const [parts, setParts] = useState<LookParts>(agent.look);
+  const [spin, setSpin] = useState(0);
+  const [level, setLevel] = useState(agent.appetite);
 
   const run = async (go: () => Promise<{ ok: boolean; error: string | null }>, ok: string) => {
     setBusy(true);
@@ -211,7 +232,14 @@ function AgentBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
     return r.ok;
   };
   const move = (direction: "in" | "out") => run(() => api(`/api/account/agents/${agent.id}/fund`, { json: { amountUsd: Number(amount), direction } }), direction === "in" ? `Added ${formatUsd(toMicro(Number(amount)))}.` : `Took ${formatUsd(toMicro(Number(amount)))} back to your account.`);
-  const saveLimits = () => run(() => api(`/api/account/agents/${agent.id}`, { method: "PATCH", json: { policy: { ...agent.policy, maxPerRequestMicro: toMicro(Number(f.perCall)), sessionBudgetMicro: toMicro(Number(f.session)), minQuality: Number(f.quality) } } }), "Limits saved.");
+  const saveLimits = () => run(() => api(`/api/account/agents/${agent.id}`, { method: "PATCH", json: { appetite: level, policy: { ...agent.policy, maxPerRequestMicro: toMicro(Number(f.perCall)), sessionBudgetMicro: toMicro(Number(f.session)), minQuality: Number(f.quality) } } }), "Saved. It takes effect the next time the agent connects.");
+  const saveLook = () => run(() => api(`/api/account/agents/${agent.id}`, { method: "PATCH", json: { look: parts } }), "New look saved.");
+  /** moving the slider suggests that level's limits; they stay editable */
+  const changeLevel = (n: number) => {
+    setLevel(n);
+    const a = appetite(n);
+    setF((p) => ({ ...p, perCall: String(a.perCallMicro / 1e6), session: String(a.sessionMicro / 1e6) }));
+  };
   const rotate = async () => {
     setBusy(true);
     setMsg(null);
@@ -234,7 +262,8 @@ function AgentBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
   const spendPct = agent.policy.sessionBudgetMicro > 0 ? Math.min(100, (agent.sessionSpendMicro / agent.policy.sessionBudgetMicro) * 100) : 0;
   const tabs: { id: Tab; label: string; icon: typeof Gauge }[] = [
     { id: "overview", label: "Overview", icon: Gauge },
-    { id: "limits", label: "Limits", icon: SlidersHorizontal },
+    { id: "look", label: "Look", icon: Shirt },
+    { id: "limits", label: "Behavior", icon: SlidersHorizontal },
     { id: "key", label: "Key", icon: KeyRound },
     { id: "remove", label: "Remove", icon: Trash2 },
   ];
@@ -242,10 +271,21 @@ function AgentBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
   return (
     <div className="grid gap-6 md:grid-cols-[260px_1fr]">
       <div className="space-y-3">
-        <div className="border-2 border-coal max-md:mx-auto max-md:max-w-[240px]" style={{ background: tint(agent.id) }}>
-          <AgentAvatar seed={agent.id} live className="w-full" />
+        <div className="relative border-2 border-coal max-md:mx-auto max-md:max-w-[240px]" style={{ background: tint(parts) }}>
+          <AgentAvatar parts={parts} live energy={level} spin={spin} className="w-full" />
+          {tab === "look" && (
+            <DiceButton
+              onRoll={() => {
+                setParts(rollParts());
+                setSpin((n) => n + 1);
+              }}
+              className="absolute right-3 bottom-3"
+            />
+          )}
         </div>
-        <p className="text-sm text-coal/70">A {describeLook(look)}.</p>
+        <p className="text-sm text-coal/70">
+          A {describeLook(lookFromParts(parts))}. <span className="font-bold">{appetite(level).name}.</span>
+        </p>
         <p className="font-mono text-[11px] text-coal/60">
           Key {agent.keyPrefix}… · since {new Date(agent.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
         </p>
@@ -303,9 +343,26 @@ function AgentBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
           </div>
         )}
 
-        {tab === "limits" && (
+        {tab === "look" && (
           <div className="space-y-4">
-            <p className="text-sm text-coal/70">Your agent can never spend more than this, whatever it reads or is told.</p>
+            <LookEditor parts={parts} onChange={setParts} />
+            <div className="flex flex-wrap gap-3">
+              <HardButton onClick={saveLook} disabled={busy || lookKey(parts) === lookKey(agent.look)}>
+                Save look
+              </HardButton>
+              {lookKey(parts) !== lookKey(agent.look) && (
+                <HardButton variant="ghost" onClick={() => setParts(agent.look)}>
+                  Undo
+                </HardButton>
+              )}
+            </div>
+          </div>
+        )}
+
+        {tab === "limits" && (
+          <div className="space-y-5">
+            <AppetiteSlider value={level} onChange={changeLevel} showLimits={false} />
+            <p className="text-sm text-coal/70">Whatever the level, it can never spend more than these limits, whatever it reads or is told.</p>
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label="Max per call (USD)">
                 <input className={inputCls} inputMode="decimal" value={f.perCall} onChange={(e) => setF({ ...f, perCall: e.target.value.replace(/[^0-9.]/g, "") })} />
@@ -318,7 +375,7 @@ function AgentBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
               </Field>
             </div>
             <HardButton onClick={saveLimits} disabled={busy}>
-              Save limits
+              Save
             </HardButton>
           </div>
         )}
@@ -385,9 +442,9 @@ export function AgentCard({ agent, onOpen, compact = false }: { agent: Agent; on
   const pct = agent.policy.sessionBudgetMicro > 0 ? Math.min(100, (agent.sessionSpendMicro / agent.policy.sessionBudgetMicro) * 100) : 0;
   return (
     <button type="button" onClick={onOpen} className="sy-card group block w-full border-2 border-coal bg-surface text-left shadow-[4px_4px_0_var(--color-coal)]">
-      <div className="relative overflow-hidden border-b-2 border-coal" style={{ background: tint(agent.id) }}>
+      <div className="relative overflow-hidden border-b-2 border-coal" style={{ background: tint(agent.look) }}>
         <div aria-hidden className="absolute inset-0 bg-[radial-gradient(rgb(23_18_15/0.09)_1px,transparent_1px)] [background-size:14px_14px]" />
-        <AgentAvatar seed={agent.id} className={cn("sy-card-critter relative mx-auto", "w-full", compact ? "max-w-40" : "max-w-56")} />
+        <AgentAvatar parts={agent.look} className={cn("sy-card-critter relative mx-auto", "w-full", compact ? "max-w-40" : "max-w-56")} />
         <span className="absolute top-2 right-2 border-2 max-sm:hidden border-coal bg-surface px-1.5 py-0.5 font-mono text-[10px] font-bold">{agent.keyPrefix}…</span>
       </div>
       <div className="space-y-2.5 p-3.5">
