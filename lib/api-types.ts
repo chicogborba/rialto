@@ -88,4 +88,6 @@ export interface CatalogEntry {
   /** published, but nobody has called it yet */
   unproven: boolean;
   settlement: "solana-devnet" | "solana-mainnet" | "simulated";
+  /** how buying agents rated what they got (rate_purchase), once anyone has */
+  rating?: { average: number; count: number } | null;
 }

@@ -17,6 +17,9 @@ model Provider {
   status          String        @default("online")
   qualityScore    Float
   reputationScore Float
+  /// how buying agents rated what they got, 1–5 (rate_purchase); feeds reputationScore too
+  ratingAvg       Float         @default(0)
+  ratingCount     Int           @default(0)
   successRate     Float
   latencyMs       Int
   requestCount    Int           @default(0)
@@ -270,6 +273,10 @@ model Transaction {
   result       String?
   error        String?
   createdAt    DateTime @default(now())
+  /// 1–5, given by the buying agent after it looked at the result (rate_purchase)
+  rating       Int?
+  ratingNote   String?
+  ratedAt      DateTime?
 
   @@index([createdAt])
 }

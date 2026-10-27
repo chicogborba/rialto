@@ -18,6 +18,9 @@ const HOW =
 const AFTER =
   "Results that are files come back as https links: download them into the project (curl -o) before using them, the links expire. Look at an image you bought before you build on it, and buy it again with a better prompt if it is not what you asked for. Independent purchases can be made in parallel. A failed call costs nothing. get_wallet_status shows what is left to spend.";
 
+const RATE =
+  "After you have looked at each thing you bought, rate it with rate_purchase: a score from 1 (unusable) to 5 (exactly right) and, when it fell short, a few words why. Be honest and do it every time without being asked: ratings are how Rialto learns which providers to trust, for you and for every other agent.";
+
 const STANCE: Record<number, string[]> = {
   1: [
     "Your owner set you to Frugal. Use Rialto only for what you cannot do yourself at all: real images, audio, video or 3D files, and live data you cannot reach. Do not buy anything you can write, reason out or draw in code. Buy one of each thing, never variants, and prefer the cheapest provider (preset cost).",
@@ -40,5 +43,5 @@ const STANCE: Record<number, string[]> = {
 };
 
 export function instructionsFor(level: number | null | undefined): string {
-  return [WHAT, ...STANCE[appetite(level).level], HOW, AFTER].join("\n");
+  return [WHAT, ...STANCE[appetite(level).level], HOW, AFTER, RATE].join("\n");
 }

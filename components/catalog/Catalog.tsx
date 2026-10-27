@@ -1,5 +1,6 @@
 "use client";
 
+import { Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { CAPABILITY_LABELS } from "@/lib/agent/capabilities";
@@ -167,6 +168,13 @@ export function Catalog({ fallback }: { fallback: CatalogEntry[] }) {
                       <div className="min-w-0 flex-1">
                         <h2 className="truncate text-xl font-bold tracking-tight">{item.name}</h2>
                         <p className="font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-coal/55">{CAPABILITY_LABELS[item.capability]}</p>
+                        {item.rating && (
+                          <p className="mt-1 flex items-center gap-1 text-sm font-bold" title={`Rated by agents after ${item.rating.count} purchase${item.rating.count === 1 ? "" : "s"}`}>
+                            <Star className="size-3.5 fill-coal" aria-hidden />
+                            {item.rating.average.toFixed(1)}
+                            <span className="font-normal text-coal/55">({item.rating.count} agent rating{item.rating.count === 1 ? "" : "s"})</span>
+                          </p>
+                        )}
                       </div>
                       <p className="shrink-0 text-right">
                         <span className="tnum block font-mono text-xl font-bold leading-none">${(item.priceMicro / 1_000_000).toFixed(3)}</span>

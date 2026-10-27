@@ -30,3 +30,10 @@ export type GoalArgs = { goal: string; budgetUsd?: number; preset?: z.infer<type
 
 
 export const transactionsInput = { limit: z.number().int().min(1).max(100).optional() };
+
+export const rateInput = {
+  runId: z.string().optional().describe("The runId execute_service returned. Without it (and without purchaseId) your latest unrated purchase is rated."),
+  purchaseId: z.string().optional().describe("A transaction id from get_transactions, to rate one purchase in particular."),
+  score: z.number().int().min(1).max(5).describe("1 unusable, 2 poor, 3 usable, 4 good, 5 exactly what you asked for."),
+  note: z.string().max(280).optional().describe("One short reason, e.g. 'background not transparent'."),
+};

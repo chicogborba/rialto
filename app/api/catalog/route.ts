@@ -35,6 +35,7 @@ export async function GET(): Promise<Response> {
           offline: p.status !== "online",
           demo: p.isDemo,
           unproven: !p.isDemo && p.requestCount === 0,
+          rating: p.ratingCount > 0 ? { average: p.ratingAvg, count: p.ratingCount } : null,
           // a real seller is paid on Solana only when the live rail is on and their address is a real one
           settlement: !p.isDemo && live && isSolanaAddress(p.payTo) ? NETWORK.name : "simulated",
         },

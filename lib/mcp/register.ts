@@ -1,9 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ToolError } from "./route";
-import { compareInput, discoverInput, planInput, reputationInput, transactionsInput } from "./schemas";
+import { compareInput, discoverInput, planInput, rateInput, reputationInput, transactionsInput } from "./schemas";
 import {
   compareServices, discoverServices, executeService, getProviderReputation, getTransactions,
-  getWalletStatus, planExecution, type ToolCtx,
+  getWalletStatus, planExecution, ratePurchaseTool, type ToolCtx,
 } from "./tools";
 
 type ToolResult = { content: { type: "text"; text: string }[]; isError?: boolean };
@@ -18,7 +18,7 @@ async function respond(run: () => Promise<unknown>): Promise<ToolResult> {
   }
 }
 
-/** The seven Rialto tools, bound to one caller. Used by both the stdio server and the hosted HTTP endpoint. */
+/** The eight Rialto tools, bound to one caller. Used by both the stdio server and the hosted HTTP endpoint. */
 export function registerRialtoTools(server: McpServer, ctx: ToolCtx): void {
   server.registerTool("discover_services", {
     title: "Discover services",
@@ -49,6 +49,12 @@ export function registerRialtoTools(server: McpServer, ctx: ToolCtx): void {
     description: "Plan AND execute a goal: picks the best provider, pays it from your Rialto wallet, runs it, falls back on failure, and returns the result plus transactions. Generated files (images, audio, video, 3D models) come back as https links to download. Pass `capability` (and `provider`) to choose them yourself; put the link of any input file in `goal`. Payments are SIMULATED unless the platform reports mode=live.",
     inputSchema: planInput,
   }, (args) => respond(() => executeService(args, ctx)));
+
+  server.registerTool("rate_purchase", {
+    title: "Rate a purchase",
+    description: "After you have looked at what you bought, rate it from 1 (unusable) to 5 (exactly right), with a short reason if it fell short. Do this once for every purchase: ratings raise good providers and sink bad ones in Rialto's rankings. Free.",
+    inputSchema: rateInput,
+  }, (args) => respond(() => ratePurchaseTool(args, ctx)));
 
   server.registerTool("get_transactions", {
     title: "Recent transactions",

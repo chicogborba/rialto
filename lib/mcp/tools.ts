@@ -5,6 +5,8 @@ import { resolveConstraints } from "@/lib/agent/constraints";
 import { DemoAgentPlanner } from "@/lib/agent/demo-planner";
 import { runAgent } from "@/lib/agent/run";
 import type { Preset } from "@/lib/agent/appetite";
+import { HttpError } from "@/lib/http";
+import { ratePurchase } from "@/lib/reputation/rating";
 import { createRun, getHistory, getWallet, listCandidates, listTransactions, persistentDepsFor, recentOutcomes } from "@/lib/db/repo";
 import { explain } from "@/lib/routing/explain";
 import { scoreCandidates } from "@/lib/routing/score";
@@ -131,6 +133,7 @@ export async function getProviderReputation(args: { provider: string }) {
   if (!hit) throw new ToolError(`Unknown provider "${args.provider}".`);
   const outcomes = (await recentOutcomes())[hit.provider.id] ?? [];
   const p = hit.provider;
+  const ratings = await prisma.provider.findUnique({ where: { id: p.id }, select: { ratingAvg: true, ratingCount: true } });
   return {
     provider: p.name,
     demoProvider: p.isDemo,
@@ -139,6 +142,7 @@ export async function getProviderReputation(args: { provider: string }) {
     successRate: p.successRate,
     avgLatencyMs: p.latencyMs,
     quality: p.qualityScore,
+    agentRating: ratings ? { average: ratings.ratingAvg, count: ratings.ratingCount } : null,
     status: p.status,
     last10Outcomes: outcomes.slice(0, 10),
   };
@@ -192,8 +196,9 @@ async function executeFromAllowance(args: GoalArgs, ctx: ToolCtx, payer: NonNull
   };
   const names = new Map(candidates.map((c) => [c.provider.id, c.provider.name]));
   const paid: { provider: string; amountUsd: number; txRef: string; explorerUrl: string | null }[] = [];
+  const runId = clock.id("run");
   let last;
-  for await (const e of runAgent({ goal: args.goal, constraints, runId: clock.id("run") }, deps)) {
+  for await (const e of runAgent({ goal: args.goal, constraints, runId }, deps)) {
     last = e;
     if (e.type === "payment.settled") paid.push({ provider: names.get(e.providerId) ?? e.providerId, amountUsd: usd(e.amountMicro), txRef: e.txRef, explorerUrl: e.explorerUrl });
   }
@@ -205,7 +210,7 @@ async function executeFromAllowance(args: GoalArgs, ctx: ToolCtx, payer: NonNull
     throw new ToolError(/insufficient|payment_rejected|simulation/i.test(reason) ? `${reason}. The wallet ${payer.wallet} needs USDC on ${NETWORK.name} and enough allowance left for Rialto (dashboard → Wallet).` : reason);
   }
   if (last.type !== "run.completed") throw new ToolError("Run ended unexpectedly");
-  return { mode: "live" as const, network: NETWORK.name, testMoney: NETWORK.testMoney, paidFrom: payer.wallet, totalCostUsd: usd(last.totalCostMicro), allowanceLeftUsd: usd(Math.max(0, spendable)), transactions: paid, result: last.result };
+  return { runId, mode: "live" as const, network: NETWORK.name, testMoney: NETWORK.testMoney, paidFrom: payer.wallet, totalCostUsd: usd(last.totalCostMicro), allowanceLeftUsd: usd(Math.max(0, spendable)), transactions: paid, result: last.result, next: RATE_HINT };
 }
 
 export async function executeService(args: GoalArgs, ctx: ToolCtx) {
@@ -237,7 +242,19 @@ export async function executeService(args: GoalArgs, ctx: ToolCtx) {
   if (!last || last.type === "run.failed") throw new ToolError(last?.type === "run.failed" ? last.error : "Run produced no events");
   if (last.type !== "run.completed") throw new ToolError("Run ended unexpectedly");
   const txs = (await listTransactions(50, undefined, ctx.agentId)).rows.filter((t) => t.runId === runId);
-  return { runId, mode: rail.mode, totalCostUsd: usd(last.totalCostMicro), savedVsPremiumUsd: usd(last.savings.savedMicro), result: last.result, transactions: txs };
+  return { runId, mode: rail.mode, totalCostUsd: usd(last.totalCostMicro), savedVsPremiumUsd: usd(last.savings.savedMicro), result: last.result, transactions: txs, next: RATE_HINT };
+}
+
+const RATE_HINT = "Look at the result, then call rate_purchase with this runId and a score from 1 (unusable) to 5 (exactly right). Ratings decide which providers Rialto trusts.";
+
+/** The buying agent's 1–5 verdict on a purchase it made. */
+export async function ratePurchaseTool(args: { runId?: string; purchaseId?: string; score: number; note?: string }, ctx: ToolCtx) {
+  try {
+    return await ratePurchase(ctx.agentId, args);
+  } catch (e) {
+    if (e instanceof HttpError) throw new ToolError(e.message);
+    throw e;
+  }
 }
 
 export async function getTransactions(args: { limit?: number }, ctx: ToolCtx) {
