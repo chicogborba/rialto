@@ -36,6 +36,10 @@ COPY --chown=node:node lib ./lib
 COPY --chown=node:node scripts ./scripts
 COPY --chown=node:node next.config.ts tsconfig.json ./
 
+# The public health check confirms which build is actually serving traffic.
+ARG APP_REVISION=unknown
+ENV APP_REVISION=$APP_REVISION
+
 VOLUME /data
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \

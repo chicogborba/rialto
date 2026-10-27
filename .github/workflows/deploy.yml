@@ -48,6 +48,7 @@ jobs:
           push: true
           build-args: |
             NEXT_PUBLIC_SOLANA_NETWORK=${{ vars.SOLANA_NETWORK || 'devnet' }}
+            APP_REVISION=${{ github.sha }}
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ steps.meta.outputs.tag }}
@@ -134,13 +135,17 @@ jobs:
           previous=$(grep '^IMAGE=' .env | cut -d= -f2- || true)
           echo "now: ${previous:-none}  next: $IMAGE"
           # a copy of the database before anything changes (kept with the nightly ones)
-          docker compose exec -T app npm run -s db:backup | tail -1 || echo "no running app to back up"
+          # exec forwards stdin by default; without this redirection it can consume the rest
+          # of the SSH script and report success without ever replacing the container.
+          docker compose exec -T app npm run -s db:backup </dev/null | tail -1 || echo "no running app to back up"
           echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin >/dev/null
           docker pull --quiet "$IMAGE" >/dev/null
           docker logout ghcr.io >/dev/null
           set_image() {
             if grep -q '^IMAGE=' .env; then sed -i "s|^IMAGE=.*|IMAGE=$1|" .env; else echo "IMAGE=$1" >> .env; fi
             chmod 600 .env
+            # Shell variables override .env in Compose, including during rollback.
+            export IMAGE="$1"
           }
           healthy() {
             for _ in $(seq 1 40); do
@@ -168,10 +173,15 @@ jobs:
           exit 1
           REMOTE
       - name: Check the public site
+        env:
+          EXPECTED_REVISION: ${{ github.sha }}
         run: |
           for _ in $(seq 1 20); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' https://galleriarialto.com/api/health || true)
-            [ "$code" = 200 ] && { echo "galleriarialto.com answers 200"; exit 0; }
+            body=$(curl -fsS https://galleriarialto.com/api/health || true)
+            if printf '%s' "$body" | python3 -c 'import json,os,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("ok") and d.get("revision") == os.environ["EXPECTED_REVISION"] else 1)' 2>/dev/null; then
+              echo "galleriarialto.com is healthy on revision $EXPECTED_REVISION"
+              exit 0
+            fi
             sleep 3
           done
-          echo "galleriarialto.com did not answer 200"; exit 1
+          echo "galleriarialto.com did not serve the expected revision"; exit 1

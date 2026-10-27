@@ -67,6 +67,10 @@ push to main ─▶ GitHub Actions ─▶ ghcr.io/<owner>/rialto:sha-…  ─ssh
 4. **Deploy:** push to `main`, or run the *Deploy* workflow by hand. It ends when the app reports healthy; if it does not, the job prints the app's log and fails.
 
 Check: `https://DOMAIN/api/health` answers `{"ok":true,…}`.
+Images built by the workflow also report their Git commit as `revision`. The
+workflow checks this value after rollout so an old but healthy container cannot
+be mistaken for a successful deployment. The backup command runs with stdin
+closed so it cannot consume the remaining SSH rollout script.
 
 Until `VPS_HOST` is set, the workflow only builds and pushes the image.
 

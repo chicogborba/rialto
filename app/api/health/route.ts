@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export async function GET(): Promise<Response> {
   try {
     const providers = await prisma.provider.count();
-    return Response.json({ ok: true, providers });
+    return Response.json({ ok: true, providers, revision: process.env.APP_REVISION ?? null });
   } catch {
     return Response.json({ ok: false, error: "database_unavailable" }, { status: 503 });
   }
