@@ -369,7 +369,11 @@
   .sy-confetti::before, .sy-confetti::after { display: none; }
 }
 
-/* the slow rails in the Solana race: a tiny shuffle on the start line, going nowhere */
-@keyframes sy-idle { 0%, 100% { transform: translate(0, -50%); } 50% { transform: translate(2px, -50%); } }
-.sy-idle { animation: sy-idle 1.6s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .sy-idle { animation: none; } }
+/* the critter in the Solana demo: breathes, leans into the throw, hops when the coin lands */
+@keyframes sy-breathe { 0%, 100% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(-3px) scaleY(1.02); } }
+@keyframes sy-throw { 0% { transform: rotate(0); } 30% { transform: rotate(-6deg) translateX(-4px); } 60% { transform: rotate(5deg) translateX(6px); } 100% { transform: rotate(0); } }
+@keyframes sy-cheer { 0%, 100% { transform: translateY(0); } 35% { transform: translateY(-22px); } 60% { transform: translateY(0) scaleY(0.94); } }
+.sy-breathe { transform-origin: 50% 100%; animation: sy-breathe 2.4s ease-in-out infinite; }
+.sy-throw { transform-origin: 50% 100%; animation: sy-throw 0.4s ease-out; }
+.sy-cheer { transform-origin: 50% 100%; animation: sy-cheer 0.6s cubic-bezier(0.3, 1.4, 0.5, 1); }
+@media (prefers-reduced-motion: reduce) { .sy-breathe, .sy-throw, .sy-cheer { animation: none; } }

@@ -6,7 +6,7 @@ import { asset, flowHref, REPO_URL, X_URL } from "@/lib/site";
 import { HeroMarket, Needs } from "./HeroMarket";
 import { PitchVideo } from "./PitchVideo";
 import { SolanaMark } from "./SolanaMark";
-import { SolanaRace } from "./SolanaRace";
+import { SolanaPay } from "./SolanaPay";
 import { Caption, Story as StoryScroll } from "./Story";
 import { BEATS } from "./story-beats";
 import { FOOTER_NOTE, MONEY_NOTE } from "@/lib/network-label";
@@ -103,12 +103,6 @@ export function Pitch() {
   );
 }
 
-const SOLANA_FACTS = [
-  { value: "≈ 400 ms", label: "to settle" },
-  { value: "< 1¢", label: "fee per payment" },
-  { value: "100×", label: "a card fee next to a $0.003 call" },
-] as const;
-
 export function Solana() {
   return (
     <section id="solana" aria-labelledby="solana-title" className="scroll-mt-6 border-y-2 border-coal/10 bg-sand/50 py-16 md:py-24">
@@ -116,19 +110,11 @@ export function Solana() {
         <h2 id="solana-title" className="flex flex-wrap items-baseline gap-x-[0.28em] text-[clamp(2.8rem,8vw,6rem)] font-bold leading-[0.92] tracking-[-0.05em]">
           Why <SolanaMark className="h-[0.62em] w-auto self-center" /> Solana?
         </h2>
-        <p className="mt-3 max-w-3xl text-xl font-bold leading-snug text-coal/80 md:text-3xl">Paid before the others leave the start line.</p>
+        <p className="mt-3 max-w-3xl text-xl font-bold leading-snug text-coal/80 md:text-3xl">Fast enough to pay per call. Cheap enough to pay a tenth of a cent.</p>
         <div className="mt-8 md:mt-10">
-          <SolanaRace />
+          <SolanaPay />
         </div>
-        <dl className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-6 md:mt-12 md:gap-8">
-          {SOLANA_FACTS.map((fact) => (
-            <div key={fact.value} className="flex items-baseline gap-4 border-2 border-coal/15 bg-cream/60 px-4 py-3 sm:block sm:border-0 sm:bg-transparent sm:p-0">
-              <dt className="tnum shrink-0 whitespace-nowrap font-mono text-2xl font-bold sm:text-3xl md:text-5xl">{fact.value}</dt>
-              <dd className="text-sm leading-snug text-coal/70 sm:mt-2 md:text-base">{fact.label}</dd>
-            </div>
-          ))}
-        </dl>
-        <p className="mt-8 text-xs text-coal/45">Card payouts take about 2 days, bank transfers 1 to 3, wires up to 5. {MONEY_NOTE}</p>
+        <p className="mt-8 text-xs text-coal/45">Card: a typical $0.30 + 2.9% per payment, paid out to the seller about 2 days later. Solana: the network fee is a fraction of a cent, paid by the x402 facilitator. {MONEY_NOTE}</p>
       </div>
     </section>
   );
