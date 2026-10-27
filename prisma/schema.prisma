@@ -266,8 +266,13 @@ model Transaction {
   feeMicro     Int      @default(0)
   /// what the call cost upstream when the seller is Rialto itself (copied from Service.costMicro at the time)
   costMicro    Int      @default(0)
+  /// signature of the seller leg (the main transfer)
   txRef        String?
   explorerUrl  String?
+  /// signature of the commission leg, buyer → Rialto's fee address (live rail)
+  feeTxRef     String?
+  /// the wallet that paid, on the live rail
+  payer        String?
   latencyMs    Int?
   requirements String
   result       String?

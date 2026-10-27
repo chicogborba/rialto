@@ -151,3 +151,11 @@ describe("the spender key typed in /admin", () => {
     expect(normaliseSetting(d, JSON.stringify(Array.from({ length: 64 }, (_, i) => i)))).toMatch(/^\[0,1,2/);
   });
 });
+
+describe("CSV exports from /admin", () => {
+  it("quotes every cell and defuses text a spreadsheet would run as a formula", async () => {
+    const { toCsv } = await import("@/lib/admin/stats");
+    const csv = toCsv(["email", "spent"], [["=HYPERLINK(\"x\")", 1.5], ["a@b.com", null]]);
+    expect(csv.split("\r\n")).toEqual(['"email","spent"', '"\'=HYPERLINK(""x"")","1.5"', '"a@b.com",""']);
+  });
+});

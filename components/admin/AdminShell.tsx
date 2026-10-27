@@ -1,6 +1,6 @@
 "use client";
 
-import { ChartNoAxesColumn, KeyRound, Receipt, Tags, Users } from "lucide-react";
+import { ChartNoAxesColumn, KeyRound, Receipt, ShieldCheck, Tags, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -9,6 +9,7 @@ import { AppFrame, type FrameTab } from "@/components/shell/AppFrame";
 
 const TABS: FrameTab[] = [
   { href: "/admin", label: "Overview", icon: ChartNoAxesColumn },
+  { href: "/admin/audit", label: "Audit", icon: ShieldCheck },
   { href: "/admin/purchases", label: "Purchases", icon: Receipt },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/apis", label: "APIs & prices", icon: Tags },

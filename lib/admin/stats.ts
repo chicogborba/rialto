@@ -1,5 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
+import { partsOf, type LookParts } from "@/lib/agent/look";
 import { OPERATOR_SELLER } from "@/lib/gateway/operator";
+import { explorerTx } from "@/lib/x402/solana";
 
 /**
  * The operator's numbers: what was bought, by whom, when, and what Rialto kept after paying the
@@ -207,20 +209,26 @@ export interface PurchaseRow {
   profitMicro: number;
   latencyMs: number | null;
   explorerUrl: string | null;
+  /** the commission leg's own transaction, when it was recorded */
+  feeExplorerUrl: string | null;
+  agent: string | null;
+  payer: string | null;
+  rating: number | null;
   error: string | null;
 }
 
 /** The latest purchases, newest first, `before` a cursor for the next page. */
-export async function listPurchases(prisma: PrismaClient, opts: { mode: ModeFilter; status?: "settled" | "failed"; before?: Date; take?: number }): Promise<PurchaseRow[]> {
+export async function listPurchases(prisma: PrismaClient, opts: { mode: ModeFilter; status?: "settled" | "failed"; before?: Date; take?: number; agentIds?: string[] }): Promise<PurchaseRow[]> {
   const rows = await prisma.transaction.findMany({
     where: {
+      ...(opts.agentIds ? { agentId: { in: opts.agentIds } } : {}),
       ...(opts.mode === "all" ? {} : { mode: opts.mode }),
       ...(opts.status === "settled" ? { status: "settled" } : opts.status === "failed" ? { status: { not: "settled" } } : {}),
       ...(opts.before ? { createdAt: { lt: opts.before } } : {}),
     },
     orderBy: { createdAt: "desc" },
-    take: Math.min(200, opts.take ?? 50),
-    select: { id: true, createdAt: true, agentId: true, capability: true, status: true, mode: true, network: true, amountMicro: true, feeMicro: true, sellerMicro: true, costMicro: true, latencyMs: true, explorerUrl: true, error: true, provider: { select: { name: true, seller: { select: { name: true } } } } },
+    take: Math.min(5_000, opts.take ?? 50),
+    select: { id: true, createdAt: true, agentId: true, capability: true, status: true, mode: true, network: true, amountMicro: true, feeMicro: true, sellerMicro: true, costMicro: true, latencyMs: true, explorerUrl: true, feeTxRef: true, payer: true, rating: true, error: true, provider: { select: { name: true, seller: { select: { name: true } } } } },
   });
   const agentIds = [...new Set(rows.map((r) => r.agentId).filter((id) => !id.startsWith("wallet:")))];
   const owners = new Map((await prisma.agent.findMany({ where: { id: { in: agentIds } }, select: { id: true, name: true, user: { select: { email: true } } } })).map((a) => [a.id, a]));
@@ -232,6 +240,8 @@ export async function listPurchases(prisma: PrismaClient, opts: { mode: ModeFilt
       id: r.id,
       at: r.createdAt.toISOString(),
       buyer: owner?.user?.email ?? (r.agentId.startsWith("wallet:") ? r.agentId.slice(7) : (owner?.name ?? r.agentId)),
+      agent: owner?.name ?? null,
+      payer: r.payer,
       buyerKind: owner?.user ? "user" : r.agentId.startsWith("wallet:") ? "wallet" : "agent",
       api: r.provider.name,
       capability: r.capability,
@@ -246,6 +256,8 @@ export async function listPurchases(prisma: PrismaClient, opts: { mode: ModeFilt
       profitMicro: settled ? r.feeMicro + (operator ? r.sellerMicro : 0) - r.costMicro : 0,
       latencyMs: r.latencyMs,
       explorerUrl: r.explorerUrl,
+      feeExplorerUrl: r.feeTxRef ? explorerTx(r.feeTxRef) : null,
+      rating: r.rating,
       error: r.error,
     };
   });
@@ -264,6 +276,9 @@ export interface UserRow {
   spentMicro: number;
   lastPurchaseAt: string | null;
   wallet: string | null;
+  /** the wallet their agents pay from (allowance), if linked */
+  payWallet: string | null;
+  verified: boolean;
   sellsApis: number;
 }
 
@@ -273,7 +288,7 @@ export async function listUsers(prisma: PrismaClient, isAdmin: (u: { email: stri
     orderBy: { createdAt: "desc" },
     take: 1_000,
     select: {
-      id: true, email: true, name: true, role: true, createdAt: true, walletAddress: true,
+      id: true, email: true, name: true, role: true, createdAt: true, walletAddress: true, payWallet: true, emailVerifiedAt: true,
       sessions: { select: { lastUsedAt: true }, orderBy: { lastUsedAt: "desc" }, take: 1 },
       agents: { select: { id: true } },
       seller: { select: { _count: { select: { providers: true } } } },
@@ -307,7 +322,61 @@ export async function listUsers(prisma: PrismaClient, isAdmin: (u: { email: stri
       spentMicro: p?.spentMicro ?? 0,
       lastPurchaseAt: p?.last?.toISOString() ?? null,
       wallet: u.walletAddress,
+      payWallet: u.payWallet,
+      verified: u.emailVerifiedAt !== null,
       sellsApis: u.seller?._count.providers ?? 0,
     };
   });
 }
+
+export interface UserDetail {
+  user: UserRow & { termsAcceptedAt: string | null; sessions: number; balanceMicro: number };
+  agents: { id: string; name: string; keyPrefix: string | null; look: LookParts; appetite: number; createdAt: string; revoked: boolean; purchases: number; spentMicro: number }[];
+  apis: { id: string; name: string; status: string; calls: number }[];
+  purchases: PurchaseRow[];
+}
+
+/** One account in full: its agents (revoked ones too), the APIs it sells and its latest purchases. */
+export async function userDetail(prisma: PrismaClient, id: string, isAdmin: (u: { email: string; role: string }) => boolean): Promise<UserDetail | null> {
+  const u = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true, email: true, name: true, role: true, createdAt: true, walletAddress: true, payWallet: true, emailVerifiedAt: true, termsAcceptedAt: true, balanceMicro: true,
+      sessions: { select: { lastUsedAt: true }, orderBy: { lastUsedAt: "desc" } },
+      agents: { orderBy: { createdAt: "asc" }, select: { id: true, name: true, keyPrefix: true, look: true, appetite: true, createdAt: true, revokedAt: true } },
+      seller: { select: { providers: { select: { id: true, name: true, status: true, requestCount: true } } } },
+    },
+  });
+  if (!u) return null;
+  const agentIds = u.agents.map((a) => a.id);
+  const [spend, purchases] = await Promise.all([
+    prisma.transaction.groupBy({ by: ["agentId"], where: { status: "settled", agentId: { in: agentIds } }, _sum: { amountMicro: true }, _count: { _all: true }, _max: { createdAt: true } }),
+    agentIds.length ? listPurchases(prisma, { mode: "all", agentIds, take: 30 }) : Promise.resolve([]),
+  ]);
+  const per = new Map(spend.map((s) => [s.agentId, s]));
+  const total = spend.reduce((acc, s) => ({ n: acc.n + s._count._all, micro: acc.micro + (s._sum.amountMicro ?? 0), last: s._max.createdAt && (!acc.last || s._max.createdAt > acc.last) ? s._max.createdAt : acc.last }), { n: 0, micro: 0, last: null as Date | null });
+  return {
+    user: {
+      id: u.id, email: u.email, name: u.name, role: u.role, admin: isAdmin(u), createdAt: u.createdAt.toISOString(),
+      lastSeenAt: u.sessions[0]?.lastUsedAt.toISOString() ?? null, agents: u.agents.filter((a) => !a.revokedAt).length,
+      purchases: total.n, spentMicro: total.micro, lastPurchaseAt: total.last?.toISOString() ?? null,
+      wallet: u.walletAddress, payWallet: u.payWallet, verified: u.emailVerifiedAt !== null, sellsApis: u.seller?.providers.length ?? 0,
+      termsAcceptedAt: u.termsAcceptedAt?.toISOString() ?? null, sessions: u.sessions.length, balanceMicro: u.balanceMicro,
+    },
+    agents: u.agents.map((a) => ({ id: a.id, name: a.name, keyPrefix: a.keyPrefix, look: partsOf(a.look, a.id), appetite: a.appetite, createdAt: a.createdAt.toISOString(), revoked: a.revokedAt !== null, purchases: per.get(a.id)?._count._all ?? 0, spentMicro: per.get(a.id)?._sum.amountMicro ?? 0 })),
+    apis: (u.seller?.providers ?? []).map((p) => ({ id: p.id, name: p.name, status: p.status, calls: p.requestCount })),
+    purchases,
+  };
+}
+
+/** Rows as CSV, every field quoted, for a spreadsheet. Text that a spreadsheet would run as a formula is defused. */
+export function toCsv(header: string[], rows: (string | number | boolean | null)[][]): string {
+  const cell = (v: string | number | boolean | null) => {
+    const t = String(v ?? "");
+    const safe = typeof v === "string" && /^[=+\-@\t\r]/.test(t) ? `'${t}` : t;
+    return `"${safe.replaceAll('"', '""')}"`;
+  };
+  return [header, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
+}
+
+export const micro = (m: number): string => (m / 1_000_000).toFixed(6);

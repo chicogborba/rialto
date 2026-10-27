@@ -251,6 +251,8 @@ export async function recordTransaction(tx: TransactionRecord): Promise<void> {
         // the upstream bill is paid whenever the API ran, which is what "settled" means here
         costMicro: settled || tx.status === "unpaid_after_work" ? (service?.costMicro ?? 0) : 0,
         txRef: tx.txRef,
+        feeTxRef: tx.feeTxRef ?? null,
+        payer: tx.directPayer ?? null,
         explorerUrl: tx.explorerUrl,
         latencyMs: tx.latencyMs,
         requirements: JSON.stringify(tx.requirements),

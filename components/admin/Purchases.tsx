@@ -1,5 +1,6 @@
 "use client";
 
+import { Download } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Label, Panel } from "@/components/primitives";
 import type { ModeFilter, PurchaseRow } from "@/lib/admin/stats";
@@ -47,7 +48,10 @@ export function AdminPurchases() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h1 className="text-[clamp(2.1rem,4.5vw,3.2rem)] font-bold leading-[0.95] tracking-[-0.05em]">Purchases</h1>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <a download href={`/api/admin/purchases?${new URLSearchParams({ mode, ...(status === "any" ? {} : { status }), format: "csv" })}`} className="flex min-h-9 items-center gap-1.5 border-2 border-coal bg-surface px-3 text-sm font-bold hover:bg-lime">
+            <Download className="size-4" aria-hidden /> CSV
+          </a>
           <Segmented label="Status" value={status} onChange={setStatus} options={[{ id: "any", label: "All" }, { id: "settled", label: "Paid" }, { id: "failed", label: "Failed" }]} />
           <Segmented label="Payments" value={mode} onChange={setMode} options={[{ id: "all", label: "All" }, { id: "live", label: "On-chain" }, { id: "simulated", label: "Simulated" }]} />
         </div>
@@ -81,12 +85,18 @@ export function AdminPurchases() {
                   <span className="block text-[10px] text-muted">{r.mode === "live" ? r.network : "simulated"}{r.latencyMs ? ` · ${(r.latencyMs / 1000).toFixed(1)} s` : ""}</span>
                   {r.error && <span className="block max-w-[14rem] truncate text-[10px] text-fail" title={r.error}>{r.error}</span>}
                 </td>
-                <td className="px-3 py-2 font-mono text-[11px]">
+                <td className="whitespace-nowrap px-3 py-2 font-mono text-[11px]">
                   {r.explorerUrl && (
-                    <a href={r.explorerUrl} target="_blank" rel="noreferrer" className="text-muted underline hover:text-signal">
-                      tx ↗
+                    <a href={r.explorerUrl} target="_blank" rel="noreferrer" className="block text-muted underline hover:text-signal" title="The transfer to the seller">
+                      seller tx
                     </a>
                   )}
+                  {r.feeExplorerUrl && (
+                    <a href={r.feeExplorerUrl} target="_blank" rel="noreferrer" className="block text-muted underline hover:text-signal" title="The commission transfer to Rialto">
+                      fee tx
+                    </a>
+                  )}
+                  {r.rating && <span className="block text-muted" title="The buying agent's rating">rated {r.rating}/5</span>}
                 </td>
               </tr>
             ))}

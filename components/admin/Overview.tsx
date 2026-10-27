@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowRight, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Label, Panel } from "@/components/primitives";
 import { Stat } from "@/components/account/ui";
@@ -135,6 +137,17 @@ export function AdminOverview() {
         <Stat label="Busiest hour" value={stats?.peaks.busiestHour != null ? `${String(stats.peaks.busiestHour).padStart(2, "0")}:00` : "—"} hint={stats?.peaks.busiestWeekday != null ? `busiest day: ${WEEKDAYS[stats.peaks.busiestWeekday]}` : "no purchases yet"} />
         <Stat label="Integrations" value={health ? `${health.integrations.online}/${health.integrations.total}` : "…"} hint={health ? `${usd(health.pricing.soldLast24hMicro)} of ${usd(health.pricing.dailyCapMicro)} daily limit` : undefined} />
       </div>
+
+      <Link href="/admin/audit" className="sy-card flex flex-wrap items-center justify-between gap-3 border-2 border-coal bg-coal px-5 py-4 text-cream shadow-[4px_4px_0_var(--color-coal)]">
+        <span className="flex items-center gap-3">
+          <ShieldCheck className="size-6 text-lime" strokeWidth={2.4} aria-hidden />
+          <span>
+            <span className="block font-bold">Check every commission on Solana</span>
+            <span className="block text-sm text-cream/60">Matches each on-chain purchase to the transfer that paid Rialto, and shows what the wallets hold.</span>
+          </span>
+        </span>
+        <ArrowRight className="size-5" aria-hidden />
+      </Link>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel title={`Purchases per ${unit}`} bodyClassName="p-4 pt-8">
