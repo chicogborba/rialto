@@ -1,13 +1,17 @@
 "use client";
 
+import { ArrowRight, Check, Plus } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Label, Panel } from "@/components/primitives";
+import { hardButtonClass, Panel } from "@/components/primitives";
 import { api } from "@/lib/client/api";
 import { useAccount } from "@/lib/client/account";
 import { formatUsd } from "@/lib/money";
 import type { TransactionRow } from "@/lib/api-types";
-import { Stat } from "./ui";
+import { lookOf } from "@/components/catalog/look";
+import { AgentCard } from "./Agents";
+import { PageHead, Stat } from "./ui";
 
 /** What to do next, derived from the account itself: it ticks off as you go. */
 function Checklist() {
@@ -27,6 +31,7 @@ function Checklist() {
     { done: (account.seller?.apis ?? 0) > 0, title: "Publish an API (optional)", text: "Let other agents hire yours and pay per call.", href: "/dashboard/apis" },
   ];
   const next = steps.findIndex((s) => !s.done);
+  if (next === -1) return null;
   return (
     <Panel title="Getting started" status={<span className="font-mono text-[10px] text-muted">{steps.filter((s) => s.done).length} / {steps.length}</span>} bodyClassName="p-0">
       <ol className="divide-y divide-line">
@@ -34,7 +39,7 @@ function Checklist() {
           <li key={s.title}>
             <Link href={s.href} className={`flex items-start gap-4 p-4 hover:bg-raised ${i === next ? "bg-raised" : ""}`}>
               <span aria-hidden className={`mt-0.5 grid size-6 shrink-0 place-items-center border font-mono text-xs font-bold ${s.done ? "border-signal bg-signal text-ink" : i === next ? "border-signal text-signal" : "border-line-hi text-muted"}`}>
-                {s.done ? "✓" : i + 1}
+                {s.done ? <Check className="size-3.5" strokeWidth={3.5} aria-label="done" /> : i + 1}
               </span>
               <span className="min-w-0">
                 <span className={`block font-bold ${s.done ? "text-muted line-through" : ""}`}>{s.title}</span>
@@ -50,6 +55,7 @@ function Checklist() {
 
 export function Overview() {
   const { account } = useAccount();
+  const router = useRouter();
   const [rows, setRows] = useState<TransactionRow[] | null>(null);
   useEffect(() => {
     let alive = true;
@@ -62,12 +68,36 @@ export function Overview() {
   const inAgents = account.agents.reduce((s, a) => s + a.balanceMicro, 0);
   const live = account.mode === "live";
   const spent = account.agents.reduce((s, a) => s + a.sessionSpendMicro, 0);
+  const first = account.user.name.split(" ")[0];
+  const crew = account.agents.slice(0, 3);
   return (
-    <div className="space-y-8">
-      <header>
-        <Label tone="signal">Dashboard</Label>
-        <h1 className="mt-3 text-[clamp(2.3rem,5.5vw,4rem)] font-bold leading-[0.95] tracking-[-0.05em]">Hi, {account.user.name.split(" ")[0]} 👋</h1>
-      </header>
+    <div className="space-y-9">
+      <PageHead
+        kicker="Dashboard"
+        title={<>Hi, <span className="sy-mark">{first}.</span></>}
+        lead={account.agents.length === 0 ? "Hatch an agent and let it shop for APIs." : live ? (account.user.payWallet ? `${account.agents.length} agent${account.agents.length === 1 ? "" : "s"}, paying from your wallet.` : "Link a wallet so your agents can pay.") : `${account.agents.length} agent${account.agents.length === 1 ? "" : "s"} on simulated money.`}
+        action={
+          <Link href="/dashboard/agents?new=1" className={hardButtonClass("primary")}>
+            <Plus className="size-4" strokeWidth={3} aria-hidden /> New agent
+          </Link>
+        }
+      />
+
+      {crew.length > 0 && (
+        <section aria-labelledby="crew-title">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 id="crew-title" className="text-xl font-bold tracking-[-0.02em]">Your crew</h2>
+            <Link href="/dashboard/agents" className="flex items-center gap-1 text-sm font-bold underline decoration-coal/30 underline-offset-4 hover:decoration-coal">
+              All agents <ArrowRight className="size-3.5" aria-hidden />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {crew.map((a) => (
+              <AgentCard key={a.id} agent={a} compact onOpen={() => router.push(`/dashboard/agents?open=${a.id}`)} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {live ? (
@@ -93,23 +123,31 @@ export function Overview() {
         ) : rows.length === 0 ? (
           <p className="p-4 font-mono text-xs text-muted">Nothing yet. When your agent hires an API, it shows up here.</p>
         ) : (
-          <ul className="divide-y divide-line font-mono text-xs">
-            {rows.map((t) => (
-              <li key={t.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                <span className="min-w-0 truncate">
-                  <span className="text-muted">{new Date(t.createdAt).toLocaleString("en-GB", { hour12: false })}</span> · {t.providerName} · {t.capability}
+          <ul className="divide-y divide-line">
+            {rows.map((t) => {
+              const look = lookOf(t.capability);
+              return (
+              <li key={t.id} className="flex items-center gap-3 px-4 py-3">
+                <span aria-hidden className="grid size-9 shrink-0 place-items-center border-2 border-coal" style={{ background: look.color }}>
+                  <look.icon className="size-4" strokeWidth={2.4} />
                 </span>
-                <span className="flex items-center gap-3">
-                  <span className={t.mode === "live" ? "text-signal" : "text-pay"}>{t.mode.toUpperCase()}</span>
-                  <span className="tnum">{t.status === "settled" ? formatUsd(t.amountMicro) : "not charged"}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-bold">{t.providerName}</span>
+                  <span className="block truncate font-mono text-[11px] text-muted">
+                    {new Date(t.createdAt).toLocaleString("en-GB", { hour12: false, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} · {t.capability}
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-3 font-mono text-xs">
+                  <span className="tnum font-bold">{t.status === "settled" ? formatUsd(t.amountMicro) : <span className="font-normal text-muted">not charged</span>}</span>
                   {t.explorerUrl && (
                     <a href={t.explorerUrl} target="_blank" rel="noreferrer" className="underline hover:text-signal">
-                      explorer ↗
+                      explorer
                     </a>
                   )}
                 </span>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </Panel>

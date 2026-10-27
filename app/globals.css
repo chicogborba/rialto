@@ -343,3 +343,28 @@
 .light select,
 .light textarea { background-color: #fffdf7; border-width: 2px; border-color: var(--color-coal); color: var(--color-coal); }
 .light .sy-mark { color: var(--color-coal); transform: none; padding: 0 0.15em; }
+
+/* ---- dashboard cards and modals */
+.sy-card { transition: transform 0.14s ease, box-shadow 0.14s ease; }
+.sy-card:hover { transform: translate(-2px, -3px); box-shadow: 6px 7px 0 var(--color-coal); }
+.sy-card:active { transform: none; box-shadow: 2px 2px 0 var(--color-coal); }
+.sy-card-critter { transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.sy-card:hover .sy-card-critter { transform: translateY(-6px) rotate(-3deg) scale(1.04); }
+.sy-modal-backdrop { transition: opacity 0.18s ease; }
+.sy-modal-backdrop[data-starting-style], .sy-modal-backdrop[data-ending-style] { opacity: 0; }
+.sy-modal { transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.1), opacity 0.18s ease; }
+.sy-modal[data-starting-style], .sy-modal[data-ending-style] { opacity: 0; transform: translateY(28px) scale(0.98); }
+@keyframes sy-confetti { 0% { transform: translateY(-20%) rotate(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(330%) rotate(540deg); opacity: 0; } }
+.sy-confetti { overflow: hidden; }
+.sy-confetti::before, .sy-confetti::after {
+  content: ""; position: absolute; inset: 0 0 auto; height: 30%; pointer-events: none;
+  background-image: radial-gradient(circle, #c6ff3d 3px, transparent 4px), radial-gradient(circle, #ff5b1f 3px, transparent 4px), radial-gradient(circle, #5ce1e6 3px, transparent 4px);
+  background-size: 46px 38px, 58px 44px, 37px 52px; background-position: 0 0, 18px 9px, 30px 20px;
+  animation: sy-confetti 1.6s ease-in 0.5s both;
+}
+.sy-confetti::after { animation-delay: 0.75s; background-position: 12px 4px, 40px 18px, 5px 28px; }
+@media (prefers-reduced-motion: reduce) {
+  .sy-card, .sy-card-critter, .sy-modal, .sy-modal-backdrop { transition: none; }
+  .sy-card:hover, .sy-card:hover .sy-card-critter { transform: none; }
+  .sy-confetti::before, .sy-confetti::after { display: none; }
+}

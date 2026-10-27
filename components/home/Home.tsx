@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Bot, Plug } from "lucide-react";
 import Link from "next/link";
 import { Buddy } from "@/components/landing/Buddy";
 import { asset, flowHref, REPO_URL, X_URL } from "@/lib/site";
@@ -55,8 +56,8 @@ export function Hero() {
         </p>
         <p className="mt-4 max-w-sm text-lg leading-snug text-coal/75 md:mt-6 md:text-xl">Find, compare, pay per call. <span className="whitespace-nowrap">No sign-up,</span> no card.</p>
         <div className="pointer-events-auto mt-5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap md:mt-7 md:gap-3">
-          <Link href={flowHref("/signup?next=/dashboard/agents")} className="home-btn home-btn-ink justify-center max-sm:text-[17px]"><span aria-hidden>🤖</span> Connect an agent</Link>
-          <Link href={flowHref("/signup?next=/dashboard/apis")} className="home-btn home-btn-line justify-center bg-cream/70 max-sm:text-[17px]"><span aria-hidden>🔌</span> Sell an API</Link>
+          <Link href={flowHref("/signup?next=/dashboard/agents")} className="home-btn home-btn-ink justify-center max-sm:text-[17px]">Connect an agent</Link>
+          <Link href={flowHref("/signup?next=/dashboard/apis")} className="home-btn home-btn-line justify-center bg-cream/70 max-sm:text-[17px]">Sell an API</Link>
         </div>
         <p className="mt-4 font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-coal/50 md:text-xs">Claude Code · Codex · any MCP agent</p>
       </div>
@@ -90,10 +91,10 @@ export function Story() {
 export function Pitch() {
   return (
     <section id="video" aria-labelledby="video-title" className={`${WRAP} scroll-mt-6 pb-16 pt-10 md:pb-24 md:pt-14`}>
-      <h2 id="video-title" className={`${H2} mb-8 text-center`}>The whole idea in 66 seconds <span aria-hidden>🍿</span></h2>
+      <h2 id="video-title" className={`${H2} mb-8 text-center`}>The whole idea in 66 seconds</h2>
       <PitchVideo />
       <p className="mt-8 text-center text-lg">
-        <span aria-hidden>🎮</span> One prompt, with and without Rialto.{" "}
+        One prompt, with and without Rialto.{" "}
         <Link href="/demo" className="font-bold underline decoration-lime decoration-4 underline-offset-4 hover:decoration-coal">
           Play both games →
         </Link>
@@ -134,8 +135,8 @@ export function Solana() {
 }
 
 const SIDES = [
-  { emoji: "🤖", title: "You run an agent", note: "Claude Code, Codex, any MCP client", steps: ["Paste one command", "Set a spending limit", "Just ask"], cta: "Connect an agent", href: "/signup?next=/dashboard/agents", primary: true },
-  { emoji: "🔌", title: "You built an API", note: "No billing code to write", steps: ["Paste your endpoint", "Set a price", "Get paid per call"], cta: "Sell an API", href: "/signup?next=/dashboard/apis", primary: false },
+  { icon: Bot, title: "You run an agent", note: "Claude Code, Codex, any MCP client", steps: ["Paste one command", "Set a spending limit", "Just ask"], cta: "Connect an agent", href: "/signup?next=/dashboard/agents", primary: true },
+  { icon: Plug, title: "You built an API", note: "No billing code to write", steps: ["Paste your endpoint", "Set a price", "Get paid per call"], cta: "Sell an API", href: "/signup?next=/dashboard/apis", primary: false },
 ] as const;
 
 /** Who it is for, said early: the people with agents and the people with APIs. */
@@ -147,7 +148,7 @@ export function Sides() {
         {SIDES.map((s) => (
           <div key={s.title} className={`flex flex-col border-2 border-coal p-6 md:p-9 ${s.primary ? "bg-coal text-cream shadow-[8px_8px_0_var(--color-lime)]" : "bg-[#fffdf7] shadow-[8px_8px_0_var(--color-coal)]"}`}>
             <h3 className="flex items-center gap-3 text-2xl font-bold leading-tight tracking-[-0.03em] md:text-4xl">
-              <span aria-hidden className={`grid size-11 shrink-0 place-items-center border-2 text-2xl md:size-14 md:text-3xl ${s.primary ? "border-cream/25 bg-cream/10" : "border-coal bg-lime"}`}>{s.emoji}</span>
+              <span aria-hidden className={`grid size-11 shrink-0 place-items-center border-2 md:size-14 ${s.primary ? "border-cream/25 bg-cream/10" : "border-coal bg-lime"}`}><s.icon className="size-6 md:size-7" strokeWidth={2.4} /></span>
               {s.title}
             </h3>
             <p className={`mt-3 font-mono text-[11px] font-bold uppercase tracking-[0.1em] md:text-xs ${s.primary ? "text-cream/55" : "text-coal/50"}`}>{s.note}</p>
@@ -172,10 +173,10 @@ export function Start() {
   return (
     <section aria-labelledby="go-title" className={`${WRAP} py-16 text-center md:py-28`}>
       <Buddy mood="wave" className="mx-auto w-16 md:w-20" />
-      <h2 id="go-title" className={`${H2} mt-5`}>The market is open <span aria-hidden>🛎️</span></h2>
+      <h2 id="go-title" className={`${H2} mt-5`}>The market is open</h2>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Link href={flowHref("/signup?next=/dashboard/agents")} className="home-btn home-btn-ink"><span aria-hidden>🤖</span> Connect an agent</Link>
-        <Link href={flowHref("/signup?next=/dashboard/apis")} className="home-btn home-btn-line"><span aria-hidden>🔌</span> Sell an API</Link>
+        <Link href={flowHref("/signup?next=/dashboard/agents")} className="home-btn home-btn-ink">Connect an agent</Link>
+        <Link href={flowHref("/signup?next=/dashboard/apis")} className="home-btn home-btn-line">Sell an API</Link>
       </div>
       <p className="mt-7 text-lg">
         Just looking?{" "}

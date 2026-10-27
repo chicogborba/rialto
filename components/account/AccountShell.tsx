@@ -1,15 +1,16 @@
 "use client";
 
+import { Bot, Home, Plug, Settings, Wallet } from "lucide-react";
 import Link from "next/link";
 import { AppFrame, Chip, type FrameTab } from "@/components/shell/AppFrame";
 import { useAccount } from "@/lib/client/account";
 
 const TABS: FrameTab[] = [
-  { href: "/dashboard", label: "Home", emoji: "🏠" },
-  { href: "/dashboard/agents", label: "Agents", emoji: "🤖" },
-  { href: "/dashboard/wallet", label: "Wallet", emoji: "👛" },
-  { href: "/dashboard/apis", label: "My APIs", emoji: "🔌" },
-  { href: "/dashboard/settings", label: "Settings", emoji: "⚙️" },
+  { href: "/dashboard", label: "Home", icon: Home },
+  { href: "/dashboard/agents", label: "Agents", icon: Bot },
+  { href: "/dashboard/wallet", label: "Wallet", icon: Wallet },
+  { href: "/dashboard/apis", label: "My APIs", icon: Plug },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 /** Frame of the signed-in platform: who you are, how payments run, and the sections. */

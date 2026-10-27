@@ -1,5 +1,6 @@
 "use client";
 
+import { ChartNoAxesColumn, KeyRound, Receipt, Tags, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -7,11 +8,11 @@ import { api } from "@/lib/client/api";
 import { AppFrame, type FrameTab } from "@/components/shell/AppFrame";
 
 const TABS: FrameTab[] = [
-  { href: "/admin", label: "Overview", emoji: "📈" },
-  { href: "/admin/purchases", label: "Purchases", emoji: "🧾" },
-  { href: "/admin/users", label: "Users", emoji: "👥" },
-  { href: "/admin/apis", label: "APIs & prices", emoji: "🏷️" },
-  { href: "/admin/settings", label: "Keys & wallets", emoji: "🔑" },
+  { href: "/admin", label: "Overview", icon: ChartNoAxesColumn },
+  { href: "/admin/purchases", label: "Purchases", icon: Receipt },
+  { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/apis", label: "APIs & prices", icon: Tags },
+  { href: "/admin/settings", label: "Keys & wallets", icon: KeyRound },
 ];
 
 /** Frame of the operator's panel. It shows nothing until the server says this account is an admin. */

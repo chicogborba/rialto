@@ -34,4 +34,18 @@ export function Stat({ label, value, hint }: { label: string; value: React.React
   );
 }
 
+/** The top of every dashboard page: a small kicker, a big headline, one line under it, one action on the right. */
+export function PageHead({ kicker, title, lead, action }: { kicker: string; title: React.ReactNode; lead?: React.ReactNode; action?: React.ReactNode }) {
+  return (
+    <header className="flex flex-wrap items-end justify-between gap-5">
+      <div className="min-w-0 max-w-2xl">
+        <Label tone="signal">{kicker}</Label>
+        <h1 className="mt-3 text-[clamp(2.2rem,5vw,3.6rem)] font-bold leading-[0.95] tracking-[-0.05em]">{title}</h1>
+        {lead && <p className="mt-3 text-lg font-medium text-coal/75">{lead}</p>}
+      </div>
+      {action && <div className="flex shrink-0 flex-wrap gap-3">{action}</div>}
+    </header>
+  );
+}
+
 export const shortAddress = (a: string): string => `${a.slice(0, 4)}…${a.slice(-4)}`;

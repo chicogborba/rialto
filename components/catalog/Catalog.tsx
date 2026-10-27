@@ -161,8 +161,8 @@ export function Catalog({ fallback }: { fallback: CatalogEntry[] }) {
                   <div aria-hidden className="h-4 border-b-2 border-coal" style={{ background: `repeating-linear-gradient(90deg, ${look.color} 0 22px, #fffdf7 22px 44px)` }} />
                   <div className="flex flex-1 flex-col p-5">
                     <div className="flex items-start gap-3">
-                      <span aria-hidden className="grid size-12 shrink-0 place-items-center border-2 border-coal text-2xl" style={{ background: look.color }}>
-                        {look.emoji}
+                      <span aria-hidden className="grid size-12 shrink-0 place-items-center border-2 border-coal" style={{ background: look.color }}>
+                        <look.icon className="size-6" strokeWidth={2.2} />
                       </span>
                       <div className="min-w-0 flex-1">
                         <h2 className="truncate text-xl font-bold tracking-tight">{item.name}</h2>

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { asset } from "@/lib/site";
@@ -9,7 +10,7 @@ import { cn } from "@/lib/utils";
 export interface FrameTab {
   href: string;
   label: string;
-  emoji: string;
+  icon: LucideIcon;
 }
 
 /**
@@ -43,7 +44,7 @@ export function AppFrame({ tabs, root, badge, right, children, wide = false }: {
                   active ? "border-coal bg-lime text-coal shadow-[3px_3px_0_var(--color-coal)]" : "border-transparent text-coal/60 hover:border-coal/20 hover:text-coal",
                 )}
               >
-                <span aria-hidden className="text-[15px]">{t.emoji}</span>
+                <t.icon aria-hidden className="size-4" strokeWidth={2.4} />
                 {t.label}
               </Link>
             );

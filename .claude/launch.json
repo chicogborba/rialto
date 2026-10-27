@@ -53,6 +53,23 @@
         "3120"
       ],
       "port": 3120
+    },
+    {
+      "name": "rialto-ui",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "PAYMENT_MODE=simulated",
+        "DATABASE_URL=file:./ui-test.db",
+        "EMAIL_TRANSPORT=preview",
+        "EMAIL_PREVIEW_DIR=.local/ui-emails",
+        "npm",
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3130"
+      ],
+      "port": 3130
     }
   ]
 }

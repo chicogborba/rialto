@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { HardButton, Label, Panel } from "@/components/primitives";
+import Link from "next/link";
+import { HardButton, Panel } from "@/components/primitives";
 import { api } from "@/lib/client/api";
 import { useAccount } from "@/lib/client/account";
-import { Field, inputCls, Notice } from "./ui";
+import { Field, inputCls, Notice, PageHead } from "./ui";
 
 type Msg = { tone: "ok" | "error"; text: string } | null;
 
@@ -39,10 +40,7 @@ export function Settings() {
 
   return (
     <div className="space-y-8">
-      <header>
-        <Label tone="signal">Settings</Label>
-        <h1 className="mt-3 text-[clamp(2.3rem,5.5vw,4rem)] font-bold leading-[0.95] tracking-[-0.05em]">Your account.</h1>
-      </header>
+      <PageHead kicker="Settings" title={<>Your <span className="sy-mark">account.</span></>} />
 
       <Panel title="Profile" bodyClassName="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -76,7 +74,9 @@ export function Settings() {
             {pwMsg && <Notice tone={pwMsg.tone}>{pwMsg.text}</Notice>}
           </div>
         </form>
-        <p className="font-mono text-[11px] text-muted">There is no email recovery yet: if you forget your password, the operator of this server has to reset it.</p>
+        <p className="font-mono text-[11px] text-muted">
+          Forgot it? <Link href="/forgot-password" className="underline hover:text-signal">Get a reset code by email</Link>.
+        </p>
       </Panel>
 
       <Panel title={`Signed-in devices (${account.sessions.length})`} bodyClassName="p-0">

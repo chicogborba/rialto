@@ -71,11 +71,11 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <Buddy mood={signup ? "wave" : "happy"} className="w-24" />
         <h1 className="mt-6 text-[clamp(2.6rem,5vw,4.2rem)] font-bold leading-[0.95] tracking-[-0.05em]">{signup ? (
             <>
-              Your agent&apos;s first shopping <span className="whitespace-nowrap">trip 🛒</span>
+              Your agent&apos;s first shopping trip
             </>
           ) : (
             <>
-              Welcome <span className="whitespace-nowrap">back 👋</span>
+              Welcome back
             </>
           )}</h1>
         <p className="mt-4 max-w-sm text-lg leading-snug text-coal/70">{signup ? "Connect Claude Code, Codex or any MCP agent, set a limit, and let it buy the APIs it needs." : "Your agents, your wallet and your APIs are where you left them."}</p>

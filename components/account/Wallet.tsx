@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { HardButton, Label, Panel } from "@/components/primitives";
+import { HardButton, Panel } from "@/components/primitives";
 import { CopyBlock } from "@/components/site/CopyBlock";
 import { api } from "@/lib/client/api";
 import { useAccount } from "@/lib/client/account";
 import { formatUsd } from "@/lib/money";
-import { Field, inputCls, Notice, Stat } from "./ui";
+import { Field, inputCls, Notice, PageHead, Stat } from "./ui";
 import { PayWallet } from "./PayWallet";
 import { usePayWalletAvailable } from "@/lib/client/pay-wallet";
 
@@ -43,11 +43,7 @@ export function Wallet() {
 
   return (
     <div className="space-y-8">
-      <header>
-        <Label tone="signal">Wallet</Label>
-        <h1 className="mt-3 text-[clamp(2.3rem,5.5vw,4rem)] font-bold leading-[0.95] tracking-[-0.05em]">Your money stays yours.</h1>
-        <p className="mt-4 max-w-2xl text-lg font-medium">Rialto never holds your money. Agents pay from their own wallet, straight to the seller; sellers are paid straight into theirs.</p>
-      </header>
+      <PageHead kicker="Wallet" title={<>Your money <span className="sy-mark">stays yours.</span></>} lead="Rialto never holds your money. Agents pay sellers straight from your wallet; sellers are paid straight into theirs." />
 
       <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${live ? "" : "sm:grid-cols-3"}`}>
         <Stat label="Payments" value={live ? netName : "Simulated"} hint={live ? (testMoney ? "Real transactions, test USDC" : "Real USDC, settled on-chain") : "Play money, no blockchain"} />

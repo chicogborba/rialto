@@ -11,7 +11,7 @@ export default function ProvidersPage() {
         Everything the agent can hire. Demo providers are fictional; APIs published by sellers are live and earn per call.
       </PageHeader>
       <div className="flex flex-wrap items-center gap-4 border-2 border-ink bg-surface p-4 shadow-[6px_6px_0_var(--color-signal)]">
-        <p className="min-w-0 flex-1 text-lg font-bold">Got an API? Publish it, set your price, get paid per call. 💸</p>
+        <p className="min-w-0 flex-1 text-lg font-bold">Got an API? Publish it, set your price, get paid per call.</p>
         <Link href="/dashboard/apis" className={hardButtonClass("primary")}>Publish an API</Link>
       </div>
       <ProviderList />
