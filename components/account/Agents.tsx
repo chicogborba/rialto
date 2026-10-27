@@ -374,7 +374,7 @@ function AgentBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
 function Fact({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="border-2 border-coal/15 bg-surface px-3 py-2.5">
-      <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-coal/60">{label}</dt>
+      <dt className="text-xs font-medium text-coal/60">{label}</dt>
       <dd className="tnum mt-1 font-mono text-lg font-bold">{value}</dd>
     </div>
   );
@@ -432,7 +432,7 @@ export function Agents() {
 
   return (
     <div className="space-y-8">
-      <PageHead kicker="Agents" title={<>Your <span className="sy-mark">crew.</span></>} lead="Each agent is a key for Claude Code, Codex or any MCP client, with its own limits. Tap one to tune it." action={<HardButton onClick={create}><Plus className="size-4" strokeWidth={3} aria-hidden /> New agent</HardButton>} />
+      <PageHead title={<>Your <span className="sy-mark">crew.</span></>} lead="Each agent is a key for Claude Code, Codex or any MCP client, with its own limits. Tap one to tune it." action={<HardButton onClick={create}><Plus className="size-4" strokeWidth={3} aria-hidden /> New agent</HardButton>} />
 
       {account.agents.length === 0 ? (
         <button type="button" onClick={create} className="sy-card flex w-full flex-col items-center gap-4 border-2 border-dashed border-coal bg-surface/70 px-6 py-12 text-center">

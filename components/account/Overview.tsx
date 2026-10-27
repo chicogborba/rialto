@@ -1,17 +1,17 @@
 "use client";
 
-import { ArrowRight, Check, Plus } from "lucide-react";
+import { ArrowRight, Check, ListChecks, Plus, Receipt } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { hardButtonClass, Panel } from "@/components/primitives";
+import { hardButtonClass } from "@/components/primitives";
 import { api } from "@/lib/client/api";
 import { useAccount } from "@/lib/client/account";
 import { formatUsd } from "@/lib/money";
 import type { TransactionRow } from "@/lib/api-types";
 import { lookOf } from "@/components/catalog/look";
 import { AgentCard } from "./Agents";
-import { PageHead, Stat } from "./ui";
+import { PageHead, Section, Stat } from "./ui";
 
 /** What to do next, derived from the account itself: it ticks off as you go. */
 function Checklist() {
@@ -33,23 +33,23 @@ function Checklist() {
   const next = steps.findIndex((s) => !s.done);
   if (next === -1) return null;
   return (
-    <Panel title="Getting started" status={<span className="font-mono text-[10px] text-muted">{steps.filter((s) => s.done).length} / {steps.length}</span>} bodyClassName="p-0">
-      <ol className="divide-y divide-line">
+    <Section title="Getting started" icon={ListChecks} aside={`${steps.filter((s) => s.done).length} of ${steps.length} done`} bodyClassName="p-0">
+      <ol className="divide-y-2 divide-coal/10">
         {steps.map((s, i) => (
           <li key={s.title}>
-            <Link href={s.href} className={`flex items-start gap-4 p-4 hover:bg-raised ${i === next ? "bg-raised" : ""}`}>
-              <span aria-hidden className={`mt-0.5 grid size-6 shrink-0 place-items-center border font-mono text-xs font-bold ${s.done ? "border-signal bg-signal text-ink" : i === next ? "border-signal text-signal" : "border-line-hi text-muted"}`}>
+            <Link href={s.href} className={`flex items-start gap-4 p-4 hover:bg-sand/40 ${i === next ? "bg-lime/25" : ""}`}>
+              <span aria-hidden className={`mt-0.5 grid size-6 shrink-0 place-items-center border font-mono text-xs font-bold ${s.done ? "border-coal bg-lime" : i === next ? "border-coal bg-surface" : "border-coal/25 text-coal/50"}`}>
                 {s.done ? <Check className="size-3.5" strokeWidth={3.5} aria-label="done" /> : i + 1}
               </span>
               <span className="min-w-0">
-                <span className={`block font-bold ${s.done ? "text-muted line-through" : ""}`}>{s.title}</span>
-                <span className="block text-sm text-muted">{s.text}</span>
+                <span className={`block font-bold ${s.done ? "text-coal/50 line-through" : ""}`}>{s.title}</span>
+                <span className="block text-sm text-coal/60">{s.text}</span>
               </span>
             </Link>
           </li>
         ))}
       </ol>
-    </Panel>
+    </Section>
   );
 }
 
@@ -73,7 +73,6 @@ export function Overview() {
   return (
     <div className="space-y-9">
       <PageHead
-        kicker="Dashboard"
         title={<>Hi, <span className="sy-mark">{first}.</span></>}
         lead={account.agents.length === 0 ? "Hatch an agent and let it shop for APIs." : live ? (account.user.payWallet ? `${account.agents.length} agent${account.agents.length === 1 ? "" : "s"}, paying from your wallet.` : "Link a wallet so your agents can pay.") : `${account.agents.length} agent${account.agents.length === 1 ? "" : "s"} on simulated money.`}
         action={
@@ -99,6 +98,7 @@ export function Overview() {
         </section>
       )}
 
+      {(account.agents.length > 0 || account.seller) && (
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {live ? (
           <>
@@ -114,16 +114,17 @@ export function Overview() {
         <Stat label="Your APIs" value={account.seller ? `${account.seller.online}/${account.seller.apis}` : "0"} hint="Online / published" />
         <Stat label="Earned & paid out" value={formatUsd(account.seller ? account.seller.paidOutMicro + account.seller.balanceMicro : 0)} hint={account.mode === "live" ? "Paid to your wallet on each call" : "Simulated"} />
       </div>
+      )}
 
       <Checklist />
 
-      <Panel title="Recent calls by your agents" bodyClassName="p-0">
+      <Section title="Recent purchases" icon={Receipt} bodyClassName="p-0">
         {rows === null ? (
-          <p className="p-4 font-mono text-xs text-muted">Loading…</p>
+          <p className="p-5 text-sm text-coal/60">Loading…</p>
         ) : rows.length === 0 ? (
-          <p className="p-4 font-mono text-xs text-muted">Nothing yet. When your agent hires an API, it shows up here.</p>
+          <p className="p-5 text-sm text-coal/60">Nothing yet. When one of your agents buys from an API, it shows up here.</p>
         ) : (
-          <ul className="divide-y divide-line">
+          <ul className="divide-y-2 divide-coal/10">
             {rows.map((t) => {
               const look = lookOf(t.capability);
               return (
@@ -150,7 +151,7 @@ export function Overview() {
             })}
           </ul>
         )}
-      </Panel>
+      </Section>
     </div>
   );
 }

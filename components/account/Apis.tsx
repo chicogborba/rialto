@@ -378,7 +378,6 @@ export function Apis() {
   return (
     <div className="space-y-8">
       <PageHead
-        kicker="My APIs"
         title={<>Get paid <span className="sy-mark">per call.</span></>}
         lead="Paste your endpoint, try it, set a price. Every agent on Rialto can hire it, and you keep 100% of your price."
         action={

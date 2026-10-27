@@ -70,6 +70,22 @@
         "3130"
       ],
       "port": 3130
+    },
+    {
+      "name": "rialto-ui-live",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "DATABASE_URL=file:./ui-live.db",
+        "EMAIL_TRANSPORT=preview",
+        "EMAIL_PREVIEW_DIR=.local/ui-emails",
+        "npm",
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3140"
+      ],
+      "port": 3140
     }
   ]
 }

@@ -2,10 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { HardButton, Panel } from "@/components/primitives";
+import { LockKeyhole, MonitorSmartphone, UserRound } from "lucide-react";
+import { HardButton } from "@/components/primitives";
 import { api } from "@/lib/client/api";
 import { useAccount } from "@/lib/client/account";
-import { Field, inputCls, Notice, PageHead } from "./ui";
+import { Field, inputCls, Notice, PageHead, Section } from "./ui";
+
+/** "Chrome on macOS" from a user agent, good enough to recognise your own devices. */
+function deviceName(ua: string | null): string {
+  if (!ua) return "Unknown device";
+  const browser = /Edg\//.test(ua) ? "Edge" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Browser";
+  const os = /iPhone|iPad/.test(ua) ? "iOS" : /Android/.test(ua) ? "Android" : /Mac OS X/.test(ua) ? "macOS" : /Windows/.test(ua) ? "Windows" : /Linux/.test(ua) ? "Linux" : "";
+  return os ? `${browser} on ${os}` : browser;
+}
 
 type Msg = { tone: "ok" | "error"; text: string } | null;
 
@@ -40,9 +49,9 @@ export function Settings() {
 
   return (
     <div className="space-y-8">
-      <PageHead kicker="Settings" title={<>Your <span className="sy-mark">account.</span></>} />
+      <PageHead title={<>Your <span className="sy-mark">account.</span></>} />
 
-      <Panel title="Profile" bodyClassName="space-y-4">
+      <Section title="Profile" icon={UserRound} bodyClassName="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Email">
             <input className={`${inputCls} opacity-60`} value={account.user.email} readOnly />
@@ -57,9 +66,9 @@ export function Settings() {
           </HardButton>
           {nameMsg && <Notice tone={nameMsg.tone}>{nameMsg.text}</Notice>}
         </div>
-      </Panel>
+      </Section>
 
-      <Panel title="Password" bodyClassName="space-y-4">
+      <Section title="Password" icon={LockKeyhole} bodyClassName="space-y-4">
         <form onSubmit={changePassword} className="grid gap-4 sm:grid-cols-2">
           <Field label="Current password">
             <input className={inputCls} type="password" autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} required />
@@ -74,23 +83,25 @@ export function Settings() {
             {pwMsg && <Notice tone={pwMsg.tone}>{pwMsg.text}</Notice>}
           </div>
         </form>
-        <p className="font-mono text-[11px] text-muted">
+        <p className="text-sm text-coal/60">
           Forgot it? <Link href="/forgot-password" className="underline hover:text-signal">Get a reset code by email</Link>.
         </p>
-      </Panel>
+      </Section>
 
-      <Panel title={`Signed-in devices (${account.sessions.length})`} bodyClassName="p-0">
-        <ul className="divide-y divide-line font-mono text-xs">
+      <Section title="Signed-in devices" icon={MonitorSmartphone} aside={`${account.sessions.length}`} bodyClassName="p-0">
+        <ul className="divide-y-2 divide-coal/10">
           {account.sessions.map((s) => (
             <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-              <span className="min-w-0 truncate">
-                {s.userAgent?.slice(0, 70) ?? "Unknown device"} {s.current && <span className="text-signal">· this device</span>}
+              <span className="min-w-0">
+                <span className="block truncate font-bold">
+                  {deviceName(s.userAgent)} {s.current && <span className="ml-1 border-2 border-coal bg-lime px-1.5 text-xs">This device</span>}
+                </span>
+                <span className="block text-xs text-coal/60">Last used {new Date(s.lastUsedAt).toLocaleString("en-GB", { hour12: false, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
               </span>
-              <span className="text-muted">last used {new Date(s.lastUsedAt).toLocaleString("en-GB", { hour12: false })}</span>
             </li>
           ))}
         </ul>
-        <div className="flex flex-wrap items-center gap-3 border-t border-line p-4">
+        <div className="flex flex-wrap items-center gap-3 border-t-2 border-coal/10 p-5">
           <HardButton variant="ghost" onClick={others} disabled={account.sessions.length < 2}>
             Sign out other devices
           </HardButton>
@@ -99,7 +110,7 @@ export function Settings() {
           </HardButton>
           {sessMsg && <Notice tone={sessMsg.tone}>{sessMsg.text}</Notice>}
         </div>
-      </Panel>
+      </Section>
     </div>
   );
 }
