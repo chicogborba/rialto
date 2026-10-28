@@ -37,3 +37,5 @@ export const rateInput = {
   score: z.number().int().min(1).max(5).describe("1 unusable, 2 poor, 3 usable, 4 good, 5 exactly what you asked for."),
   note: z.string().max(280).optional().describe("One short reason, e.g. 'background not transparent'."),
 };
+
+export const resultInput = { runId: z.string().describe("The runId execute_service answered \"pending\" with.") };

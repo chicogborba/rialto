@@ -8,6 +8,7 @@ import { runAgent } from "@/lib/agent/run";
 import type { Preset } from "@/lib/agent/appetite";
 import { HttpError } from "@/lib/http";
 import { ratePurchase } from "@/lib/reputation/rating";
+import { jobFor, resultOrPending } from "./pending";
 import { createRun, getHistory, getWallet, listCandidates, listTransactions, persistentDepsFor, recentOutcomes } from "@/lib/db/repo";
 import { explain } from "@/lib/routing/explain";
 import { scoreCandidates } from "@/lib/routing/score";
@@ -198,6 +199,7 @@ async function executeFromAllowance(args: GoalArgs, ctx: ToolCtx, payer: NonNull
   const names = new Map(candidates.map((c) => [c.provider.id, c.provider.name]));
   const paid: { provider: string; amountUsd: number; txRef: string; explorerUrl: string | null }[] = [];
   const runId = clock.id("run");
+  return resultOrPending(ctx.agentId, runId, (async () => {
   let last;
   for await (const e of runAgent({ goal: args.goal, constraints, runId }, deps)) {
     last = e;
@@ -212,6 +214,7 @@ async function executeFromAllowance(args: GoalArgs, ctx: ToolCtx, payer: NonNull
   }
   if (last.type !== "run.completed") throw new ToolError("Run ended unexpectedly");
   return { runId, mode: "live" as const, network: NETWORK.name, testMoney: NETWORK.testMoney, paidFrom: payer.wallet, totalCostUsd: usd(last.totalCostMicro), allowanceLeftUsd: usd(Math.max(0, spendable)), transactions: paid, result: last.result, next: RATE_HINT };
+  })());
 }
 
 export async function executeService(args: GoalArgs, ctx: ToolCtx) {
@@ -238,6 +241,7 @@ export async function executeService(args: GoalArgs, ctx: ToolCtx) {
   const runId = clock.id("run");
   await createRun({ runId, goal: args.goal, constraints, mode: rail.mode, agentId: ctx.agentId });
   const deps = { planner: new DemoAgentPlanner(route), rail, clock, executor: createHttpExecutor(base), ...persistentDepsFor(ctx.agentId) };
+  return resultOrPending(ctx.agentId, runId, (async () => {
   let last;
   for await (const e of runAgent({ goal: args.goal, constraints, runId }, deps)) last = e;
   if (last?.type === "run.failed" && last.capability && last.rejected && last.stepId === null) throw new ToolError(noProviderMessage(last.capability, last.rejected, wallet.policy.maxPerRequestMicro));
@@ -245,6 +249,20 @@ export async function executeService(args: GoalArgs, ctx: ToolCtx) {
   if (last.type !== "run.completed") throw new ToolError("Run ended unexpectedly");
   const txs = (await listTransactions(50, undefined, ctx.agentId)).rows.filter((t) => t.runId === runId);
   return { runId, mode: rail.mode, totalCostUsd: usd(last.totalCostMicro), savedVsPremiumUsd: usd(last.savings.savedMicro), result: last.result, transactions: txs, next: RATE_HINT };
+  })());
+}
+
+/** The result of a purchase that execute_service answered "pending" for. */
+export async function getResult(args: { runId: string }, ctx: ToolCtx) {
+  const job = jobFor(ctx.agentId, args.runId);
+  if (job?.state === "done") return job.value;
+  if (job?.state === "failed") throw new ToolError(job.error instanceof ToolError ? job.error.message : `It failed and you were not charged: ${job.error.message}`);
+  if (job?.state === "pending") return { status: "pending", runId: args.runId, next: "Still generating. Ask again in about 30 seconds." };
+  // not in this process (a restart, or an older run): what the purchase recorded
+  const tx = await prisma.transaction.findFirst({ where: { runId: args.runId, agentId: ctx.agentId }, orderBy: { createdAt: "desc" }, select: { status: true, result: true, error: true, amountMicro: true } });
+  if (!tx) throw new ToolError(`No purchase of yours with runId "${args.runId}".`);
+  if (tx.status !== "settled") throw new ToolError(`That purchase did not go through and you were not charged${tx.error ? `: ${tx.error}` : "."}`);
+  return { runId: args.runId, totalCostUsd: usd(tx.amountMicro), result: tx.result ? JSON.parse(tx.result) : null, next: RATE_HINT };
 }
 
 const RATE_HINT = "Look at the result, then call rate_purchase with this runId and a score from 1 (unusable) to 5 (exactly right). Ratings decide which providers Rialto trusts.";

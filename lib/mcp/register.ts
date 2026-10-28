@@ -1,9 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ToolError } from "./route";
-import { compareInput, discoverInput, planInput, rateInput, reputationInput, transactionsInput } from "./schemas";
+import { compareInput, discoverInput, planInput, rateInput, reputationInput, resultInput, transactionsInput } from "./schemas";
 import {
   compareServices, discoverServices, executeService, getProviderReputation, getTransactions,
-  getWalletStatus, planExecution, ratePurchaseTool, type ToolCtx,
+  getResult, getWalletStatus, planExecution, ratePurchaseTool, type ToolCtx,
 } from "./tools";
 
 type ToolResult = { content: { type: "text"; text: string }[]; isError?: boolean };
@@ -18,7 +18,7 @@ async function respond(run: () => Promise<unknown>): Promise<ToolResult> {
   }
 }
 
-/** The eight Rialto tools, bound to one caller. Used by both the stdio server and the hosted HTTP endpoint. */
+/** The nine Rialto tools, bound to one caller. Used by both the stdio server and the hosted HTTP endpoint. */
 export function registerRialtoTools(server: McpServer, ctx: ToolCtx): void {
   server.registerTool("discover_services", {
     title: "Discover services",
@@ -46,9 +46,15 @@ export function registerRialtoTools(server: McpServer, ctx: ToolCtx): void {
 
   server.registerTool("execute_service", {
     title: "Execute goal",
-    description: "Plan AND execute a goal: picks the best provider, pays it from your owner's linked Solana wallet within its approved allowance, runs it, falls back on failure, and returns the result plus transactions. Generated files (images, audio, video, 3D models) come back as https links to download. Pass `capability` (and `provider`) to choose them yourself; put the link of any input file in `goal`. On-chain payments use USDC; get_wallet_status reports the platform mode, network, whether it is test money, and payment readiness.",
+    description: "Plan AND execute a goal: picks the best provider, pays it from your owner's linked Solana wallet within its approved allowance, runs it, falls back on failure, and returns the result plus transactions. Generated files (images, audio, video, 3D models) come back as https links to download. Pass `capability` (and `provider`) to choose them yourself; put the link of any input file in `goal`. Slow APIs (3D models, video, long music) can take minutes: after about 45 seconds you get {status: \"pending\", runId} instead, and get_result hands you the result when it is ready. You are charged only when it delivers. On-chain payments use USDC; get_wallet_status reports the platform mode, network, whether it is test money, and payment readiness.",
     inputSchema: planInput,
   }, (args) => respond(() => executeService(args, ctx)));
+
+  server.registerTool("get_result", {
+    title: "Get a pending result",
+    description: "The result of an execute_service call that answered {status: \"pending\"}: pass its runId. Answers pending again while the API is still working; ask every 30 seconds or so. Free.",
+    inputSchema: resultInput,
+  }, (args) => respond(() => getResult(args, ctx)));
 
   server.registerTool("rate_purchase", {
     title: "Rate a purchase",

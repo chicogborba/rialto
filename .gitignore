@@ -56,3 +56,6 @@ prisma/backups/
 
 # Local email previews contain confirmation/reset codes.
 .local/
+
+# live copies of the demo games while they are being built
+public/demo/preview/
