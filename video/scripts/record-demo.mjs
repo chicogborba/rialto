@@ -11,7 +11,7 @@
 // `npm run user:admin -- purge @example.com` in the app.
 import { spawn, spawnSync } from "node:child_process";
 import { createPrivateKey, randomBytes, sign } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -214,6 +214,17 @@ async function wheel(total, ms = 900) {
 }
 const byText = (tags, text) => `[...document.querySelectorAll(${JSON.stringify(tags)})].find((e) => e.textContent.trim().startsWith(${JSON.stringify(text)}) && e.getClientRects().length)`;
 const field = (label) => `[...document.querySelectorAll("label")].find((l) => l.textContent.trim().startsWith(${JSON.stringify(label)}))?.querySelector("input,select,textarea")`;
+/** The six-digit code of the newest email to `email`: the server writes its mail to disk when EMAIL_TRANSPORT=preview. */
+function emailedCode(email) {
+  const dir = path.resolve(root, "..", process.env.DEMO_EMAIL_DIR ?? ".local/demo-emails");
+  if (!existsSync(dir)) return null;
+  const files = readdirSync(dir).map((f) => ({ f, t: statSync(path.join(dir, f)).mtimeMs })).sort((a, b) => b.t - a.t);
+  for (const { f } of files) {
+    const mail = JSON.parse(readFileSync(path.join(dir, f), "utf8"));
+    if ([mail.to].flat().some((to) => String(to).toLowerCase() === email)) return /\n\n(\d{6})\n\n/.exec(mail.text)?.[1] ?? null;
+  }
+  return null;
+}
 async function goto(url) {
   await page.send("Page.navigate", { url: `${BASE}${url}` });
   await page.until(`document.readyState === "complete"`, `load ${url}`);
@@ -482,7 +493,7 @@ async function filmGame(name, original, seconds = 16, options = {}) {
 }
 
 /** Takes that are made only when asked for by name: they need a session or a game that the others do not. */
-const ON_REQUEST = new Set(["termRialto", "termPlain", "gamePlain", "gameRialto"]);
+const ON_REQUEST = new Set(["termRialto", "termPlain", "gamePlain", "gameRialto", "session", "terminal", "login", "activity", "admin"]);
 
 const TAKES = {
   async termRialto() {
@@ -522,45 +533,60 @@ const TAKES = {
     await wheel(-1540, 1300);
     await sleep(600);
     mark("cta");
-    await click(byText("a", "🤖"), { ms: 800, rest: 350 });
+    await click(byText("a", "Connect an agent"), { ms: 800, rest: 350 });
     await page.until(`location.pathname === "/signup"`, "the sign-up page");
     mark("signup");
     await sleep(500);
     await end();
   },
 
-  /** Sign up: three fields and a button. */
+  /** Sign up: three fields, then the code that arrives by email. */
   async signup() {
     await goto("/signup?next=/dashboard/agents");
-    await page.until(byText("h1", "Create your account"));
+    await page.until(byText("h1,h2", "Create your account"));
     await sleep(600);
     state.password = `${randomBytes(9).toString("base64url")}Aa1`;
     await begin("signup");
     await sleep(700);
-    await click(field("Your name"));
-    mark("name");
-    await type(PERSON.name);
-    await click(field("Email"), { ms: 450 });
+    await click(field("Email"));
     mark("email");
     await type(PERSON.email, { each: 45 });
+    await click(field("Your name"), { ms: 450 });
+    mark("name");
+    await type(PERSON.name);
     await click(field("Password"), { ms: 450, at: [0.3, 0.5] });
     mark("password");
     await type(state.password, { each: 40 });
     await sleep(350);
     await shot("signup-filled");
-    await click(byText("button", "Create account"), { ms: 600, rest: 300 });
+    await click(byText("button", "Send confirmation code"), { ms: 600, rest: 300 });
     mark("submit");
+    await page.until(`document.body.innerText.includes("six-digit code")`, "the code step", 30_000);
+    mark("code");
+    let code = null;
+    for (let i = 0; i < 40 && !code; i++) {
+      code = emailedCode(PERSON.email);
+      if (!code) await sleep(250);
+    }
+    if (!code) throw new Error("no confirmation email in the preview folder: start the server with EMAIL_TRANSPORT=preview");
+    await sleep(900);
+    await click(field("Confirmation code"), { ms: 600 });
+    await type(code, { each: 130 });
+    await sleep(300);
+    await shot("signup-code");
+    await click(byText("button", "Confirm email"), { ms: 600, rest: 300 });
+    mark("confirm");
     await page.until(`location.pathname === "/dashboard/agents"`, "the dashboard", 30_000);
-    await page.until(byText("h1", "Give your agent"));
+    await page.until(byText("h1", "Your"));
     mark("dashboard");
     await sleep(900);
     await end();
   },
 
-  /** Create an agent, see its key and the one command, give it money to spend. */
+  /** Make an agent: name it, dress its critter, roll the dice, set how keen it is to buy; meet it, get its key and the one command. */
   async agent() {
     await goto("/dashboard/agents");
-    await page.until(byText("h1", "Give your agent"));
+    await page.until(byText("h1", "Your"));
     await sleep(700);
     const key = new Promise((resolve) => {
       const ids = new Set();
@@ -573,17 +599,39 @@ const TAKES = {
         resolve(JSON.parse(body.body).apiKey);
       });
     });
+    const arrow = (label) => `document.querySelector('button[aria-label="${label}"]')`;
     await begin("agent");
     await sleep(600);
-    await click(field("Name a new agent"));
+    await click(byText("button", "New agent"), { ms: 700, rest: 300 });
+    mark("new");
+    await page.until(`document.body.innerText.includes("Make your agent")`, "the editor", 15_000);
+    await sleep(1100);
+    await click(field("Name"), { ms: 500 });
     mark("name");
-    await clearField();
-    await sleep(200);
-    await type(PERSON.agent);
-    await sleep(250);
-    await click(byText("button", "Create agent"), { ms: 500, rest: 250 });
+    await type(PERSON.agent, { each: 60 });
+    await sleep(300);
+    // a few steps through its wardrobe, then the dice
+    for (const label of ["Next head", "Next head", "Next glasses", "Next color"]) {
+      await click(arrow(label), { ms: 520, rest: 140 });
+      await sleep(260);
+    }
+    mark("look");
+    await sleep(500);
+    await click(arrow("Random look"), { ms: 600, rest: 200 });
+    mark("dice");
+    await sleep(1100);
+    await click(arrow("Eager"), { ms: 700, rest: 250 });
+    mark("appetite");
+    await sleep(1500);
+    await shot("agent-editor");
+    await click(byText("button", "Create agent"), { ms: 600, rest: 300 });
     mark("create");
-    await page.until(byText("h2,h3,div,span", "Connect “"), "the key card", 30_000);
+    await page.until(`document.body.innerText.includes("Meet ")`, "the new agent", 30_000);
+    mark("meet");
+    await sleep(2800);
+    await shot("agent-meet");
+    await click(byText("button", "Connect it"), { ms: 650, rest: 250 });
+    await page.until(`document.body.innerText.includes("Copy the key")`, "the key step", 15_000);
     state.agentKey = await key;
     save();
     mark("key");
@@ -595,20 +643,18 @@ const TAKES = {
     mark("copy");
     await sleep(1500);
     await shot("agent-copied");
-    await click(byText("button", "I saved it"), { ms: 700 });
-    await sleep(500);
-    // money: the account's test dollar goes to the agent
-    await click(`[...document.querySelectorAll("label")].find((l) => l.textContent.includes("Amount (USD)"))?.querySelector("input")`, { ms: 700 });
-    mark("amount");
-    await clearField();
-    await type("1", { each: 90 });
-    await sleep(250);
-    await click(byText("button", "Add from account"), { ms: 500, rest: 250 });
-    mark("fund");
-    await page.until(`document.body.innerText.includes("Added $1")`, "the money to move", 20_000);
-    mark("funded");
-    await sleep(2600);
-    await shot("agent-funded");
+    await click(byText("button", "I saved the key"), { ms: 700 });
+    mark("saved");
+    await sleep(1400);
+    // its card, and its settings
+    await click(`[...document.querySelectorAll("button")].find((b) => b.textContent.includes(${JSON.stringify(PERSON.agent)}) && b.className.includes("sy-card"))`, { ms: 800, rest: 250 });
+    await page.until(`document.querySelector('[role="tab"]')`, "the agent's settings", 15_000);
+    mark("open");
+    await sleep(1300);
+    await click(byText("button", "Behavior"), { ms: 650, rest: 200 });
+    mark("behavior");
+    await sleep(2400);
+    await shot("agent-behavior");
     await end();
   },
 
@@ -661,100 +707,117 @@ const TAKES = {
     console.log(`terminal: ${session.seconds.toFixed(1)}s, marks ${Object.keys(session.marks).join(" ")}`);
   },
 
-  /** After the agent has bought something: the overview, down at the list of calls, on the one it just made. */
+  /** Off camera: sign in as the demo admin, whose agent has just built a game and has the purchases to show. */
+  async login() {
+    if (!process.env.DEMO_ADMIN_EMAIL || !process.env.DEMO_ADMIN_PW) throw new Error("set DEMO_ADMIN_EMAIL and DEMO_ADMIN_PW");
+    await goto("/login");
+    const res = await page.js(`fetch("/api/auth/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: ${JSON.stringify(process.env.DEMO_ADMIN_EMAIL)}, password: ${JSON.stringify(process.env.DEMO_ADMIN_PW)} }) }).then((r) => r.status)`);
+    if (res !== 200) throw new Error(`login failed: ${res}`);
+    console.log("login: signed in as the demo admin");
+  },
+
+  /** After the agent has bought something: the home page, its crew, and down to the purchases it made. */
   async activity() {
     await goto("/dashboard");
     await page.until(byText("h1", "Hi,"));
-    const row = `[...document.querySelectorAll("a")].find((a) => a.href.includes("explorer.solana.com"))`;
-    await page.until(row, "the call in the dashboard", 20_000);
-    state.explorerUrl = await page.js(`(${row}).href`);
-    save();
+    await page.until(byText("h2", "Recent purchases"), "the purchases", 20_000);
     await sleep(500);
     await begin("activity");
-    await sleep(1400);
+    await sleep(1600);
     mark("overview");
-    const p = await where(row);
+    const p = await where(byText("h2", "Recent purchases"));
     mark("calls");
-    await sleep(500);
-    await moveTo(p.x, p.y, 900);
+    await sleep(600);
+    await moveTo(p.x + 260, p.y + 130, 900);
     mark("transaction");
     await sleep(3200);
     await shot("activity");
     await end();
   },
 
-  /** The same payment on Solana's own explorer: not Rialto's word for it. */
-  async explorer() {
-    if (!state.explorerUrl) throw new Error("no transaction yet: record the activity take first");
-    await page.send("Page.navigate", { url: state.explorerUrl });
-    await page.until(`/Signature|Result|Confirmation/.test(document.body.innerText) && /Success|Finalized|Confirmed/i.test(document.body.innerText)`, "the transaction on the explorer", 60_000);
-    await sleep(1500);
-    await begin("explorer");
-    await moveTo(820, 430, 600);
+  /** The operator's side: sales and profit, every purchase with what Rialto kept, and the people behind them. */
+  async admin() {
+    await goto("/admin");
+    await page.until(byText("h1", "Overview"), "the admin overview", 30_000).catch(() => sleep(2000));
+    await sleep(1200);
+    await begin("admin");
     await sleep(1800);
-    mark("page");
-    await wheel(260, 1100);
-    await sleep(2600);
-    await shot("explorer");
+    mark("overview");
+    await wheel(520, 1200);
+    await sleep(1800);
+    mark("charts");
+    await click(byText("a", "Purchases"), { ms: 800, rest: 300 });
+    await page.until(`location.pathname === "/admin/purchases"`, "the purchases page");
+    await sleep(2200);
+    mark("purchases");
+    await click(byText("a", "Users"), { ms: 800, rest: 300 });
+    await page.until(`location.pathname === "/admin/users"`, "the users page");
+    await sleep(1600);
+    mark("users");
+    await click(`[...document.querySelectorAll("tbody tr")][0]`, { ms: 800, rest: 300 });
+    await page.until(byText("h3", "Agents"), "the user's profile", 15_000).catch(() => sleep(1500));
+    mark("profile");
+    await sleep(2800);
+    await shot("admin");
     await end();
-    // the scene shows the address it was filmed at
-    if (!SHOTS) writeFileSync(path.join(OUT, "explorer.json"), `${JSON.stringify({ ...JSON.parse(readFileSync(path.join(OUT, "explorer.json"), "utf8")), url: state.explorerUrl })}\n`);
   },
 
-  /**
-   * Off camera: the account links the wallet it wants to be paid at, by signing Rialto's challenge
-   * with it. In the product that is a click in Phantom; here the devnet test wallet from the app's
-   * .env signs it, because a headless browser has no wallet extension.
-   */
+  /** Off camera: say where this account is paid, which an API needs before it can be published. */
   async wallet() {
     const env = readFileSync(path.resolve(root, "../.env"), "utf8");
-    const secret = /^SOLANA_TEST_SELLER_SECRET_KEY="?([1-9A-HJ-NP-Za-km-z]+)"?/m.exec(env)?.[1];
-    if (!secret) throw new Error("SOLANA_TEST_SELLER_SECRET_KEY is not in the app's .env");
-    const bytes = unbase58(secret);
-    const address = base58(bytes.subarray(32, 64));
-    const key = createPrivateKey({ key: Buffer.concat([Buffer.from("302e020100300506032b657004220420", "hex"), bytes.subarray(0, 32)]), format: "der", type: "pkcs8" });
+    const address = /^SOLANA_PAY_TO="?([1-9A-HJ-NP-Za-km-z]{32,44})"?/m.exec(env)?.[1];
+    if (!address) throw new Error("SOLANA_PAY_TO is not in the app's .env");
     await goto("/dashboard/wallet");
-    const post = (url, body) => page.js(`fetch(${JSON.stringify(url)}, { method: "POST", headers: { "content-type": "application/json" }, body: ${JSON.stringify(JSON.stringify(body))} }).then(async (r) => ({ status: r.status, body: await r.json() }))`);
-    const challenge = await post("/api/account/wallet/challenge", { address });
-    if (challenge.status !== 200) throw new Error(`challenge: ${JSON.stringify(challenge.body)}`);
-    const verified = await post("/api/account/wallet/verify", { address, issuedAt: challenge.body.issuedAt, signature: sign(null, Buffer.from(challenge.body.message), key).toString("base64") });
-    if (verified.status !== 200) throw new Error(`verify: ${JSON.stringify(verified.body)}`);
-    console.log("wallet: linked");
+    const res = await page.js(`fetch("/api/account/wallet", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ address: ${JSON.stringify(address)} }) }).then((r) => r.status)`);
+    if (res !== 200) throw new Error(`wallet: ${res}`);
+    console.log("wallet: set");
   },
 
-  /** Publish an API: the free example, a price, publish, and there it is in the catalog. */
+  /** Register an API in four steps: pick the example, call it for free, price it, publish; there it is. */
   async publish() {
     await goto("/dashboard/apis");
-    await page.until(byText("button", "⚡ Fill with a free example"));
+    await page.until(byText("h1", "Get paid"));
+    await page.until(byText("button", "Register an API"));
     await sleep(700);
     await begin("publish");
     await sleep(900);
-    await click(byText("button", "⚡ Fill with a free example"), { ms: 800, rest: 300 });
-    mark("fill");
-    await sleep(900);
-    await click(field("API name"), { ms: 600 });
+    await click(byText("button", "Register an API"), { ms: 800, rest: 300 });
+    mark("open");
+    await page.until(`document.body.innerText.includes("Start from an example")`, "the wizard", 15_000);
+    await sleep(1100);
+    await click(byText("button", "PokéAPI"), { ms: 800, rest: 300 });
+    mark("example");
+    await page.until(`document.body.innerText.includes("Try it before you sell it")`, "the endpoint step", 15_000);
+    await sleep(1300);
+    await click(byText("button", "Call it"), { ms: 800, rest: 300 });
+    mark("call");
+    await page.until(`document.body.innerText.includes("OK in")`, "the dry run", 30_000);
+    await sleep(2300);
+    await shot("publish-called");
+    await click(byText("button", "Next"), { ms: 700, rest: 250 });
+    await page.until(`document.body.innerText.includes("One line for buyers")`, "the listing step", 15_000);
+    await sleep(700);
+    await click(field("Name"), { ms: 600 });
     await clearField();
     await sleep(150);
     await type("Monster Data API", { each: 50 });
     mark("named");
     await sleep(500);
-    await shot("publish-filled");
-    await click(field("Your price per successful call"), { ms: 800 });
+    await click(field("Your price per call"), { ms: 800 });
     mark("price");
     await clearField();
     await type("0.004", { each: 110 });
-    await sleep(1500);
+    await sleep(1700);
     await shot("publish-price");
+    await click(byText("button", "Next"), { ms: 700, rest: 250 });
+    await page.until(`document.body.innerText.includes("This is how agents will see it")`, "the preview", 15_000);
+    mark("preview");
+    await sleep(2200);
     await click(byText("button", "Publish API"), { ms: 700, rest: 300 });
     mark("publish");
-    await page.until(`document.body.innerText.toLowerCase().includes("published") || document.body.innerText.includes("is live")`, "the API to publish", 30_000).catch(() => sleep(2500));
+    await page.until(`document.body.innerText.includes("It is on sale now")`, "the API to publish", 30_000);
     mark("published");
-    await sleep(1500);
-    // back up to the list, where it now stands
-    await page.until(`document.body.innerText.includes("YOUR APIS (1)") || document.body.innerText.includes("Your APIs (1)")`, "the list", 15_000).catch(() => {});
-    await click(byText("div,span,h2,h3", "Your APIs"), { ms: 900, at: [0.2, 3] }).catch(() => wheel(-700, 900));
-    mark("listed");
-    await sleep(2400);
+    await sleep(2800);
     await shot("publish-done");
     await end();
   },
