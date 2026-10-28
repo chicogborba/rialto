@@ -27,19 +27,6 @@
       "port": 3110
     },
     {
-      "name": "rialto-demo",
-      "runtimeExecutable": "env",
-      "runtimeArgs": [
-        "DATABASE_URL=file:./demo.db",
-        "LIVE_DAILY_CAP_USD=20",
-        "OPERATOR_DAILY_CAP_USD=50",
-        "npm",
-        "run",
-        "dev"
-      ],
-      "port": 3100
-    },
-    {
       "name": "rialto-live-test",
       "runtimeExecutable": "env",
       "runtimeArgs": [
@@ -86,6 +73,25 @@
         "3140"
       ],
       "port": 3140
+    },
+    {
+      "name": "rialto-demo",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "PAYMENT_MODE=simulated",
+        "DATABASE_URL=file:./demo-v2.db",
+        "OPERATOR_DAILY_CAP_USD=60",
+        "EMAIL_TRANSPORT=preview",
+        "EMAIL_PREVIEW_DIR=.local/demo-emails",
+        "INTERNAL_BASE_URL=http://127.0.0.1:3100",
+        "npm",
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3100"
+      ],
+      "port": 3100
     }
   ]
 }

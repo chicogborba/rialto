@@ -4,6 +4,8 @@
 //   npm run user:admin -- reset-password <email>     set a new random password (printed once), sign the user out everywhere
 //   npm run user:admin -- create-agent <email> <name> [maxPerCallUsd] [sessionBudgetUsd]
 //                                                    a new agent for that account, with its limits; the key is printed once
+//   npm run user:admin -- grant <email> [usd]       test money for a throwaway or demo account (default $1000): its balance and
+//                                                    every agent's. Simulated rail only: refuses to run with PAYMENT_MODE=live
 //   npm run user:admin -- purge <@domain>            delete the accounts whose email ends with this, with their agents and APIs
 //                                                    (e.g. @example.com: what the e2e script leaves behind)
 //
@@ -48,6 +50,17 @@ async function main(): Promise<void> {
     const user = await prisma.user.update({ where: { email }, data: { role: command === "promote" ? "admin" : "user" } }).catch(() => null);
     if (!user) throw new Error(`No account with ${email}`);
     console.log(`${email} is now ${user.role === "admin" ? "an admin: /admin is open to them" : "a regular user"}.`);
+  } else if (command === "grant" && arg) {
+    if (process.env.PAYMENT_MODE === "live") throw new Error("grant makes up test money, which only exists on the simulated rail. Run it with PAYMENT_MODE=simulated.");
+    const user = await prisma.user.findUnique({ where: { email: normalizeEmail(arg) } });
+    if (!user) throw new Error(`No account with ${arg}`);
+    // balances are 32-bit micro-dollars: about $2,100 is the most a column can hold
+    const micro = Math.min(2_000_000_000, toMicro(Number(name ?? 1000)));
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: user.id }, data: { balanceMicro: micro } }),
+      prisma.agent.updateMany({ where: { userId: user.id, revokedAt: null }, data: { balanceMicro: micro } }),
+    ]);
+    console.log(`${user.email} and its agents now hold $${(micro / 1e6).toFixed(2)} of test money each.`);
   } else if (command === "purge" && arg?.startsWith("@")) {
     const users = await prisma.user.findMany({ where: { email: { endsWith: arg.toLowerCase() } }, select: { id: true, seller: { select: { id: true } } } });
     const ids = users.map((u) => u.id);
@@ -67,7 +80,7 @@ async function main(): Promise<void> {
     ]);
     console.log(`Deleted ${ids.length} account(s) ending in ${arg}.`);
   } else {
-    console.log("Usage: user:admin list | reset-password <email> | promote <email> | demote <email> | create-agent <email> <name> [perCallUsd] [sessionUsd] | purge <@domain>");
+    console.log("Usage: user:admin list | reset-password <email> | promote <email> | demote <email> | create-agent <email> <name> [perCallUsd] [sessionUsd] | grant <email> [usd] | purge <@domain>");
     process.exitCode = 1;
   }
 }
