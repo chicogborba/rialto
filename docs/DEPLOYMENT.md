@@ -163,3 +163,7 @@ they registered, so a typo is a lost payment.
 - `prisma db push` runs on every start. It applies additive schema changes and **stops the container instead of applying one that would lose data**; such a change needs a manual migration.
 - The image is about 1.7 GB unpacked: it carries the Prisma CLI and `tsx` so the same image can migrate, seed and run the scripts above.
 - Payments are **simulated** unless `PAYMENT_MODE=live`. On the live rail they are USDC on the network `SOLANA_NETWORK` names: devnet is test money, mainnet is real money. Say which one a deployment is on.
+
+### Production payment surface
+
+Production hides fictional providers and test-credit controls. Credit issuance, allocation, simulated payouts, demo execution and the legacy anonymous buyer signup are disabled even if the live rail is misconfigured. `/app` redirects to `/dashboard`. The hosted MCP reports the platform mode, linked wallet allowance and agent limits; live responses omit test-credit balances. Existing simulated ledger entries remain stored for historical accuracy. Local development with `PAYMENT_MODE=simulated` retains the simulation tools.

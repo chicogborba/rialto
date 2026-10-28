@@ -1,3 +1,4 @@
+import { simulationAllowed } from "@/lib/simulation";
 import { createHmac, randomBytes, randomInt } from "node:crypto";
 import type { EmailChallenge, Prisma } from "@prisma/client";
 import { z } from "zod";
@@ -7,7 +8,6 @@ import { emailConfig, sendEmail } from "@/lib/email/send";
 import { codeEmail, type EmailPurpose } from "@/lib/email/templates";
 import { HttpError } from "@/lib/http";
 import { LEGAL_VERSION } from "@/lib/legal";
-import { liveConfig } from "@/lib/x402/solana";
 import { hashPassword, normalizeEmail, passwordProblem } from "./password";
 
 export const CODE_LIFETIME_MS = 10 * 60_000;
@@ -87,7 +87,7 @@ export async function confirmSignup(email: string, code: string): Promise<{ id: 
   try {
     return await prisma.$transaction(async (db) => {
       await consumeCode(db, pending);
-      const credit = liveConfig() ? 0 : WELCOME_CREDIT_MICRO;
+      const credit = simulationAllowed() ? WELCOME_CREDIT_MICRO : 0;
       const user = await db.user.create({ data: { email: pending.email, name, passwordHash, emailVerifiedAt: new Date(), balanceMicro: credit, welcomeCreditAt: credit ? new Date() : null, termsVersion: pending.termsVersion, termsAcceptedAt: pending.termsAcceptedAt }, select: { id: true, email: true, name: true } });
       if (credit) await db.ledgerEntry.create({ data: { kind: "welcome_credit", userId: user.id, amountMicro: credit, note: "welcome test credit" } });
       return user;

@@ -8,6 +8,7 @@ import { api } from "./api";
 
 export type AccountData = AccountView & {
   mode: PaymentMode;
+  simulationEnabled: boolean;
   network: "solana-devnet" | "solana-mainnet";
   /** true when the money on this network is test money */
   testMoney: boolean;

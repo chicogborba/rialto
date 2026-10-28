@@ -1,3 +1,4 @@
+import { requireSimulation } from "@/lib/simulation";
 import { realClock } from "@/lib/agent/clock";
 import { buyerFromRequest } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
@@ -119,6 +120,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
       return Response.json(out.json, { status: out.status, headers: out.headers });
     }
 
+    requireSimulation();
     const out = await handleSimCall({
       provider,
       service,

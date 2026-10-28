@@ -1,3 +1,4 @@
+import { requireSimulation } from "@/lib/simulation";
 import { z } from "zod";
 import { sellerFromRequest } from "@/lib/auth/session";
 import { requestPayout } from "@/lib/db/accounts";
@@ -12,6 +13,7 @@ const Body = z.object({ amountUsd: z.number().positive().optional() });
 /** Withdraw earnings to your payout address. Simulated until the live rail is connected. */
 export async function POST(req: Request): Promise<Response> {
   return handle(async () => {
+    requireSimulation();
     const { sellerId } = await sellerFromRequest(req);
     const parsed = Body.safeParse(await readJson(req));
     if (!parsed.success) throw new HttpError(400, "invalid_body", "amountUsd must be a positive number");

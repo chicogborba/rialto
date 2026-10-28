@@ -272,6 +272,8 @@ Rialto keeps no balance for anyone on the live rail. Each purchase is recorded (
 
 Rialto's own integrations (fal.ai, ElevenLabs, Tripo) are sold at what the upstream API charges plus a margin (`OPERATOR_MARGIN_PCT`, 15% by default), then the same commission on top. The operator sets keys, payout wallets and the margin in `/admin`.
 
+Simulation is available only in local development with the live rail disabled. Production hides fictional providers, disables credit issuance and simulated purchases, and reports only linked USDC wallet funds and agent limits. Historical simulated records remain stored.
+
 The simulated providers use play money: a test credit on the account, debited and credited in a ledger. That ledger is only used for them.
 
 ## What is real and what is not

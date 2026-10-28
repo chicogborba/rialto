@@ -1,3 +1,4 @@
+import { requireSimulation } from "@/lib/simulation";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/account";
 import { prisma } from "@/lib/db/client";
@@ -13,6 +14,7 @@ const Body = z.object({ amountUsd: z.number().min(0.01).max(10) });
 /** Play money for the simulated providers. Off where the live rail is on: there, buyers pay from their own wallets. */
 export async function POST(req: Request): Promise<Response> {
   return handle(async () => {
+    requireSimulation();
     const { user } = await requireUser(req);
     if (currentMode() !== "simulated") throw new HttpError(400, "not_available", "Test credit is only for the simulated rail. Real payments come straight from your agent's own wallet.");
     const parsed = Body.safeParse(await readJson(req));

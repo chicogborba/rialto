@@ -1,9 +1,12 @@
+import { redirect } from "next/navigation";
+import { simulationAllowed } from "@/lib/simulation";
 import Link from "next/link";
 import { AppNav } from "@/components/shell/AppNav";
 import { ResetButton } from "@/components/shell/ResetButton";
 import { WalletChip } from "@/components/shell/WalletChip";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  if (!simulationAllowed()) redirect("/dashboard");
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-line bg-ink/95 px-4 py-3 backdrop-blur-none">

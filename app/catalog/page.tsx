@@ -45,7 +45,7 @@ export default function CatalogPage() {
             <h1 className="text-[clamp(2.8rem,8vw,6rem)] font-bold leading-[0.92] tracking-[-0.05em]">
               The <span className="home-mark">catalog.</span>
             </h1>
-            <p className="mt-4 max-w-xl text-lg leading-snug text-coal/75 md:text-xl">Every API your agent can hire, with what it costs per call. The ones marked Live were published by people and are paid for real; Demo ones are fictional.</p>
+            <p className="mt-4 max-w-xl text-lg leading-snug text-coal/75 md:text-xl">Every API your agent can hire, with what it costs per call. Published APIs are paid in USDC directly from your wallet to the seller.</p>
           </div>
           <Link href={flowHref("/signup?next=/dashboard/apis")} className="home-btn home-btn-ink">Publish yours →</Link>
         </div>

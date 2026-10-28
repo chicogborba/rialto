@@ -1,3 +1,4 @@
+import { simulationAllowed } from "@/lib/simulation";
 import { z } from "zod";
 import { isAdminUser } from "@/lib/admin/auth";
 import { requireUser } from "@/lib/auth/account";
@@ -15,7 +16,7 @@ export async function GET(req: Request): Promise<Response> {
   return handle(async () => {
     const { user, sessionId } = await requireUser(req);
     const [view, row] = await Promise.all([accountView(user.id, sessionId), prisma.user.findUnique({ where: { id: user.id }, select: { email: true, role: true } })]);
-    return Response.json({ ...view, isAdmin: row ? isAdminUser(row) : false, mode: currentMode(), network: NETWORK.name, testMoney: NETWORK.testMoney, welcomeCreditMicro: WELCOME_CREDIT_MICRO });
+    return Response.json({ ...view, isAdmin: row ? isAdminUser(row) : false, mode: currentMode(), simulationEnabled: simulationAllowed(), network: NETWORK.name, testMoney: NETWORK.testMoney, welcomeCreditMicro: simulationAllowed() ? WELCOME_CREDIT_MICRO : 0 });
   });
 }
 

@@ -1,3 +1,4 @@
+import { simulationAllowed } from "@/lib/simulation";
 import { prisma } from "@/lib/db/client";
 import { handle } from "@/lib/http";
 import { currentMode } from "@/lib/x402";
@@ -16,7 +17,7 @@ export const runtime = "nodejs";
 export async function GET(): Promise<Response> {
   return handle(async () => {
     const live = currentMode() === "live";
-    const rows = await prisma.provider.findMany({ include: { services: true }, orderBy: { name: "asc" } });
+    const rows = await prisma.provider.findMany({ where: simulationAllowed() ? {} : { isDemo: false }, include: { services: true }, orderBy: { name: "asc" } });
     const entries: CatalogEntry[] = rows.flatMap((p) => {
       const service = p.services[0];
       if (!service || !isCapabilityId(service.capability)) return [];

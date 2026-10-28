@@ -1,3 +1,4 @@
+import { simulationAllowed } from "@/lib/simulation";
 import { isCapabilityId } from "@/lib/agent/capabilities";
 import type { RunEvent } from "@/lib/agent/events";
 import type { RunDeps, TransactionRecord } from "@/lib/agent/run";
@@ -41,11 +42,12 @@ function asTxStatus(s: string): TxStatus {
 // ---------- registry ----------
 
 export async function listCandidates(): Promise<Candidate[]> {
-  const services = await prisma.service.findMany({ include: { provider: true }, orderBy: { id: "asc" } });
+  const services = await prisma.service.findMany({ where: simulationAllowed() ? {} : { provider: { isDemo: false } }, include: { provider: true }, orderBy: { id: "asc" } });
   const out: Candidate[] = [];
   for (const s of services) {
     const service = toService(s);
-    if (service) out.push({ provider: toProvider(s.provider), service });
+    const provider = toProvider(s.provider);
+    if (service && (simulationAllowed() || provider.settlement === "live")) out.push({ provider, service });
   }
   return out;
 }
@@ -81,6 +83,7 @@ export async function getHistory(): Promise<ProviderHistory> {
 
 export async function listProviders(capability?: CapabilityId): Promise<ProviderWithServices[]> {
   const rows = await prisma.provider.findMany({
+    where: simulationAllowed() ? {} : { isDemo: false },
     include: { services: true },
     orderBy: [{ isDemo: "asc" }, { name: "asc" }],
   });

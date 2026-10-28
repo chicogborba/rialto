@@ -1,3 +1,4 @@
+import { requireSimulation } from "@/lib/simulation";
 import { anonymousKeysAllowed } from "@/lib/security/keys";
 import { signupAllowed } from "@/lib/security/rate-limit";
 import { CreateBuyerSchema, createBuyer } from "@/lib/db/accounts";
@@ -9,6 +10,7 @@ export const runtime = "nodejs";
 /** Create a buyer account. The key is returned ONCE; only its hash is stored. */
 export async function POST(req: Request): Promise<Response> {
   return handle(async () => {
+    requireSimulation();
     if (!anonymousKeysAllowed()) throw new HttpError(403, "accounts_required", "Create an account at /signup: it gives you agents and API keys.");
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
     if (!signupAllowed(ip)) throw new HttpError(429, "rate_limited", "Too many signups from this address");

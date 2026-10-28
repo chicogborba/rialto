@@ -46,7 +46,7 @@ export function registerRialtoTools(server: McpServer, ctx: ToolCtx): void {
 
   server.registerTool("execute_service", {
     title: "Execute goal",
-    description: "Plan AND execute a goal: picks the best provider, pays it from your Rialto wallet, runs it, falls back on failure, and returns the result plus transactions. Generated files (images, audio, video, 3D models) come back as https links to download. Pass `capability` (and `provider`) to choose them yourself; put the link of any input file in `goal`. Payments are SIMULATED unless the platform reports mode=live.",
+    description: "Plan AND execute a goal: picks the best provider, pays it from your owner's linked Solana wallet within its approved allowance, runs it, falls back on failure, and returns the result plus transactions. Generated files (images, audio, video, 3D models) come back as https links to download. Pass `capability` (and `provider`) to choose them yourself; put the link of any input file in `goal`. On-chain payments use USDC; get_wallet_status reports the platform mode, network, whether it is test money, and payment readiness.",
     inputSchema: planInput,
   }, (args) => respond(() => executeService(args, ctx)));
 
@@ -64,7 +64,7 @@ export function registerRialtoTools(server: McpServer, ctx: ToolCtx): void {
 
   server.registerTool("get_wallet_status", {
     title: "Wallet status",
-    description: "Your wallet balance, session spend, spending policy and payment mode (simulated/live).",
+    description: "Your linked paying wallet, spendable on-chain USDC allowance, session spend and remaining budget, spending policy, platform payment mode and on-chain readiness.",
     inputSchema: {},
   }, () => respond(() => getWalletStatus(ctx)));
 }

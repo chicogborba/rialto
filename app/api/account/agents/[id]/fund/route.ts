@@ -1,3 +1,4 @@
+import { requireSimulation } from "@/lib/simulation";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/account";
 import { fundAgent, reclaimFromAgent } from "@/lib/db/users";
@@ -12,6 +13,7 @@ const Body = z.object({ amountUsd: z.number().positive().max(1000), direction: z
 /** Give an agent money from the account ("in"), or take unspent money back ("out"). */
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }): Promise<Response> {
   return handle(async () => {
+    requireSimulation();
     const { user } = await requireUser(req);
     const parsed = Body.safeParse(await readJson(req));
     if (!parsed.success) throw new HttpError(400, "invalid_body", "Enter an amount between $0.001 and $1000.");

@@ -1,3 +1,4 @@
+import { simulationAllowed } from "@/lib/simulation";
 import { z } from "zod";
 import { realClock } from "@/lib/agent/clock";
 import { resolveConstraints } from "@/lib/agent/constraints";
@@ -33,6 +34,7 @@ const BodySchema = z.object({
 });
 
 export async function POST(req: Request): Promise<Response> {
+  if (!simulationAllowed()) return Response.json({ error: "simulation_disabled", message: "Connect your agent through the dashboard to buy APIs with USDC." }, { status: 403 });
   const parsed = BodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return Response.json({ error: "invalid_body", issues: parsed.error.issues }, { status: 400 });

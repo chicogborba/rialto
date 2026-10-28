@@ -34,6 +34,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 interface Loaded {
   live: CatalogEntry[];
   demo: CatalogEntry[];
+  mode?: "live" | "simulated";
 }
 
 /**
@@ -55,13 +56,13 @@ export function Catalog({ fallback }: { fallback: CatalogEntry[] }) {
     fetch("/api/catalog", { cache: "no-store" })
       .then((r) => (r.ok ? (r.json() as Promise<Loaded>) : Promise.reject(new Error("catalog"))))
       .then((d) => alive && setData(d))
-      .catch(() => alive && (setFailed(true), setData({ live: [], demo: fallback })));
+      .catch(() => alive && (setFailed(true), setData({ live: [], demo: [], mode: "live" })));
     return () => {
       alive = false;
     };
   }, [fallback]);
 
-  const active: Group = group ?? (data && data.live.length === 0 ? "demo" : "live");
+  const active: Group = group ?? (STATIC_PREVIEW ? "demo" : "live");
   const items = useMemo(() => (data ? data[active] : []), [data, active]);
   const categories = useMemo(() => ["All", ...Array.from(new Set(items.map((i) => CAPABILITY_LABELS[i.capability])))], [items]);
   const shown = useMemo(() => {
@@ -88,7 +89,7 @@ export function Catalog({ fallback }: { fallback: CatalogEntry[] }) {
             { id: "live", label: "Live on Rialto", n: data.live.length, hint: "Published by people, really callable" },
             { id: "demo", label: "Demo providers", n: data.demo.length, hint: "Fictional, simulated payments" },
           ] as const
-        ).map((t) => (
+        ).filter((t) => t.id === "live" || STATIC_PREVIEW || data.demo.length > 0).map((t) => (
           <button
             key={t.id}
             type="button"
@@ -111,7 +112,7 @@ export function Catalog({ fallback }: { fallback: CatalogEntry[] }) {
       {STATIC_PREVIEW ? (
         <p className="mt-4 border-l-4 border-coal bg-sand/60 px-4 py-3 text-sm">This is the static preview: it can only show the fictional demo providers. A running Rialto lists the APIs people really published here.</p>
       ) : failed ? (
-        <p className="mt-4 border-l-4 border-coal bg-sand/60 px-4 py-3 text-sm">Could not reach the server, so this is the demo list.</p>
+        <p className="mt-4 border-l-4 border-coal bg-sand/60 px-4 py-3 text-sm">Could not load the catalog. Please try again.</p>
       ) : active === "demo" ? (
         <p className="mt-4 border-l-4 border-coal bg-sand/60 px-4 py-3 text-sm">These providers are fictional and their payments are simulated. They are here so an agent has a market to compare while real APIs are few.</p>
       ) : null}

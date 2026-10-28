@@ -391,10 +391,10 @@ export function Wallet() {
         </p>
       </div>
 
-      {live ? <PayFrom /> : <TestMoney />}
+      {live ? <PayFrom /> : account.simulationEnabled ? <TestMoney /> : <p>Payments are temporarily unavailable. Please try again later.</p>}
       <PaidAt />
 
-      {account.ledger.length > 0 && (
+      {account.simulationEnabled && account.ledger.length > 0 && (
         <section aria-labelledby="history-title">
           <h2 id="history-title" className="mb-3 text-lg font-bold tracking-[-0.02em]">
             History

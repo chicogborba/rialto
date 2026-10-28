@@ -17,7 +17,7 @@ import { PageHead, Section, Stat } from "./ui";
 function Checklist() {
   const { account } = useAccount();
   if (!account) return null;
-  const live = account.mode === "live";
+  const live = !account.simulationEnabled;
   // on the live rail agents pay from the owner's wallet; on the simulation, from play money moved to them
   const funded = live ? Boolean(account.user.payWallet) : account.agents.some((a) => a.balanceMicro > 0);
   const used = account.ledger.some((l) => l.kind === "purchase") || account.agents.some((a) => a.sessionSpendMicro > 0);
@@ -66,7 +66,7 @@ export function Overview() {
   }, []);
   if (!account) return null;
   const inAgents = account.agents.reduce((s, a) => s + a.balanceMicro, 0);
-  const live = account.mode === "live";
+  const live = !account.simulationEnabled;
   const spent = account.agents.reduce((s, a) => s + a.sessionSpendMicro, 0);
   const first = account.user.name.split(" ")[0];
   const crew = account.agents.slice(0, 3);

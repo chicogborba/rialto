@@ -1,3 +1,4 @@
+import { simulationAllowed } from "@/lib/simulation";
 import { getProviderBySlug } from "@/lib/db/repo";
 import { toProvider, toService } from "@/lib/db/mappers";
 import { handleSimCall } from "@/lib/providers/sim-provider";
@@ -18,6 +19,7 @@ export async function POST(
   req: Request,
   ctx: { params: Promise<{ provider: string; capability: string }> },
 ): Promise<Response> {
+  if (!simulationAllowed()) return Response.json({ error: "unknown_service" }, { status: 404 });
   const { provider: slug, capability } = await ctx.params;
   const row = await getProviderBySlug(slug);
   const svcRow = row?.services.find((s) => s.capability === capability);

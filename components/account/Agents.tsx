@@ -210,7 +210,7 @@ function AgentSheet({ agent, onClose }: { agent: Agent | null; onClose: () => vo
 
 function AgentBody({ agent, onClose }: { agent: Agent; onClose: () => void }) {
   const { account, refresh } = useAccount();
-  const credits = account?.mode !== "live";
+  const credits = account?.simulationEnabled === true;
   const [tab, setTab] = useState<Tab>("overview");
   const [amount, setAmount] = useState("0.50");
   const [f, setF] = useState({ perCall: String(agent.policy.maxPerRequestMicro / 1e6), session: String(agent.policy.sessionBudgetMicro / 1e6), quality: String(agent.policy.minQuality) });

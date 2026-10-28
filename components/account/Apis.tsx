@@ -409,7 +409,7 @@ export function Apis() {
               <Stat label="Failed, not charged" value={String(ov.totals.failedNotCharged)} />
             </div>
           )}
-          {ov && ov.seller.balanceMicro >= ov.minPayoutMicro && (
+          {account.simulationEnabled && ov && ov.seller.balanceMicro >= ov.minPayoutMicro && (
             <div className="flex flex-wrap items-center gap-3">
               <HardButton onClick={payout}>Withdraw {formatUsd(ov.seller.balanceMicro)}</HardButton>
               <span className="font-mono text-[11px] text-muted">Simulated payout. On the live rail every call is paid to your wallet as it happens.</span>

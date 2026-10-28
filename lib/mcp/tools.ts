@@ -1,3 +1,4 @@
+import { simulationAllowed } from "@/lib/simulation";
 import { z } from "zod";
 import { ALL_CAPABILITIES, CAPABILITY_LABELS } from "@/lib/agent/capabilities";
 import { realClock } from "@/lib/agent/clock";
@@ -231,6 +232,7 @@ export async function executeService(args: GoalArgs, ctx: ToolCtx) {
   if (route.providerId ? everything.some((c) => c.provider.id === route.providerId && paidOnChain(c)) : route.capability && everything.some((c) => c.service.capability === route.capability && paidOnChain(c)) && !everything.some((c) => c.service.capability === route.capability && !paidOnChain(c))) {
     throw new ToolError(SIGNER_HELP);
   }
+  if (!simulationAllowed()) throw new ToolError(SIGNER_HELP);
   const clock = realClock(0);
   const rail = getRail(clock);
   const runId = clock.id("run");
@@ -264,16 +266,19 @@ export async function getTransactions(args: { limit?: number }, ctx: ToolCtx) {
 export async function getWalletStatus(ctx: ToolCtx) {
   const w = await getWallet(ctx.agentId);
   const payer = await payerForAgent(ctx.agentId);
+  const mode = currentMode();
   return {
     payingWallet: payer
       ? { address: payer.wallet, network: NETWORK.name, testMoney: NETWORK.testMoney, allowanceLeftUsd: usd(payer.spendableMicro), note: "Sellers paid on-chain are paid from this wallet, within the limit your owner approved." }
       : { address: null, note: "No wallet linked: sellers paid on-chain cannot be bought here until your owner connects one in the dashboard (Wallet → Pay from your wallet)." },
-    balanceUsd: usd(w.balanceMicro),
+    ...(simulationAllowed() ? { balanceUsd: usd(w.balanceMicro), testCredit: { balanceUsd: usd(w.balanceMicro), mode: "simulated" as const } } : {}),
+    sessionRemainingUsd: usd(Math.max(0, w.policy.sessionBudgetMicro - w.sessionSpendMicro)),
     sessionSpendUsd: usd(w.sessionSpendMicro),
     withinPolicy: w.sessionSpendMicro <= w.policy.sessionBudgetMicro,
-    // what this hosted wallet pays with: test credit, on the simulation
-    mode: "simulated" as const,
-    realPayments: currentMode() === "live" ? (payer ? "On: from the linked wallet above." : "Sellers paid on-chain are paid from your owner's wallet once linked in the dashboard, or through the local signer. This hosted balance only holds test credit.") : "off",
+    // Platform payment mode; individual demo purchases still use simulated test credit.
+    mode,
+    onChainPayments: { enabled: mode === "live", ready: mode === "live" && payer !== null && payer.spendableMicro > 0, network: NETWORK.name, testMoney: NETWORK.testMoney },
+    realPayments: mode === "live" ? (payer ? "On: from the linked wallet above." : "Sellers paid on-chain are paid from your owner's wallet once linked in the dashboard, or through the local signer. Connect a wallet in Dashboard → Wallet to enable hosted purchases.") : "off",
     policy: {
       maxPerRequestUsd: usd(w.policy.maxPerRequestMicro),
       sessionBudgetUsd: usd(w.policy.sessionBudgetMicro),
